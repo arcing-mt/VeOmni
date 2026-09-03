@@ -31,6 +31,7 @@ from torch.optim.optimizer import Optimizer
 
 from ..distributed.parallel_state import get_parallel_state
 from ..utils import logging
+from ..utils.device import IS_MUSA_AVAILABLE
 from .muon import DistributedMuon, infer_head_block_counts, split_muon_adamw_params
 
 
@@ -108,6 +109,27 @@ def _collect_ep_replicated_lora_param_ids(model: "nn.Module") -> set[int]:
 
 
 logger = logging.get_logger(__name__)
+
+
+def _build_adamw(
+    param_groups: Sequence[Dict[str, Any]],
+    lr: float,
+    betas: Tuple[float, float],
+    eps: float,
+    weight_decay: float,
+    fused: bool,
+) -> Optimizer:
+    """Construct the fused AdamW variant supported by the active accelerator.
+
+    ``torch.optim.AdamW(fused=True)`` is CUDA-specific in the torch_musa
+    stack. The MUSA package ships a drop-in ``FusedAdamW`` instead; keep this
+    choice local to the optimizer builder so CUDA/NPU/MLU behaviour is unchanged.
+    """
+    if fused and IS_MUSA_AVAILABLE:
+        from torch_musa.optim import FusedAdamW
+
+        return FusedAdamW(param_groups, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+    return AdamW(param_groups, lr, betas, eps, weight_decay, fused=fused, foreach=not fused)
 
 
 def filter_empty_param_groups(
@@ -509,9 +531,7 @@ def build_optimizer(
         raise ValueError("All optimizer param groups are empty; no trainable parameters to optimize.")
 
     if optimizer_type == "adamw":
-        foreach = not fused
-        fused = fused
-        optim = AdamW(param_groups, lr, betas, eps, weight_decay, fused=fused, foreach=foreach)
+        optim = _build_adamw(param_groups, lr, betas, eps, weight_decay, fused)
     elif optimizer_type == "anyprecision_adamw":
         optim = AnyPrecisionAdamW(param_groups, lr, betas, eps, weight_decay)
     else:
@@ -711,8 +731,7 @@ def _build_muon_with_adamw(
 
     def _make_adamw(params: List[torch.nn.Parameter]) -> AdamW:
         groups = _make_param_groups_for_subset(model, params, weight_decay, no_decay_modules, no_decay_params)
-        foreach = not fused
-        return AdamW(groups, lr=lr, betas=betas, eps=eps, weight_decay=weight_decay, fused=fused, foreach=foreach)
+        return _build_adamw(groups, lr, betas, eps, weight_decay, fused)
 
     optimizer_dict: Dict[str, Optimizer] = {}
     if extra_parallel_aware:
@@ -883,9 +902,8 @@ def build_extra_parallel_fsdp2_optimizer(
     def _build(groups: Sequence[Dict[str, Any]]) -> Optimizer:
         if optimizer_type == "adamw":
             nonlocal fused
-            foreach = not fused
             _fused = fused
-            return AdamW(groups, lr, betas, eps, weight_decay, fused=_fused, foreach=foreach)
+            return _build_adamw(groups, lr, betas, eps, weight_decay, _fused)
         elif optimizer_type == "anyprecision_adamw":
             return AnyPrecisionAdamW(groups, lr, betas, eps, weight_decay)
         else:

@@ -19,12 +19,13 @@ from typing import Any
 import torch
 
 from . import logging
-from .import_utils import is_torch_mlu_available, is_torch_npu_available
+from .import_utils import is_torch_mlu_available, is_torch_musa_available, is_torch_npu_available
 
 
 logger = logging.get_logger(__name__)
 
 
+IS_MUSA_AVAILABLE = is_torch_musa_available()
 IS_CUDA_AVAILABLE = torch.cuda.is_available()
 IS_NPU_AVAILABLE = is_torch_npu_available()
 IS_MLU_AVAILABLE = is_torch_mlu_available()
@@ -37,7 +38,9 @@ MOE_TRITON_DEVICE_TYPES = ("cuda", "mlu")
 
 def get_device_type() -> str:
     """Get device type based on current machine, currently only support CPU, CUDA, NPU, MLU."""
-    if IS_CUDA_AVAILABLE:
+    if IS_MUSA_AVAILABLE:
+        device = "musa"
+    elif IS_CUDA_AVAILABLE:
         device = "cuda"
     elif IS_NPU_AVAILABLE:
         device = "npu"
@@ -71,14 +74,16 @@ def get_device_id() -> int:
 
 
 def is_moe_kernel_supported(device: torch.device | str) -> bool:
-    """Return True if ``device`` is one of the supported accelerator types (CUDA/MLU)."""
+    """Return True if ``device`` is one of the supported MoE kernel types (CUDA/MLU)."""
     device_type = getattr(device, "type", device)
     return str(device_type) in MOE_TRITON_DEVICE_TYPES
 
 
 def get_dist_comm_backend() -> str:
     """Return distributed communication backend type based on device type."""
-    if IS_CUDA_AVAILABLE:
+    if IS_MUSA_AVAILABLE:
+        return "mccl"
+    elif IS_CUDA_AVAILABLE:
         return "nccl"
     elif IS_NPU_AVAILABLE:
         return "hccl"
@@ -95,7 +100,9 @@ def synchronize() -> None:
 
 def stream_synchronize() -> None:
     """Execute device stream synchronize operation."""
-    if IS_CUDA_AVAILABLE:
+    if IS_MUSA_AVAILABLE:
+        torch.musa.current_stream().synchronize()
+    elif IS_CUDA_AVAILABLE:
         torch.cuda.current_stream().synchronize()
     elif IS_NPU_AVAILABLE:
         torch.npu.current_stream().synchronize()
@@ -128,6 +135,11 @@ def is_hccl_backend() -> bool:
 def is_cncl_backend() -> bool:
     """Check if the distributed communication backend is CNCL."""
     return get_dist_comm_backend() == "cncl"
+
+
+def is_mccl_backend() -> bool:
+    """Check if the distributed communication backend is MCCL."""
+    return get_dist_comm_backend() == "mccl"
 
 
 def get_gpu_compute_capability(device: torch.types.Device | int | None = None) -> int:
@@ -200,6 +212,9 @@ def get_compute_units():
             NUM_SMS = device_properties.max_compute_units
         case "mlu":
             device_properties = torch.mlu.get_device_properties(0)
+            NUM_SMS = device_properties.multi_processor_count
+        case "musa":
+            device_properties = torch.musa.get_device_properties(0)
             NUM_SMS = device_properties.multi_processor_count
         case _:
             print("No CUDA, XPU, or MLU device available. Using CPU.")

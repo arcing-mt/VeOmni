@@ -32,6 +32,7 @@ from torch.autograd.graph import saved_tensors_hooks
 from ..utils import logging
 from ..utils.device import (
     IS_CUDA_AVAILABLE,
+    IS_MUSA_AVAILABLE,
     IS_NPU_AVAILABLE,
     create_event,
     create_stream,
@@ -55,7 +56,7 @@ def _module_name_match(pattern: str, name: str) -> bool:
 
 
 def _is_active_accelerator_tensor(tensor) -> bool:
-    return (IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE) and tensor.device.type == get_device_type()
+    return (IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE or IS_MUSA_AVAILABLE) and tensor.device.type == get_device_type()
 
 
 def _has_private_dense_storage(tensor) -> bool:

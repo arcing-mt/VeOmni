@@ -755,10 +755,10 @@ class TrainingArguments:
             )
         },
     )
-    init_device: Literal["cuda", "meta", "npu", "mlu"] = field(
+    init_device: Literal["cuda", "meta", "npu", "mlu", "musa"] = field(
         default="meta",
         metadata={
-            "help": "Device to initialize model weights. 1. `cuda`: Init parameters on GPU. 2. `meta`: Init parameters on meta (required for FSDP2). 3. `npu`: Init parameters on Ascend NPU. 4. `mlu`: Init parameters on Cambricon MLU."
+            "help": "Device to initialize model weights. 1. `cuda`: Init parameters on GPU. 2. `meta`: Init parameters on meta (required for FSDP2). 3. `npu`: Init parameters on Ascend NPU. 4. `mlu`: Init parameters on Cambricon MLU. 5. `musa`: Init parameters on Moore Threads MUSA."
         },
     )
     broadcast_model_weights_from_rank0: bool = field(
@@ -1052,15 +1052,15 @@ _MLU_DEFAULT_FALLBACK: Dict[str, str | frozenset] = {
     "moe_implementation": frozenset({"fused_mlu", "fused_mlu_triton"}),
 }
 
-
 @dataclass
 class OpsImplementationConfig:
     """model.ops_implementation.* — kernel backend selection per op.
 
     Defaults are GPU-optimal (Liger / Triton / fused_triton). On NPU, values
-    still equal to the dataclass defaults listed in ``_NPU_DEFAULT_FALLBACK``
-    are automatically mapped to NPU-compatible or eager implementations;
-    explicit non-default overrides are validated and unsupported values raise.
+    still equal to the dataclass defaults are mapped to the existing NPU
+    implementations. MUSA does not silently substitute an eager/fallback
+    implementation: requested kernels are resolved as requested and an
+    unsupported backend raises at bind time.
     Per-op fields are ``str`` so third-party backends can register without
     changing this dataclass.
 
@@ -1208,6 +1208,13 @@ class OpsImplementationConfig:
     )
 
     def __post_init__(self):
+        # On MUSA, use the locally installed FA3 interface when the upstream
+        # GPU default (FA2) is still selected. This is an explicit accelerator
+        # mapping, not an eager/fallback substitution; if FA3 is unavailable,
+        # leave the requested FA2 value untouched so its normal validation
+        # error remains visible to the user.
+        self._resolve_musa_attention()
+
         if get_env("MODELING_BACKEND") == "veomni":
             replacements = {
                 "flash_attention_2": "veomni_flash_attention_2_with_sp",
@@ -1226,7 +1233,11 @@ class OpsImplementationConfig:
         # Ascend, MLU group-gemm or triton on Cambricon MLU. Kept for back-compat with pre-#678 YAMLs; warn so users
         # migrate to the explicit name.
         if self.moe_implementation == "fused":
-            from ..utils.import_utils import is_apex_mlu_available, is_torch_mlu_available, is_torch_npu_available
+            from ..utils.import_utils import (
+                is_apex_mlu_available,
+                is_torch_mlu_available,
+                is_torch_npu_available,
+            )
 
             if is_torch_npu_available():
                 resolved = "fused_npu"
@@ -1247,6 +1258,19 @@ class OpsImplementationConfig:
         self._apply_npu_default_fallback()
         self._apply_mlu_default_fallback()
         self._validate_implementations()
+
+    def _resolve_musa_attention(self):
+        """Prefer installed MUSA FA3 for the upstream FA2 attention default."""
+        from ..utils.import_utils import is_flash_attn_3_available, is_torch_musa_available
+
+        if not is_torch_musa_available() or self.attn_implementation != "flash_attention_2":
+            return
+        if is_flash_attn_3_available():
+            logger.info_rank0(
+                "attn_implementation: using locally available flash_attention_3 on MUSA "
+                "instead of the upstream flash_attention_2 default."
+            )
+            self.attn_implementation = "flash_attention_3"
 
     def _apply_npu_default_fallback(self):
         """Auto-resolve GPU-only defaults to NPU-compatible alternatives.

@@ -28,7 +28,7 @@ from ..arguments.arguments_types import OpsImplementationConfig
 from ..distributed.parallel_state import get_parallel_state, is_parallel_state_initialized
 from ..ops.dispatch import OpsConfigSlot, OpSlot
 from ..utils import logging
-from ..utils.device import is_torch_npu_available
+from ..utils.device import IS_MUSA_AVAILABLE, is_torch_npu_available
 from .loader import BaseModelLoader, get_loader, get_model_config, get_model_processor
 
 
@@ -184,7 +184,7 @@ def build_foundation_model(
             "native-sparse",
         ]
     ] = None,
-    init_device: Literal["cpu", "cuda", "npu", "mlu", "meta"] = "cuda",
+    init_device: Literal["cpu", "cuda", "npu", "mlu", "musa", "meta"] = "cuda",
     config_kwargs: Optional[Dict[str, Any]] = None,
     encoder_data_balance: Optional[bool] = False,
     encoder_data_balance_sorting_algo: Optional[str] = "post_mbs_balancing_greedy_without_pad",
@@ -206,6 +206,15 @@ def build_foundation_model(
     """
     from ..ops import apply_ops_config
     from ..ops.config.singleton import get_ops_config
+
+    # Transformers' FA3 capability gate is CUDA-only, while the local MUSA
+    # wheel exposes the standard ``flash_attn_interface`` API. Install this
+    # small runtime gate before constructing the model so FA3 can be selected
+    # without changing the installed Transformers package.
+    if IS_MUSA_AVAILABLE:
+        from ..ops.platform.musa import apply_musa_flash_attn_patch
+
+        apply_musa_flash_attn_patch()
 
     if ops_implementation is not None:
         attn_implementation = ops_implementation.attn_implementation

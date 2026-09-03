@@ -3,6 +3,12 @@
 set -x
 set -o pipefail
 
+# Make a fresh clone runnable without requiring an editable package install.
+# torch.distributed.run executes the training script from ``tasks/`` and does
+# not always keep the repository root on ``sys.path``.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export PYTHONPATH="${SCRIPT_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
+
 export TOKENIZERS_PARALLELISM=false
 export TORCH_NCCL_AVOID_RECORD_STREAMS=1
 
@@ -34,6 +40,25 @@ elif command -v cnmon &> /dev/null; then
   else
     NPROC_PER_NODE=${NPROC_PER_NODE:=$(cnmon -l 2>/dev/null | grep -c "MLU")}
   fi
+elif command -v mthreads-gmi &> /dev/null && mthreads-gmi --list-gpus &> /dev/null; then
+  # Moore Threads MUSA. torch_musa exposes a separate ``musa`` device
+  # namespace, so it must be detected before the generic NPU fallback.
+  if [[ -n "${MUSA_VISIBLE_DEVICES}" ]]; then
+    NPROC_PER_NODE=${NPROC_PER_NODE:=$(echo "${MUSA_VISIBLE_DEVICES}" | tr ',' '\n' | wc -l)}
+  else
+    NPROC_PER_NODE=${NPROC_PER_NODE:=$(mthreads-gmi --list-gpus | wc -l)}
+  fi
+  export PYTORCH_MUSA_ALLOC_CONF="${PYTORCH_MUSA_ALLOC_CONF:-expandable_segments:True}"
+  export TORCH_MCCL_AVOID_RECORD_STREAMS="${TORCH_MCCL_AVOID_RECORD_STREAMS:-1}"
+  export MUSA_EXECUTION_TIMEOUT="${MUSA_EXECUTION_TIMEOUT:-3200000}"
+  export ACCELERATOR_BACKEND="${ACCELERATOR_BACKEND:-musa}"
+  export MCCL_PROTOS="${MCCL_PROTOS:-2}"
+  export MCCL_ALGOS="${MCCL_ALGOS:-1}"
+  export CUDA_DEVICE_MAX_CONNECTIONS="${CUDA_DEVICE_MAX_CONNECTIONS:-1}"
+  export OMP_NUM_THREADS="${OMP_NUM_THREADS:-4}"
+  export LD_LIBRARY_PATH="/usr/local/musa/lib:/usr/local/openmpi/lib:${LD_LIBRARY_PATH:-}"
+  export PATH="/usr/local/musa/bin:/usr/local/musa/mudnn/bin:/usr/local/musa/mudnn_bench/bin:/usr/local/musa/mccl_test:/usr/local/openmpi/bin:${PATH}"
+  export NCCL_DEBUG="${NCCL_DEBUG:-WARN}"
 else
   # NPU
   if [[ -n "${ASCEND_RT_VISIBLE_DEVICES}" ]]; then
@@ -55,7 +80,12 @@ else
   additional_args="--rdzv_endpoint=${MASTER_ADDR}:${MASTER_PORT}"
 fi
 
-torchrun \
+# Use the active Python environment's torch.distributed launcher.  The system
+# `/usr/local/bin/torchrun` in the MUSA image may be shebang-bound to
+# `/usr/bin/python3`, which can silently omit the active venv's Transformers,
+# torchdata, and VeOmni dependencies.
+TORCHRUN_PYTHON="${TORCHRUN_PYTHON:-${PYTHON:-python}}"
+"${TORCHRUN_PYTHON}" -m torch.distributed.run \
   --nnodes=$NNODES \
   --nproc-per-node=$NPROC_PER_NODE \
   --node-rank=$NODE_RANK \

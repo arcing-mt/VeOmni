@@ -29,7 +29,7 @@ from torch.utils.checkpoint import noop_context_fn
 from ..arguments import MixedPrecisionConfig
 from ..models import load_model_weights, load_model_weights_ep_sharded, rank0_load_and_broadcast_weights
 from ..utils import logging
-from ..utils.device import IS_NPU_AVAILABLE, get_device_type
+from ..utils.device import IS_MUSA_AVAILABLE, IS_NPU_AVAILABLE, get_device_type
 from .checkpoint import CheckpointFunction
 from .parallel_plan import ParallelPlan, get_runtime_parallel_plan
 from .parallel_state import get_parallel_state
@@ -577,10 +577,15 @@ def parallelize_model_fsdp2(
     # NPU currently does not support the PreSumMul operation, so this operation is supported through the apply_hccl_premul_sum_patch.
     # TODO(https://github.com/ByteDance-Seed/VeOmni/issues/241):
     # NPU is missing PreSumMul ReduceOp. Need to remove this condition after the issue is resolved.
-    if IS_NPU_AVAILABLE and parallel_state.any_extra_parallel_enabled:
-        from veomni.ops.platform.npu import apply_hccl_premul_sum_patch
+    if (IS_NPU_AVAILABLE or IS_MUSA_AVAILABLE) and parallel_state.any_extra_parallel_enabled:
+        if IS_MUSA_AVAILABLE:
+            from veomni.ops.platform.musa import apply_mccl_premul_sum_patch
 
-        apply_hccl_premul_sum_patch()
+            apply_mccl_premul_sum_patch()
+        else:
+            from veomni.ops.platform.npu import apply_hccl_premul_sum_patch
+
+            apply_hccl_premul_sum_patch()
 
     # Sort layer_pairs by fqn by submodule order, as fully_shard should starts from bottom modules to top modules
     #   e.g. sorted_fqn_list = ['decoder.embed_tokens', 'embed_tokens', 'decoder']
@@ -609,11 +614,17 @@ def parallelize_model_fsdp2(
                 gradient_divide_factor = parallel_state.extra_parallel_gradient_divide_factor(para)
                 logger.info(f"setting grad divide factor for {para} module to {gradient_divide_factor}")
                 if IS_NPU_AVAILABLE:
-                    # NPU is using torch 2.7
+                    # NPU is using torch 2.7.
                     _para_mod.set_reduce_scatter_divide_factor(gradient_divide_factor)
                 else:
-                    # from torch 2.8
-                    _para_mod.set_gradient_divide_factor(gradient_divide_factor)
+                    # torch 2.8+ (including the current torch_musa build).
+                    set_gradient_divide_factor = getattr(_para_mod, "set_gradient_divide_factor", None)
+                    if set_gradient_divide_factor is None:
+                        # Keep older MUSA/Torch combinations usable when they
+                        # expose only the pre-2.8 spelling.
+                        _para_mod.set_reduce_scatter_divide_factor(gradient_divide_factor)
+                    else:
+                        set_gradient_divide_factor(gradient_divide_factor)
                 layer_mod._fsdp_modules.append(_para_mod)
 
         # shard module that needs to ignore mixed precision control
@@ -796,7 +807,7 @@ def build_parallelize_model(
     compile_config = compile_config or CompileConfig()
 
     if not parallel_state.fsdp_enabled:
-        if kwargs.get("init_device") not in ["cuda", "npu", "mlu"]:
+        if kwargs.get("init_device") not in ["cuda", "npu", "mlu", "musa"]:
             raise ValueError("Only FSDP training supports `init_device=meta`.")
 
     if mixed_precision.enable:  # upcast to float32 before feed it to optimizer

@@ -33,9 +33,9 @@ Selection is driven by three fields on ``OpsImplementationConfig``:
 
 Backends per op:
 
-- ``rms_norm_gated``: ``fla`` (GPU), ``npu``.
-- ``causal_conv1d``: ``fla`` (GPU), ``npu``.
-- ``chunk_gated_delta_rule``: ``fla`` (GPU), ``flash_qla`` (GPU ``gpu`` extra,
+- ``rms_norm_gated``: ``fla`` (GPU/MLU/MUSA), ``npu``.
+- ``causal_conv1d``: ``fla`` (GPU/MLU/MUSA), ``npu``.
+- ``chunk_gated_delta_rule``: ``fla`` (GPU/MUSA), ``flash_qla`` (GPU ``gpu`` extra,
   Hopper SM90), ``npu`` (vendored Triton), ``npu_ascendc`` (AscendC fused ops).
 
 The ``npu`` ``causal_conv1d`` backend is a thin adapter (``npu_causal_conv1d``)
