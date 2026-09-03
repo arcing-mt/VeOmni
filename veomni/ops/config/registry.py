@@ -69,7 +69,8 @@ class BackendSpec:
     Attributes:
         entry: ``"module:attr"`` - lazily imported to resolve the replacement.
         requires: Package names that must be available, checked before
-            resolution. Supported values: ``"liger_kernel"``, ``"torch_npu"``.
+            resolution. Supported values: ``"liger_kernel"``, ``"torch_musa"``,
+            ``"torch_npu"``, and ``"torch_mlu"``.
         side_effect: GLOBAL ops only. ``"module:callable"`` invoked after
             ``entry`` is bound to ``global_slot`` (e.g. installing additional
             ``LOSS_MAPPING`` entries).
@@ -167,6 +168,7 @@ def _check_requires(requires: tuple[str, ...]) -> None:
         is_liger_kernel_available,
         is_package_available,
         is_torch_mlu_available,
+        is_torch_musa_available,
         is_torch_npu_available,
     )
 
@@ -180,6 +182,11 @@ def _check_requires(requires: tuple[str, ...]) -> None:
         elif pkg == "torch_mlu":
             if not is_torch_mlu_available():
                 raise RuntimeError("mlu backend requested but torch_mlu is not installed.")
+        elif pkg == "torch_musa":
+            if not is_torch_musa_available():
+                raise RuntimeError(
+                    "musa backend requested but torch_musa is not installed or no MUSA device is available."
+                )
         elif pkg == "triton":
             if not is_package_available("triton"):
                 raise RuntimeError(

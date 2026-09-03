@@ -15,6 +15,7 @@ from veomni.distributed.sequence_parallel.op_wrappers import (
     _EagerRotary,
     _LigerRMSNorm,
     _LigerRotary,
+    _MusaRMSNorm,
     _NpuRMSNorm,
     get_op_wrapper,
     pack_saved_state,
@@ -22,7 +23,7 @@ from veomni.distributed.sequence_parallel.op_wrappers import (
 )
 from veomni.ops.config.singleton import get_ops_config, set_ops_config
 from veomni.ops.dispatch import OpSlot
-from veomni.utils.device import IS_CUDA_AVAILABLE, get_device_type
+from veomni.utils.device import IS_CUDA_AVAILABLE, IS_MUSA_AVAILABLE, get_device_type
 
 
 def _clear_wrapper_cache() -> None:
@@ -311,8 +312,15 @@ def test_get_op_wrapper_rejects_unknown_op() -> None:
 
 def test_unknown_implementation_raises() -> None:
     _set_ops(rms_norm="not_a_backend")
-    with pytest.raises(KeyError, match="Supported: \\['eager', 'liger_kernel', 'npu'\\]"):
+    with pytest.raises(KeyError, match="Supported: \\['eager', 'liger_kernel', 'musa', 'npu'\\]"):
         get_op_wrapper("rms_norm")
+
+
+@pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA RMSNorm wrapper requires an active torch-musa device")
+def test_musa_rms_norm_wrapper_is_selected() -> None:
+    _set_ops(rms_norm="musa", rotary_pos_emb="eager")
+    wrapper = get_op_wrapper("rms_norm")
+    assert isinstance(wrapper, _MusaRMSNorm)
 
 
 def test_triton_implementation_raises() -> None:
