@@ -29,7 +29,7 @@ import torch
 from torch import Tensor
 
 from ...ops.config.singleton import get_ops_config
-from ...utils.device import IS_NPU_AVAILABLE
+from ...utils.device import IS_MUSA_AVAILABLE, IS_NPU_AVAILABLE
 
 
 class OpWrapper(Protocol):
@@ -235,6 +235,52 @@ class _NpuRMSNorm:
         )
 
 
+@dataclass(frozen=True)
+class _MusaRMSMetadata:
+    empty: bool
+    eps: float
+
+
+@dataclass
+class _MusaRMSNorm:
+    offset: float = 0.0
+
+    def forward(self, x: Tensor, weight: Tensor, eps: float) -> tuple[Tensor, OpSavedState]:
+        if x.numel() == 0:
+            output, _ = _EagerRMSNorm(self.offset).forward(x, weight, eps)
+            return output, OpSavedState((x, weight), _MusaRMSMetadata(True, eps))
+
+        scale = weight if self.offset == 0.0 else self.offset + weight
+        output, rstd = torch.ops.aten._fused_rms_norm.default(
+            x,
+            [x.shape[-1]],
+            scale,
+            eps,
+        )
+        return output, OpSavedState((x, weight, rstd), _MusaRMSMetadata(False, eps))
+
+    def backward(self, grad_output: Tensor, saved: OpSavedState) -> tuple[Tensor, Tensor]:
+        metadata = saved.metadata
+        assert isinstance(metadata, _MusaRMSMetadata)
+        x, weight, *optional_rstd = saved.tensors
+        if metadata.empty:
+            return _EagerRMSNorm(self.offset).backward(
+                grad_output,
+                OpSavedState((x, weight), _EagerRMSMetadata(True, metadata.eps)),
+            )
+
+        (rstd,) = optional_rstd
+        scale = weight if self.offset == 0.0 else self.offset + weight
+        return torch.ops.aten._fused_rms_norm_backward.default(
+            grad_output.contiguous(),
+            x,
+            [x.shape[-1]],
+            rstd,
+            scale,
+            [True, True],
+        )
+
+
 def _build_rms_norm(variant: str, impl_name: str) -> OpWrapper:
     if variant == "qwen3_5":
         offset, casting_mode = 1.0, "gemma"
@@ -253,6 +299,10 @@ def _build_rms_norm(variant: str, impl_name: str) -> OpWrapper:
         if not IS_NPU_AVAILABLE:
             raise RuntimeError("rms_norm implementation 'npu' requires an NPU device.")
         return _NpuRMSNorm(offset=offset)
+    if impl_name == "musa":
+        if not IS_MUSA_AVAILABLE:
+            raise RuntimeError("rms_norm implementation 'musa' requires a MUSA device.")
+        return _MusaRMSNorm(offset=offset)
     raise KeyError(f"No async RMSNorm wrapper for impl={impl_name!r}, variant={variant!r}")
 
 
@@ -367,7 +417,7 @@ _BUILDERS: dict[str, Callable[[str, str], OpWrapper]] = {
 }
 
 _SUPPORTED_IMPLEMENTATIONS: dict[str, frozenset[str]] = {
-    "rms_norm": frozenset({"eager", "liger_kernel", "npu"}),
+    "rms_norm": frozenset({"eager", "liger_kernel", "musa", "npu"}),
     "rotary_pos_emb": frozenset({"eager", "liger_kernel", "npu"}),
 }
 

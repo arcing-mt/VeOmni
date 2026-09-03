@@ -1082,8 +1082,9 @@ class OpsImplementationConfig:
       is documented in the field metadata.
 
     Backends: ``"eager"`` (HF reference, always available),
-    ``"liger_kernel"`` (GPU, needs ``liger-kernel``), ``"npu"`` (Ascend),
-    ``"triton"`` (CUDA ``triton``). Load-balancing loss has a CUDA Triton
+    ``"liger_kernel"`` (GPU, needs ``liger-kernel``), ``"musa"`` (MUSA-native
+    fused RMSNorm), ``"npu"`` (Ascend), ``"triton"`` (CUDA ``triton``).
+    Load-balancing loss has a CUDA Triton
     backend; on NPU, values equal to the dataclass default are normalized to
     ``"eager"`` before registry binding.
     """
@@ -1126,7 +1127,7 @@ class OpsImplementationConfig:
     rms_norm_implementation: str = field(
         default="liger_kernel",
         metadata={
-            "help": "RMSNorm. 'liger_kernel' (default, GPU) | 'npu' | "
+            "help": "RMSNorm. 'liger_kernel' (default, GPU) | 'musa' (MUSA-native fused) | 'npu' | "
             "'triton' (DeepSeek-V3 batch-invariant; GPU only) | 'eager'."
         },
     )

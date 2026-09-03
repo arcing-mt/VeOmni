@@ -19,7 +19,7 @@ selection knob.
 | DSA attention | `dsa_attention_implementation` | `eager`, `flashmla_cudnn` (GLM-DSA), `tilelang` (DeepSeek-V4) | `"eager"` | Model build via `OpsConfigSlot` |
 | mHC | `mhc_implementation` | `eager`, `tilelang` (DeepSeek-V4, SM90+) | `"eager"` | Model build via three `OpSlot`s (`pre`, `post`, `head`) |
 | Cross-entropy loss | `cross_entropy_loss_implementation` | `eager`, `liger_kernel`, `chunk_loss`, `npu` | `"liger_kernel"` (GPU) | `apply_ops_config()` (before model build) |
-| RMSNorm | `rms_norm_implementation` | `eager`, `liger_kernel`, `npu`, `triton` (per-model; DeepSeek-V3) | `"liger_kernel"` (GPU) | Model registration via ops config singleton |
+| RMSNorm | `rms_norm_implementation` | `eager`, `liger_kernel`, `musa`, `npu`, `triton` (per-model; DeepSeek-V3) | `"liger_kernel"` (GPU) | Model registration via ops config singleton |
 | SwiGLU MLP | `swiglu_mlp_implementation` | `eager`, `liger_kernel` | `"liger_kernel"` (GPU) | Model registration via ops config singleton |
 | Rotary embedding | `rotary_pos_emb_implementation` | `eager`, `liger_kernel`, `npu`, `triton` (per-model; DeepSeek-V3, DeepSeek-V4, Wan) | `"liger_kernel"` (GPU) | Model registration via ops config singleton |
 | Vision rotary embedding | `rotary_pos_emb_vision_implementation` | `eager`, `npu` | `"eager"` | Model registration via ops config singleton |
@@ -222,7 +222,7 @@ batch-invariant RMSNorm and deterministic RoPE).
 ```yaml
 model:
   ops_implementation:
-    rms_norm_implementation: liger_kernel       # default; pin to "npu" / "eager" on NPU
+    rms_norm_implementation: liger_kernel       # default; use "musa" on MUSA or "npu" on NPU
     swiglu_mlp_implementation: liger_kernel     # default; pin to "eager" on NPU (no NPU backend)
     rotary_pos_emb_implementation: liger_kernel # default; pin to "npu" / "eager" on NPU
 ```
@@ -234,6 +234,7 @@ model:
 | Value | Implementation | Requirements |
 |-------|---------------|---|
 | `liger_kernel` | `LigerRMSNorm` | `liger-kernel` package |
+| `musa` | torch-musa fused `torch.rms_norm` / `aten::_fused_rms_norm` | `torch_musa` + MUSA |
 | `npu` | `torch_npu.npu_rms_norm` | `torch_npu` |
 | `triton` | Model-specific Triton kernel registered via `extra_backends` (e.g. DeepSeek-V3 batch-invariant RMSNorm) | `triton`, per-model registration |
 | `eager` | HuggingFace default (`{Model}RMSNorm`) | — |
@@ -267,8 +268,9 @@ model-specific arguments such as an optional RMSNorm weight:
 | `rotary_pos_emb_implementation` | `apply_rotary_pos_emb` | `liger_rotary_pos_emb` |
 | `swiglu_mlp_implementation` | `{Model}MLP.forward` | Functional Liger SwiGLU |
 
-The `npu` and `triton` backends follow the same `device_patch.py` flow — the
-only difference is the kernel callable on the other side of the registry.
+The `musa`, `npu`, and `triton` backends follow the same `device_patch.py`
+flow — the only difference is the kernel callable on the other side of the
+registry.
 
 ### Models with Liger support
 
@@ -448,7 +450,7 @@ All four are defined in `transformers.integrations`:
 
 | | VeOmni | Transformers v5 |
 |---|--------|----------------|
-| **Mechanism** | The per-model registry or a variant-aware `OpSlot` selects `liger_kernel`, `npu`, or a model-specific `triton` backend | `@use_kernel_forward_from_hub("RMSNorm")` decorator on `Qwen3MoeRMSNorm`; at `model.kernelize()` time the `kernels` library downloads and swaps in `LigerRMSNorm` from `kernels-community/liger_kernels` |
+| **Mechanism** | The per-model registry or a variant-aware `OpSlot` selects `liger_kernel`, `musa`, `npu`, or a model-specific `triton` backend | `@use_kernel_forward_from_hub("RMSNorm")` decorator on `Qwen3MoeRMSNorm`; at `model.kernelize()` time the `kernels` library downloads and swaps in `LigerRMSNorm` from `kernels-community/liger_kernels` |
 | **Config** | `OpsImplementationConfig.rms_norm_implementation` field (default `"liger_kernel"` on GPU) | `USE_HUB_KERNELS` env var + `model.kernelize()` call |
 | **When** | Model registration (import time) | Deferred — `kernelize()` after model init |
 | **SP support** | N/A (norm is local) | N/A |

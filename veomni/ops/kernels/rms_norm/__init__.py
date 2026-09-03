@@ -16,6 +16,7 @@
 
 Default per-model backends:
     - ``liger_kernel``: ``liger_kernel.transformers.rms_norm.LigerRMSNorm``
+    - ``musa``: torch-musa's fused ``torch.rms_norm`` on MUSA
     - ``npu``: ``torch_npu.npu_rms_norm`` via ``veomni.ops.kernels.rms_norm.npu``
 Models can register a ``triton`` backend via ``extra_backends`` in their
 ``device_patch.py`` (e.g. DeepSeek V3 batch-invariant kernel).
@@ -40,6 +41,11 @@ register_op(
             "npu": BackendSpec(
                 entry="veomni.ops.kernels.rms_norm.npu:rms_norm_forward_npu",
                 requires=("torch_npu",),
+                replace_forward=True,
+            ),
+            "musa": BackendSpec(
+                entry="veomni.ops.kernels.rms_norm.musa:rms_norm_forward_musa",
+                requires=("torch_musa",),
                 replace_forward=True,
             ),
         },
@@ -99,5 +105,61 @@ KERNEL_REGISTRY.register(
         factory=_npu_qwen3_5_rms_norm_factory,
         hardware=HardwareRequirement(device_type="npu"),
         description="Qwen3.5 fused RMSNorm on NPU",
+    )
+)
+
+
+# ── rms_norm (Torch_musa) ───────────────────────────────────
+
+def _musa_standard_rms_norm_factory():
+    from .musa import standard_rms_norm_forward_musa
+
+    return standard_rms_norm_forward_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rms_norm",
+        variant="standard",
+        factory=_musa_standard_rms_norm_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="torch-musa fused RMSNorm (standard variant)",
+    )
+)
+
+
+def _musa_unweighted_rms_norm_factory():
+    from .musa import unweighted_rms_norm_forward_musa
+
+    return unweighted_rms_norm_forward_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rms_norm",
+        variant="unweighted",
+        factory=_musa_unweighted_rms_norm_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="torch-musa fused unweighted RMSNorm",
+    )
+)
+
+
+def _musa_qwen3_5_rms_norm_factory():
+    from .musa import qwen3_5_rms_norm_forward_musa
+
+    return qwen3_5_rms_norm_forward_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rms_norm",
+        variant="qwen3_5",
+        factory=_musa_qwen3_5_rms_norm_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="torch-musa fused RMSNorm for Qwen3.5 (1+weight)",
     )
 )

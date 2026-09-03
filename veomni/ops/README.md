@@ -50,7 +50,7 @@ depending on when and where the kernel is bound:
 | Attention | `attn_implementation` | import-time | `flash_attention_2` | `eager`, `sdpa`, `flash_attention_2/3/4`, `flex_attention`, `magi_attention`, `native-sparse` |
 | Cross-entropy loss | `cross_entropy_loss_implementation` | LOSS_MAPPING | `eager` | `eager`, `liger_kernel`, `npu` (chunked loss) |
 | Load-balancing loss | `load_balancing_loss_implementation` | GLOBAL | `eager` | `eager`, `triton` |
-| RMSNorm | `rms_norm_implementation` | PER_MODEL | `eager` | `liger_kernel`, `npu`, `triton`\* |
+| RMSNorm | `rms_norm_implementation` | PER_MODEL | `eager` | `liger_kernel`, `musa`, `npu`, `triton`\* |
 | Rotary pos emb | `rotary_pos_emb_implementation` | PER_MODEL | `eager` | `liger_kernel`, `npu`, `triton`\* |
 | SwiGLU MLP | `swiglu_mlp_implementation` | PER_MODEL | `eager` | `liger_kernel` |
 | mHC | `mhc_implementation` | build-time `OpSlot` | `eager` | `tilelang` (DeepSeek V4, SM90+; provided by `tile-kernels`) |
@@ -66,6 +66,7 @@ own Triton RMSNorm/rotary. See the per-model table below.
 |---|---|---|
 | `eager` | — | Always available |
 | `liger_kernel` | `liger-kernel` package | `BackendSpec.requires=("liger_kernel",)` → `is_liger_kernel_available()` |
+| `musa` | `torch_musa` + active MUSA device | `BackendSpec.requires=("torch_musa",)` → `is_torch_musa_available()` |
 | `npu` | `torch_npu` + Ascend NPU | `BackendSpec.requires=("torch_npu",)` → `is_torch_npu_available()` |
 | `triton` | Triton + CUDA | Validated by the model `extra_backends` registration |
 | `flash_attention_2/3/4` | `flash-attn` / `flash-attn-interface` / `flash-attn.cute` | Validated in `OpsImplementationConfig.__post_init__` |
@@ -259,7 +260,7 @@ GLOBAL slot pattern does not fit.
 ## Edge cases
 
 - **Hardware requirements**: list the import guard in `BackendSpec.requires`
-  (`"liger_kernel"` and `"torch_npu"` are supported today; extend
+  (`"liger_kernel"`, `"torch_musa"`, `"torch_npu"`, and `"torch_mlu"` are supported today; extend
   `_check_requires` in `registry.py` to add more).
 - **Replace `.forward` instead of the class** (NPU RMSNorm): set
   `replace_forward=True`.
