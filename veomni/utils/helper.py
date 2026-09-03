@@ -42,6 +42,7 @@ from .count_flops import VeomniFlopsCounter
 from .device import (
     IS_CUDA_AVAILABLE,
     IS_MLU_AVAILABLE,
+    IS_MUSA_AVAILABLE,
     IS_NPU_AVAILABLE,
     get_device_type,
     get_torch_device,
@@ -60,6 +61,9 @@ except (ImportError, ModuleNotFoundError):
 
 if IS_NPU_AVAILABLE:
     import torch_npu
+
+if IS_MUSA_AVAILABLE:
+    import torch_musa  # noqa: F401  registers torch.musa accelerator
 
 
 # internal use
@@ -453,6 +457,11 @@ def enable_high_precision_for_bf16():
         torch.backends.mlu.matmul.allow_tf32 = False
         torch.backends.mlu.matmul.allow_bf16_reduced_precision_reduction = False
 
+    if IS_MUSA_AVAILABLE:
+        # torch_musa exposes the TF32 switch but not PyTorch CUDA's reduced
+        # precision reduction flag.
+        torch.backends.musa.matmul.allow_tf32 = False
+
 
 def enable_full_determinism(seed: int):
     """
@@ -472,8 +481,9 @@ def enable_full_determinism(seed: int):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if IS_CUDA_AVAILABLE:
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
     # Enable CUDNN deterministic mode
     torch.backends.cudnn.deterministic = True
@@ -488,6 +498,10 @@ def enable_full_determinism(seed: int):
         torch.mlu.manual_seed(seed)
         torch.mlu.manual_seed_all(seed)
 
+    if IS_MUSA_AVAILABLE:
+        torch.musa.manual_seed(seed)
+        torch.musa.manual_seed_all(seed)
+
 
 def set_seed(seed: int, full_determinism: bool = False) -> None:
     """
@@ -497,6 +511,9 @@ def set_seed(seed: int, full_determinism: bool = False) -> None:
         enable_full_determinism(seed)
     else:
         set_seed_func(seed)
+        if IS_MUSA_AVAILABLE:
+            torch.musa.manual_seed(seed)
+            torch.musa.manual_seed_all(seed)
 
 
 def create_logger(name: Optional[str] = None) -> "logging._Logger":
@@ -567,7 +584,7 @@ def empty_cache() -> None:
     """
     gc.collect()
 
-    if IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE or IS_MLU_AVAILABLE:
+    if IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE or IS_MLU_AVAILABLE or IS_MUSA_AVAILABLE:
         from veomni.utils.device import empty_cache
 
         empty_cache()
@@ -743,7 +760,7 @@ def create_profiler(
             nonlocal npu_trace_handler
             npu_trace_handler(p)
             trace_file = p.prof_if.prof_path
-        elif IS_CUDA_AVAILABLE or IS_MLU_AVAILABLE:
+        elif IS_CUDA_AVAILABLE or IS_MLU_AVAILABLE or IS_MUSA_AVAILABLE:
             p.export_chrome_trace(trace_file)
         logger.info(f"Profiling result saved at {trace_file}.")
 
@@ -786,6 +803,10 @@ def create_profiler(
         profiler_module = torch.profiler
         activities = [profiler_module.ProfilerActivity.CPU, profiler_module.ProfilerActivity.MLU]
         experimental_config = None
+    elif IS_MUSA_AVAILABLE:
+        profiler_module = torch.profiler
+        activities = [profiler_module.ProfilerActivity.CPU, profiler_module.ProfilerActivity.MUSA]
+        experimental_config = None
     else:
         profiler_module = torch.profiler
         activities = [profiler_module.ProfilerActivity.CPU, profiler_module.ProfilerActivity.CUDA]
@@ -812,7 +833,7 @@ def create_profiler(
         with_stack=with_stack,
         experimental_config=experimental_config,
     )
-    if (IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE) and profile_memory:
+    if (IS_CUDA_AVAILABLE or IS_NPU_AVAILABLE or IS_MUSA_AVAILABLE) and profile_memory:
         return ProfilerWithMem(base_profiler)
     else:
         return base_profiler
