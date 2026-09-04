@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from ....lora.target_mapping import convert_fused_moe_lora_targets
-from ....utils.device import IS_NPU_AVAILABLE
+from ....utils.device import IS_MUSA_AVAILABLE, IS_NPU_AVAILABLE
 from ...loader import MODELING_REGISTRY
 
 
@@ -52,10 +52,18 @@ def register_qwen3_5_moe_modeling(architecture: str):
             Qwen3_5MoeForConditionalGeneration,
         )
     else:
-        from .generated.patched_modeling_qwen3_5_moe_gpu import (
-            Qwen3_5MoeForCausalLM,
-            Qwen3_5MoeForConditionalGeneration,
-        )
+        from .generated import patched_modeling_qwen3_5_moe_gpu as modeling_module
+
+        if IS_MUSA_AVAILABLE:
+            from ....ops.config.singleton import get_ops_config
+
+            ops_config = get_ops_config()
+            if ops_config is not None and ops_config.rotary_pos_emb_implementation == "musa":
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch
+
+                install_qwen3_5_musa_rotary_patch(modeling_module)
+        Qwen3_5MoeForCausalLM = modeling_module.Qwen3_5MoeForCausalLM
+        Qwen3_5MoeForConditionalGeneration = modeling_module.Qwen3_5MoeForConditionalGeneration
 
     Qwen3_5MoeForConditionalGeneration._convert_lora_targets_to_parameters = staticmethod(
         _convert_qwen3_5_moe_conditional_lora_targets_to_parameters
@@ -77,7 +85,17 @@ def register_qwen3_5_moe_text_modeling(architecture: str):
     if IS_NPU_AVAILABLE:
         from .generated.patched_modeling_qwen3_5_moe_npu import Qwen3_5MoeForCausalLM
     else:
-        from .generated.patched_modeling_qwen3_5_moe_gpu import Qwen3_5MoeForCausalLM
+        from .generated import patched_modeling_qwen3_5_moe_gpu as modeling_module
+
+        if IS_MUSA_AVAILABLE:
+            from ....ops.config.singleton import get_ops_config
+
+            ops_config = get_ops_config()
+            if ops_config is not None and ops_config.rotary_pos_emb_implementation == "musa":
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch
+
+                install_qwen3_5_musa_rotary_patch(modeling_module)
+        Qwen3_5MoeForCausalLM = modeling_module.Qwen3_5MoeForCausalLM
 
     Qwen3_5MoeForCausalLM._convert_lora_targets_to_parameters = staticmethod(
         _convert_qwen3_5_moe_causal_lora_targets_to_parameters

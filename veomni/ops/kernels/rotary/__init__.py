@@ -16,6 +16,7 @@
 
 Default per-model backends:
     - ``liger_kernel``: ``liger_kernel.transformers.rope.liger_rotary_pos_emb``
+    - ``musa``: torch-musa fused ``torch.rope`` adapter
     - ``npu``: ``torch_npu.npu_rotary_mul`` via ``veomni.ops.kernels.rotary.npu``
 Models can register a ``triton`` (deterministic bmm / Wan DiT / DeepSeek-V4
 partial-interleaved) backend via ``extra_backends`` in their ``device_patch.py``.
@@ -37,11 +38,54 @@ register_op(
                 entry="liger_kernel.transformers.rope:liger_rotary_pos_emb",
                 requires=("liger_kernel",),
             ),
+            "musa": BackendSpec(
+                entry="veomni.ops.kernels.rotary.musa:apply_rotary_pos_emb_musa",
+                requires=("torch_musa",),
+            ),
             "npu": BackendSpec(
                 entry="veomni.ops.kernels.rotary.npu:apply_rotary_pos_emb_npu",
                 requires=("torch_npu",),
             ),
         },
+    )
+)
+
+
+# ── rotary_pos_emb (Torch_musa) ─────────────────────────
+
+
+def _musa_full_apply_rotary_pos_emb_factory():
+    from .musa import apply_rotary_pos_emb_musa
+
+    return apply_rotary_pos_emb_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rotary_pos_emb",
+        variant="full",
+        factory=_musa_full_apply_rotary_pos_emb_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="full apply_rotary_pos_emb on MUSA",
+    )
+)
+
+
+def _musa_partial_apply_rotary_pos_emb_factory():
+    from .musa import partial_apply_rotary_pos_emb_musa
+
+    return partial_apply_rotary_pos_emb_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rotary_pos_emb",
+        variant="partial",
+        factory=_musa_partial_apply_rotary_pos_emb_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="partial apply_rotary_pos_emb on MUSA",
     )
 )
 

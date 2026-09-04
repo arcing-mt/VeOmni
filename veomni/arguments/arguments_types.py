@@ -1083,7 +1083,7 @@ class OpsImplementationConfig:
 
     Backends: ``"eager"`` (HF reference, always available),
     ``"liger_kernel"`` (GPU, needs ``liger-kernel``), ``"musa"`` (MUSA-native
-    fused RMSNorm), ``"npu"`` (Ascend), ``"triton"`` (CUDA ``triton``).
+    fused kernel), ``"npu"`` (Ascend), ``"triton"`` (CUDA ``triton``).
     Load-balancing loss has a CUDA Triton
     backend; on NPU, values equal to the dataclass default are normalized to
     ``"eager"`` before registry binding.
@@ -1127,7 +1127,7 @@ class OpsImplementationConfig:
     rms_norm_implementation: str = field(
         default="liger_kernel",
         metadata={
-            "help": "RMSNorm. 'liger_kernel' (default, GPU) | 'musa' (MUSA-native fused) | 'npu' | "
+            "help": "RMSNorm. 'liger_kernel' (default, GPU) | 'musa' | 'npu' | "
             "'triton' (DeepSeek-V3 batch-invariant; GPU only) | 'eager'."
         },
     )
@@ -1141,7 +1141,7 @@ class OpsImplementationConfig:
         default="liger_kernel",
         metadata={
             "help": "Rotary positional embedding. 'liger_kernel' (default, GPU) | "
-            "'npu' | 'triton' (per-model: DeepSeek-V3 deterministic, "
+            "'musa' | 'npu' | 'triton' (per-model: DeepSeek-V3 deterministic, "
             "DeepSeek-V4 fused partial-interleaved, Wan; GPU only) | 'eager'."
         },
     )
@@ -1338,6 +1338,7 @@ class OpsImplementationConfig:
         from ..utils.import_utils import (
             is_apex_mlu_available,
             is_package_available,
+            is_torch_musa_available,
             is_torch_mlu_available,
             is_torch_npu_available,
         )
@@ -1353,6 +1354,7 @@ class OpsImplementationConfig:
 
         on_npu = is_torch_npu_available()
         on_mlu = is_torch_mlu_available()
+        on_musa = is_torch_musa_available()
 
         for field_name, npu_ok in _NPU_ALLOWED.items():
             value = getattr(self, field_name)
@@ -1367,6 +1369,16 @@ class OpsImplementationConfig:
                 )
             if not on_npu and value in _NPU_REQUIRED.get(field_name, frozenset()):
                 raise ValueError(f"{field_name}={value!r} requires Ascend NPU but none is available.")
+
+            # The Qwen3.5 GPU module is shared by CUDA and MUSA, but its
+            # MUSA-only text-RoPE OpSlot is injected only on an active MUSA
+            # device.  Reject the value here on other hardware instead of
+            # letting it silently fall through to the eager function.
+            if field_name == "rotary_pos_emb_implementation" and value == "musa" and not on_musa:
+                raise ValueError(
+                    "rotary_pos_emb_implementation='musa' requires an active torch-musa/MUSA device. "
+                    "Set it to 'eager', 'liger_kernel', or a model-supported backend on other hardware."
+                )
 
         for field_name, mlu_ok in _MLU_ALLOWED.items():
             value = getattr(self, field_name)
