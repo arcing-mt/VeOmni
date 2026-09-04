@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MUSA-only runtime patch for Qwen3.5 text RoPE.
+"""MUSA-only runtime patch for Qwen3.5 RoPE.
 
 The current loader shares Qwen3.5's generated GPU module between CUDA and
 MUSA. This module is intentionally a small runtime installer, not a patchgen
 ``PatchConfig``: it leaves the GPU/NPU generated files untouched and adds one
-partial-RoPE OpSlot only on the active MUSA model path.
+partial/full RoPE OpSlots only on the active MUSA model path.
 """
 
 from __future__ import annotations
@@ -28,27 +28,50 @@ from types import ModuleType
 from ....ops.dispatch import OpSlot
 
 
-def install_qwen3_5_musa_rotary_patch(modeling_module: ModuleType) -> None:
-    """Install the MUSA text-RoPE OpSlot on one generated modeling module."""
-    if getattr(modeling_module, "_VEOMNI_MUSA_ROTARY_PATCHED", False):
-        return
+def install_qwen3_5_musa_rotary_patch(
+    modeling_module: ModuleType,
+    *,
+    install_text: bool = True,
+    install_vision: bool = False,
+) -> None:
+    """Install requested MUSA RoPE OpSlots on one generated module.
 
-    original = modeling_module.apply_rotary_pos_emb
-    slot = OpSlot("rotary_pos_emb", "partial")
+    The two switches keep text and Vision configuration independent: a text
+    model does not acquire a Vision slot, and a caller selecting only Vision
+    MUSA does not alter the text path.
+    """
+    if install_text and not getattr(modeling_module, "_VEOMNI_MUSA_TEXT_ROTARY_PATCHED", False):
+        original_text = modeling_module.apply_rotary_pos_emb
+        text_slot = OpSlot("rotary_pos_emb", "partial")
 
-    @wraps(original)
-    def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
-        if slot.use_non_eager_impl:
-            return slot(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
-        return original(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
+        @wraps(original_text)
+        def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
+            if text_slot.use_non_eager_impl:
+                return text_slot(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
+            return original_text(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
 
-    # _bind_veomni_ops() scans module globals for OpSlot instances after the
-    # model class is selected. Adding the slot here keeps the CUDA generated
-    # artifact unchanged while allowing the MUSA backend to bind and perform
-    # the normal hardware check.
-    modeling_module.veomni_apply_rotary_pos_emb = slot
-    modeling_module.apply_rotary_pos_emb = apply_rotary_pos_emb
-    modeling_module._VEOMNI_MUSA_ROTARY_PATCHED = True
+        modeling_module.veomni_apply_rotary_pos_emb = text_slot
+        modeling_module.apply_rotary_pos_emb = apply_rotary_pos_emb
+        modeling_module._VEOMNI_MUSA_TEXT_ROTARY_PATCHED = True
+
+    if install_vision and not getattr(modeling_module, "_VEOMNI_MUSA_VISION_ROTARY_PATCHED", False):
+        original_vision = modeling_module.apply_rotary_pos_emb_vision
+        vision_slot = OpSlot("rotary_pos_emb_vision", "full")
+
+        @wraps(original_vision)
+        def apply_rotary_pos_emb_vision(q, k, cos, sin):
+            if vision_slot.use_non_eager_impl:
+                return vision_slot(q, k, cos, sin)
+            return original_vision(q, k, cos, sin)
+
+        modeling_module.veomni_apply_rotary_pos_emb_vision = vision_slot
+        modeling_module.apply_rotary_pos_emb_vision = apply_rotary_pos_emb_vision
+        modeling_module._VEOMNI_MUSA_VISION_ROTARY_PATCHED = True
+
+    modeling_module._VEOMNI_MUSA_ROTARY_PATCHED = bool(
+        getattr(modeling_module, "_VEOMNI_MUSA_TEXT_ROTARY_PATCHED", False)
+        or getattr(modeling_module, "_VEOMNI_MUSA_VISION_ROTARY_PATCHED", False)
+    )
 
 
 __all__ = ["install_qwen3_5_musa_rotary_patch"]

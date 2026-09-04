@@ -56,9 +56,10 @@ _PHASE_CACHE: dict[int, _PhaseCacheEntry] = {}
 
 def _phase_from_cos_sin(cos: torch.Tensor, sin: torch.Tensor) -> tuple[torch.Tensor, bool]:
     """Recover a muDNN float32 phase table from HF cos/sin tensors."""
-    if cos.ndim != 3 or sin.ndim != 3:
+    if cos.ndim not in (2, 3) or sin.ndim != cos.ndim:
         raise ValueError(
-            "MUSA RoPE expects cos and sin with shape [batch, sequence, rotary_dim]. "
+            "MUSA RoPE expects cos and sin with shape [sequence, rotary_dim] or "
+            "[batch, sequence, rotary_dim]. "
             f"Got cos.ndim={cos.ndim}, sin.ndim={sin.ndim}."
         )
     if cos.shape != sin.shape:
@@ -74,7 +75,7 @@ def _phase_from_cos_sin(cos: torch.Tensor, sin: torch.Tensor) -> tuple[torch.Ten
         and cached.cos_ref() is cos
         and cached.sin_ref() is sin
         and cached.rotary_dim == rotary_dim
-        and cached.phase.shape[:2] == cos.shape[:2]
+        and cached.phase.shape == cos.shape
     ):
         return cached.phase, cached.shared
 
@@ -85,7 +86,10 @@ def _phase_from_cos_sin(cos: torch.Tensor, sin: torch.Tensor) -> tuple[torch.Ten
     half = rotary_dim // 2
     phase_half = torch.atan2(sin[..., :half].float(), cos[..., :half].float())
     phase = torch.cat((phase_half, phase_half), dim=-1).contiguous()
-    shared = cos.shape[0] == 1
+    # A vision call supplies [S, D] and is inherently one shared sequence;
+    # text supplies [B, S, D], where only B==1 is known to be shared without
+    # comparing device tensors.
+    shared = cos.ndim == 2 or cos.shape[0] == 1
 
     entry: _PhaseCacheEntry
 
@@ -199,4 +203,32 @@ def partial_apply_rotary_pos_emb_musa(
     return _apply_rotary_pos_emb_musa(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim, partial=True)
 
 
-__all__ = ["apply_rotary_pos_emb_musa", "partial_apply_rotary_pos_emb_musa"]
+def apply_rotary_pos_emb_vision_musa(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """MUSA full RoPE adapter for Qwen3.5 Vision's ``[S, H, D]`` API."""
+    if q.ndim != 3 or k.ndim != 3:
+        raise ValueError(f"MUSA Vision RoPE expects q/k with shape [S, H, D]; got q={tuple(q.shape)}, k={tuple(k.shape)}.")
+    if q.shape[0] != k.shape[0] or q.shape[2] != k.shape[2]:
+        raise ValueError(f"MUSA Vision RoPE requires q/k sequence and head dimensions to match; got q={q.shape}, k={k.shape}.")
+    phase, _ = _phase_from_cos_sin(cos, sin)
+    if phase.ndim != 2 or phase.shape[0] != q.shape[0] or phase.shape[1] != q.shape[-1]:
+        raise ValueError(
+            "MUSA Vision RoPE requires cos/sin with shape [S, D] matching q/k; "
+            f"got phase={tuple(phase.shape)}, q={tuple(q.shape)}."
+        )
+    # muDNN's non-batch-first contract is [S, B, H, D].  Use B=1 because
+    # Vision tokens are already packed along S and their phase is per token.
+    q_out = torch.rope(q.unsqueeze(1).contiguous(), phase, False, False, False).squeeze(1)
+    k_out = torch.rope(k.unsqueeze(1).contiguous(), phase, False, False, False).squeeze(1)
+    return q_out, k_out
+
+
+__all__ = [
+    "apply_rotary_pos_emb_musa",
+    "apply_rotary_pos_emb_vision_musa",
+    "partial_apply_rotary_pos_emb_musa",
+]

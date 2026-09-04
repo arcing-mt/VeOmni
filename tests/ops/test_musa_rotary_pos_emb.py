@@ -29,6 +29,7 @@ from veomni.utils.device import IS_MUSA_AVAILABLE
 def test_musa_rope_kernels_are_registered() -> None:
     assert "musa" in KERNEL_REGISTRY.list_available("rotary_pos_emb", "full")
     assert "musa" in KERNEL_REGISTRY.list_available("rotary_pos_emb", "partial")
+    assert "musa" in KERNEL_REGISTRY.list_available("rotary_pos_emb_vision", "full")
 
 
 def test_phase_reconstruction_marks_only_explicit_single_batch_as_shared() -> None:
@@ -65,6 +66,70 @@ def test_musa_patch_is_runtime_only_and_preserves_eager_when_unbound() -> None:
     q_out, k_out = module.apply_rotary_pos_emb(q, k, cos, sin)
     assert torch.equal(q_out, q + cos)
     assert torch.equal(k_out, k + sin)
+
+
+def test_musa_vision_patch_is_independent_from_text_patch() -> None:
+    module = ModuleType("fake_qwen3_5_vision_modeling")
+
+    def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
+        del unsqueeze_dim
+        return q + cos, k + sin
+
+    def apply_rotary_pos_emb_vision(q, k, cos, sin):
+        return q + cos, k + sin
+
+    module.apply_rotary_pos_emb = apply_rotary_pos_emb
+    module.apply_rotary_pos_emb_vision = apply_rotary_pos_emb_vision
+    install_qwen3_5_musa_rotary_patch(module, install_text=False, install_vision=True)
+    assert not hasattr(module, "veomni_apply_rotary_pos_emb")
+    assert hasattr(module, "veomni_apply_rotary_pos_emb_vision")
+    assert getattr(module, "_VEOMNI_MUSA_VISION_ROTARY_PATCHED") is True
+
+    q = torch.zeros(1)
+    k = torch.ones(1)
+    cos = torch.full((1,), 2.0)
+    sin = torch.full((1,), 3.0)
+    q_out, k_out = module.apply_rotary_pos_emb_vision(q, k, cos, sin)
+    assert torch.equal(q_out, q + cos)
+    assert torch.equal(k_out, k + sin)
+
+
+def test_vision_phase_reconstruction_accepts_sequence_layout() -> None:
+    angles = torch.randn(4, 8)
+    cos = torch.cat((angles.cos(), angles.cos()), dim=-1)
+    sin = torch.cat((angles.sin(), angles.sin()), dim=-1)
+    phase, shared = _phase_from_cos_sin(cos, sin)
+    assert shared
+    assert phase.shape == cos.shape
+    assert torch.allclose(phase.cos(), cos, atol=1e-6, rtol=1e-6)
+    assert torch.allclose(phase.sin(), sin, atol=1e-6, rtol=1e-6)
+
+
+@pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA Vision RoPE requires an active torch-musa device")
+def test_musa_vision_rope_matches_eager() -> None:
+    torch.manual_seed(7120)
+    device = torch.device("musa")
+    seq, heads, head_dim = 64, 16, 64
+    q = torch.randn(seq, heads, head_dim, device=device, dtype=torch.float16)
+    k = torch.randn_like(q)
+    angles = torch.randn(seq, head_dim // 2, device=device, dtype=torch.float32)
+    cos = torch.cat((angles.cos(), angles.cos()), dim=-1)
+    sin = torch.cat((angles.sin(), angles.sin()), dim=-1)
+
+    def eager(x: torch.Tensor) -> torch.Tensor:
+        first, second = x.float().chunk(2, dim=-1)
+        rotated = torch.cat((-second, first), dim=-1)
+        return ((x.float() * cos.unsqueeze(-2)) + (rotated * sin.unsqueeze(-2))).to(x.dtype)
+
+    from veomni.ops.dispatch import OpSlot
+
+    slot = OpSlot("rotary_pos_emb_vision", "full")
+    slot.bind("musa")
+    q_out, k_out = slot(q, k, cos, sin)
+    q_ref, k_ref = eager(q), eager(k)
+    torch.musa.synchronize()
+    diff = torch.cat(((q_out.float() - q_ref.float()).abs().flatten(), (k_out.float() - k_ref.float()).abs().flatten()))
+    assert float(diff.max().cpu()) <= 2e-3
 
 
 @pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA RoPE requires an active torch-musa device")
