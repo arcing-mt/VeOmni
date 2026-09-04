@@ -235,7 +235,7 @@ class TestKernelSpecValidation:
 
     def test_all_registered_specs_have_hardware_requirement(self):
         """Every registered spec must have a non-None hardware requirement."""
-        allowed_device_types = ("gpu", "npu", "mlu", "any")
+        allowed_device_types = ("gpu", "npu", "mlu", "musa", "any")
         for (op_name, variant), bucket in KERNEL_REGISTRY._specs.items():
             for impl_name, spec in bucket.items():
                 assert spec.hardware is not None, (

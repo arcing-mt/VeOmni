@@ -55,6 +55,7 @@ def apply_veomni_wan_device_patch():
                 # raise cleanly instead of crashing inside the wrong-signature
                 # kernel at runtime. Wan YAMLs pin ``rotary_pos_emb_implementation: eager``.
                 "liger_kernel": None,
+                "musa": None,
                 "npu": BackendSpec(
                     entry="veomni.models.transformers.wan.npu_patch:rope_apply_fused",
                     requires=("torch_npu",),
