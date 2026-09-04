@@ -1147,7 +1147,10 @@ class OpsImplementationConfig:
     )
     rotary_pos_emb_vision_implementation: str = field(
         default="eager",
-        metadata={"help": "Rotary positional embedding in vision part. 'npu' | 'eager' (default)."},
+        metadata={
+            "help": "Rotary positional embedding in vision part. 'musa' | "
+            "'npu' | 'eager' (default)."
+        },
     )
     load_balancing_loss_implementation: str = field(
         default="triton",
@@ -1374,9 +1377,13 @@ class OpsImplementationConfig:
             # MUSA-only text-RoPE OpSlot is injected only on an active MUSA
             # device.  Reject the value here on other hardware instead of
             # letting it silently fall through to the eager function.
-            if field_name == "rotary_pos_emb_implementation" and value == "musa" and not on_musa:
+            if (
+                field_name in {"rotary_pos_emb_implementation", "rotary_pos_emb_vision_implementation"}
+                and value == "musa"
+                and not on_musa
+            ):
                 raise ValueError(
-                    "rotary_pos_emb_implementation='musa' requires an active torch-musa/MUSA device. "
+                    f"{field_name}='musa' requires an active torch-musa/MUSA device. "
                     "Set it to 'eager', 'liger_kernel', or a model-supported backend on other hardware."
                 )
 

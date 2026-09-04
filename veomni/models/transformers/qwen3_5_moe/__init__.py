@@ -58,10 +58,17 @@ def register_qwen3_5_moe_modeling(architecture: str):
             from ....ops.config.singleton import get_ops_config
 
             ops_config = get_ops_config()
-            if ops_config is not None and ops_config.rotary_pos_emb_implementation == "musa":
+            if ops_config is not None and (
+                ops_config.rotary_pos_emb_implementation == "musa"
+                or ops_config.rotary_pos_emb_vision_implementation == "musa"
+            ):
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch
 
-                install_qwen3_5_musa_rotary_patch(modeling_module)
+                install_qwen3_5_musa_rotary_patch(
+                    modeling_module,
+                    install_text=ops_config.rotary_pos_emb_implementation == "musa",
+                    install_vision=ops_config.rotary_pos_emb_vision_implementation == "musa",
+                )
         Qwen3_5MoeForCausalLM = modeling_module.Qwen3_5MoeForCausalLM
         Qwen3_5MoeForConditionalGeneration = modeling_module.Qwen3_5MoeForConditionalGeneration
 

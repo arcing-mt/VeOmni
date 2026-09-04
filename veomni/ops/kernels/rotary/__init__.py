@@ -117,6 +117,24 @@ def _npu_apply_rotary_pos_emb_vision_factory():
     return apply_rotary_pos_emb_vision_npu
 
 
+def _musa_apply_rotary_pos_emb_vision_factory():
+    from .musa import apply_rotary_pos_emb_vision_musa
+
+    return apply_rotary_pos_emb_vision_musa
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="rotary_pos_emb_vision",
+        variant="full",
+        factory=_musa_apply_rotary_pos_emb_vision_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="torch-musa muDNN fused Vision RoPE",
+    )
+)
+
+
 KERNEL_REGISTRY.register(
     KernelSpec(
         name="npu",
