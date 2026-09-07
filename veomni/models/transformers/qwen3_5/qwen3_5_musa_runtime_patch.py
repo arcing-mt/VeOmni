@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MUSA-only runtime patch for Qwen3.5 RoPE.
+"""MUSA-only runtime patches for Qwen3.5.
 
 The current loader shares Qwen3.5's generated GPU module between CUDA and
 MUSA. This module is intentionally a small runtime installer, not a patchgen
 ``PatchConfig``: it leaves the GPU/NPU generated files untouched and adds one
 partial/full RoPE OpSlots only on the active MUSA model path.
+
+The MUSA chunk gated delta-rule backend does not need another runtime wrapper:
+the shared generated module already exposes
+``OpSlot("chunk_gated_delta_rule", "standard")``. At model-build time,
+``_bind_veomni_ops`` resolves ``chunk_gated_delta_rule_implementation=musa``
+through the normal kernel registry. Keeping that selection in the ops layer
+avoids duplicating Qwen3.5's GatedDeltaNet forward here.
 """
 
 from __future__ import annotations

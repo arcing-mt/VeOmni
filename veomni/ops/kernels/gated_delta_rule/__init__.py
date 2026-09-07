@@ -35,8 +35,9 @@ Backends per op:
 
 - ``rms_norm_gated``: ``fla`` (GPU/MLU/MUSA), ``npu``.
 - ``causal_conv1d``: ``fla`` (GPU/MLU/MUSA), ``npu``.
-- ``chunk_gated_delta_rule``: ``fla`` (GPU/MUSA), ``flash_qla`` (GPU ``gpu`` extra,
-  Hopper SM90), ``npu`` (vendored Triton), ``npu_ascendc`` (AscendC fused ops).
+- ``chunk_gated_delta_rule``: ``fla`` (GPU/MUSA), ``musa`` (S5000-tuned FLA
+  bridge), ``flash_qla`` (GPU ``gpu`` extra, Hopper SM90), ``npu`` (vendored
+  Triton), ``npu_ascendc`` (AscendC fused ops).
 
 The ``npu`` ``causal_conv1d`` backend is a thin adapter (``npu_causal_conv1d``)
 over the vendored kernel; the ``npu`` ``chunk_gated_delta_rule`` binds the
@@ -180,6 +181,25 @@ KERNEL_REGISTRY.register(
         factory=_fla_chunk_gated_delta_rule_factory,
         hardware=HardwareRequirement(device_type=["gpu", "mlu"]),
         description="flash-linear-attention chunk gated delta rule (Triton, varlen-aware)",
+    )
+)
+
+
+def _musa_chunk_gated_delta_rule_factory():
+    """Return the built-in S5000-tuned FLA bridge for MUSA."""
+    from .musa import get_musa_chunk_gated_delta_rule
+
+    return get_musa_chunk_gated_delta_rule()
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="chunk_gated_delta_rule",
+        variant="standard",
+        factory=_musa_chunk_gated_delta_rule_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="Built-in S5000-tuned FLA chunk gated delta rule adapter for MUSA",
     )
 )
 

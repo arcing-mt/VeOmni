@@ -278,6 +278,9 @@ model:
     chunk_gated_delta_rule_implementation: flash_qla
 ```
 
+On MUSA, `musa` selects the built-in S5000-tuned FLA configurations and the
+unfused KKT forward path.
+
 On NPU the default `fla` raises, so all three fields must be set explicitly — see
 [Kernel backends](#kernel-backends) under *Start training on NPU*.
 
