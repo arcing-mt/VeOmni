@@ -132,6 +132,45 @@ def test_musa_vision_rope_matches_eager() -> None:
     assert float(diff.max().cpu()) <= 2e-3
 
 
+@pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA Vision RoPE requires an active torch-musa device")
+def test_musa_vision_rope_zero_padding_matches_eager(monkeypatch) -> None:
+    """Zero cos/sin rows from Vision SP padding must remain zero after MUSA RoPE."""
+    torch.manual_seed(7121)
+    device = torch.device("musa")
+    valid_seq, pad_seq, heads, head_dim = 62, 2, 16, 64
+    q = torch.randn(valid_seq + pad_seq, heads, head_dim, device=device, dtype=torch.float16)
+    k = torch.randn_like(q)
+    angles = torch.randn(valid_seq, head_dim // 2, device=device, dtype=torch.float32)
+    cos_valid = torch.cat((angles.cos(), angles.cos()), dim=-1)
+    sin_valid = torch.cat((angles.sin(), angles.sin()), dim=-1)
+    cos = torch.cat((cos_valid, torch.zeros(pad_seq, head_dim, device=device)), dim=0)
+    sin = torch.cat((sin_valid, torch.zeros(pad_seq, head_dim, device=device)), dim=0)
+
+    def eager(x: torch.Tensor) -> torch.Tensor:
+        first, second = x.float().chunk(2, dim=-1)
+        rotated = torch.cat((-second, first), dim=-1)
+        return ((x.float() * cos.unsqueeze(-2)) + (rotated * sin.unsqueeze(-2))).to(x.dtype)
+
+    import veomni.ops.kernels.rotary.musa as musa_kernel
+    from veomni.ops.dispatch import OpSlot
+
+    class _SPState:
+        sp_enabled = True
+
+    monkeypatch.setattr(musa_kernel, "is_parallel_state_initialized", lambda: True)
+    monkeypatch.setattr(musa_kernel, "get_parallel_state", lambda: _SPState())
+
+    slot = OpSlot("rotary_pos_emb_vision", "full")
+    slot.bind("musa")
+    q_out, k_out = slot(q, k, cos, sin)
+    q_ref, k_ref = eager(q), eager(k)
+    torch.musa.synchronize()
+    torch.testing.assert_close(q_out, q_ref, atol=2e-3, rtol=2e-3)
+    torch.testing.assert_close(k_out, k_ref, atol=2e-3, rtol=2e-3)
+    assert torch.equal(q_out[-pad_seq:], torch.zeros_like(q_out[-pad_seq:]))
+    assert torch.equal(k_out[-pad_seq:], torch.zeros_like(k_out[-pad_seq:]))
+
+
 @pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA RoPE requires an active torch-musa device")
 @pytest.mark.parametrize("batch_size", [1, 2, 4])
 def test_musa_partial_rope_matches_eager_and_preserves_tail(batch_size: int) -> None:

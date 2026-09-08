@@ -38,6 +38,8 @@ from typing import NamedTuple
 
 import torch
 
+from ....distributed.parallel_state import get_parallel_state, is_parallel_state_initialized
+
 
 class _PhaseCacheEntry(NamedTuple):
     cos_ref: weakref.ReferenceType[torch.Tensor]
@@ -224,6 +226,16 @@ def apply_rotary_pos_emb_vision_musa(
     # Vision tokens are already packed along S and their phase is per token.
     q_out = torch.rope(q.unsqueeze(1).contiguous(), phase, False, False, False).squeeze(1)
     k_out = torch.rope(k.unsqueeze(1).contiguous(), phase, False, False, False).squeeze(1)
+
+    # The generated Vision path only introduces zero cos/sin rows when
+    # sequence parallelism is enabled (``sp_pad_and_slice``).  Avoid an extra
+    # device-side mask kernel on the common non-SP path.  Eager RoPE zeros
+    # those rows, while atan2 above maps them to phase=0 (identity rotation),
+    # so restore the eager result only for the SP path.
+    if is_parallel_state_initialized() and get_parallel_state().sp_enabled:
+        valid = ((cos != 0).any(dim=-1) | (sin != 0).any(dim=-1)).view(-1, 1, 1)
+        q_out = torch.where(valid, q_out, torch.zeros_like(q_out))
+        k_out = torch.where(valid, k_out, torch.zeros_like(k_out))
     return q_out, k_out
 
 
