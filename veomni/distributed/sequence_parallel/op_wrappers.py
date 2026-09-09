@@ -239,6 +239,8 @@ class _NpuRMSNorm:
 class _MusaRMSMetadata:
     empty: bool
     eps: float
+    input_dtype: torch.dtype | None = None
+    weight_dtype: torch.dtype | None = None
 
 
 @dataclass
@@ -251,13 +253,21 @@ class _MusaRMSNorm:
             return output, OpSavedState((x, weight), _MusaRMSMetadata(True, eps))
 
         scale = weight if self.offset == 0.0 else self.offset + weight
+        input_dtype = x.dtype
+        weight_dtype = weight.dtype
+        compute_dtype = torch.promote_types(input_dtype, scale.dtype)
+        x_compute = x.to(compute_dtype)
+        scale = scale.to(compute_dtype)
         output, rstd = torch.ops.aten._fused_rms_norm.default(
-            x,
-            [x.shape[-1]],
+            x_compute,
+            [x_compute.shape[-1]],
             scale,
             eps,
         )
-        return output, OpSavedState((x, weight, rstd), _MusaRMSMetadata(False, eps))
+        return output.to(input_dtype), OpSavedState(
+            (x_compute, weight, rstd),
+            _MusaRMSMetadata(False, eps, input_dtype, weight_dtype),
+        )
 
     def backward(self, grad_output: Tensor, saved: OpSavedState) -> tuple[Tensor, Tensor]:
         metadata = saved.metadata
@@ -271,14 +281,16 @@ class _MusaRMSNorm:
 
         (rstd,) = optional_rstd
         scale = weight if self.offset == 0.0 else self.offset + weight
-        return torch.ops.aten._fused_rms_norm_backward.default(
-            grad_output.contiguous(),
+        compute_dtype = x.dtype
+        grad_x, grad_weight = torch.ops.aten._fused_rms_norm_backward.default(
+            grad_output.to(compute_dtype).contiguous(),
             x,
             [x.shape[-1]],
             rstd,
-            scale,
+            scale.to(compute_dtype),
             [True, True],
         )
+        return grad_x.to(metadata.input_dtype), grad_weight.to(metadata.weight_dtype)
 
 
 def _build_rms_norm(variant: str, impl_name: str) -> OpWrapper:

@@ -323,6 +323,30 @@ def test_musa_rms_norm_wrapper_is_selected() -> None:
     assert isinstance(wrapper, _MusaRMSNorm)
 
 
+@pytest.mark.skipif(not IS_MUSA_AVAILABLE, reason="MUSA RMSNorm wrapper requires an active torch-musa device")
+def test_musa_rms_norm_wrapper_mixed_dtype_matches_eager() -> None:
+    torch.manual_seed(6105)
+    eps = 1e-6
+    x = torch.randn(8, 128, device="musa", dtype=torch.bfloat16).requires_grad_()
+    weight = torch.randn(128, device="musa", dtype=torch.float32).requires_grad_()
+    wrapper = _MusaRMSNorm(offset=1.0)
+
+    output, saved = wrapper.forward(x, weight, eps)
+    reference = _eager_rms_norm(x, weight, eps, offset=1.0)
+    torch.testing.assert_close(output, reference, rtol=0, atol=0)
+
+    grad_output = torch.randn_like(output)
+    grad_x, grad_weight = wrapper.backward(grad_output, saved)
+    output_ref, saved_ref = _EagerRMSNorm(offset=1.0).forward(x, weight, eps)
+    grad_x_ref, grad_weight_ref = _EagerRMSNorm(offset=1.0).backward(
+        grad_output,
+        saved_ref,
+    )
+    del output_ref
+    torch.testing.assert_close(grad_x, grad_x_ref, rtol=2e-2, atol=2e-2)
+    torch.testing.assert_close(grad_weight, grad_weight_ref, rtol=2e-2, atol=2e-2)
+
+
 def test_triton_implementation_raises() -> None:
     _set_ops(rms_norm="triton", rotary_pos_emb="triton")
     with pytest.raises(KeyError, match="implementation 'triton'"):
