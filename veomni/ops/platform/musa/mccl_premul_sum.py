@@ -83,7 +83,7 @@ def mccl_reduce_op_wrapper(op: Callable, output_name: str, op_arg_index: int, gr
             args, kwargs = _replace_op(args, kwargs, op_arg_index, ReduceOp.SUM)
 
         handle = op(*args, **kwargs)
-        if handle is not None:
+        if factor is not None and handle is not None:
             handle.wait()
         if factor is not None:
             output = args[0] if args else kwargs[output_name]
