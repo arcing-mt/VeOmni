@@ -19,6 +19,7 @@ from ....utils.import_utils import (
     is_fused_moe_available,
     is_quack_gemm_available,
     is_torch_mlu_available,
+    is_torch_musa_available,
     is_torch_npu_available,
 )
 
@@ -72,6 +73,7 @@ def apply_veomni_fused_moe_patch(fused_moe_kernel: str = "triton") -> None:
             ``"npu"`` (NPU group-gemm, requires torch_npu).
             ``"mlu"`` (MLU group-gemm, requires torch_mlu).
             ``"mlu_triton"`` (MLU Triton group-gemm, requires torch_mlu).
+            ``"musa"`` (MUSA group-gemm, requires mate).
             The kernel must match the hardware; mismatches raise here rather
             than silently falling back to a different backend.
 
@@ -117,6 +119,13 @@ def apply_veomni_fused_moe_patch(fused_moe_kernel: str = "triton") -> None:
         from .group_gemm import group_gemm_fused_moe_forward
 
         _fused_moe_forward = group_gemm_fused_moe_forward
+    elif fused_moe_kernel == "musa":
+        if not is_torch_musa_available():
+            raise RuntimeError("fused_moe_kernel='musa' requires torch_musa and a MUSA device.")
+        from .musa_group_gemm import musa_fused_moe_forward, validate_mate
+
+        validate_mate()
+        _fused_moe_forward = musa_fused_moe_forward
     elif fused_moe_kernel == "mlu_triton":
         if not is_torch_mlu_available():
             raise RuntimeError(
@@ -129,7 +138,7 @@ def apply_veomni_fused_moe_patch(fused_moe_kernel: str = "triton") -> None:
         _fused_moe_forward = group_gemm_fused_moe_forward
     else:
         raise ValueError(
-            f"Invalid fused_moe_kernel: {fused_moe_kernel!r}. Expected one of: 'triton', 'quack', 'npu', 'mlu', 'mlu_triton'."
+            f"Invalid fused_moe_kernel: {fused_moe_kernel!r}. Expected one of: 'triton', 'quack', 'npu', 'mlu', 'mlu_triton', 'musa'."
         )
 
     # Bind the LoRA-aware fused MoE kernels (owned by ``veomni.lora.ops``) to
@@ -155,7 +164,8 @@ def _make_moe_experts_adapter(raw_forward):
         veomni_moe_experts_forward(self, hidden_states, top_k_index, top_k_weights)
 
     The raw kernels (``group_gemm_fused_moe_forward`` /
-    ``quack_gemm_fused_moe_forward``) instead take the flat tensor-level
+    ``quack_gemm_fused_moe_forward`` / ``musa_fused_moe_forward``) instead
+    take the flat tensor-level
     signature ``(num_experts, routing_weights, selected_experts,
     hidden_states, fc1_1_weight, fc1_2_weight, fc2_weight,
     fc1_1_2_weight, swiglu_limit)``. This adapter pulls
@@ -283,6 +293,25 @@ KERNEL_REGISTRY.register(
         factory=_npu_kernel_factory,
         hardware=HardwareRequirement(device_type="npu"),
         description="NPU group-gemm fused MoE forward",
+    )
+)
+
+
+def _musa_kernel_factory():
+    from .musa_group_gemm import musa_fused_moe_forward, validate_mate
+
+    validate_mate()
+    return _make_moe_experts_adapter(musa_fused_moe_forward)
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa",
+        op_name="moe_experts",
+        variant="standard",
+        factory=_musa_kernel_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="MATE M/K-grouped fused MoE forward and backward on MUSA",
     )
 )
 

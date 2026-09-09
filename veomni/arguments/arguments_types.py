@@ -1108,7 +1108,7 @@ class OpsImplementationConfig:
         default="fused_triton",
         metadata={
             "help": "MoE experts forward. 'fused_triton' (default, GPU SM70+) | "
-            "'fused_quack' (GPU SM90+) | 'fused_npu' (NPU) | 'fused_mlu' (MLU) | 'fused_mlu_triton' (MLU) | 'eager'. "
+            "'fused_quack' (GPU SM90+) | 'fused_musa' (MUSA) | 'fused_npu' (NPU) | 'fused_mlu' (MLU) | 'fused_mlu_triton' (MLU) | 'eager'. "
             "On NPU, a default-valued 'fused_triton' selection maps to 'fused_npu'; "
             "incompatible non-default overrides raise. Legacy 'fused' "
             "auto-resolves to fused_quack/fused_npu with a deprecation warning."
@@ -1342,8 +1342,8 @@ class OpsImplementationConfig:
         from ..utils.import_utils import (
             is_apex_mlu_available,
             is_package_available,
-            is_torch_musa_available,
             is_torch_mlu_available,
+            is_torch_musa_available,
             is_torch_npu_available,
         )
 

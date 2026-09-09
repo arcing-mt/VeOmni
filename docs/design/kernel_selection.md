@@ -27,7 +27,7 @@ selection knob.
 | Causal Conv1D | `causal_conv1d_implementation` | `eager`, `fla`, `npu` | `"fla"` (GPU) | Qwen3.5 OpSlot binding |
 | Gated delta rule | `chunk_gated_delta_rule_implementation` | `eager`, `fla`, `musa` (S5000-tuned FLA bridge), `flash_qla` (SM90), `npu`, `npu_ascendc` | `"fla"` (GPU) | Qwen3.5 OpSlot binding |
 | Load-balancing loss | `load_balancing_loss_implementation` | `eager`, `triton` (CUDA; NPU config normalizes this default to `eager`) | `"triton"` | `apply_ops_config()` (before model build) |
-| MoE experts | `moe_implementation` | `eager`, `fused_triton`, `fused_quack` (SM90+), `fused_npu` | `"fused_triton"` (GPU) | `build_foundation_model` |
+| MoE experts | `moe_implementation` | `eager`, `fused_triton`, `fused_quack` (SM90+), `fused_musa` (MUSA), `fused_npu` | `"fused_triton"` (GPU) | `build_foundation_model` |
 
 **Most optimized-op defaults are GPU-oriented.** On Ascend NPU, values still
 equal to the dataclass defaults automatically resolve to `npu` for RMSNorm,
@@ -368,6 +368,7 @@ model:
   ops_implementation:
     moe_implementation: fused_triton   # Triton group-gemm (GPU, SM70+)
     # moe_implementation: fused_quack  # Quack CUTLASS/CuTe (GPU, SM90+)
+    # moe_implementation: fused_musa   # MUSA group-gemm (MUSA)
     # moe_implementation: fused_npu    # NPU group-gemm (Ascend)
     # moe_implementation: eager        # Reference PyTorch loop (very slow, debug only)
 ```
@@ -387,6 +388,7 @@ raise during config validation or kernel binding.
 | `eager` | PyTorch expert loop | Any | No |
 | `fused_triton` | Triton group-gemm | GPU, SM70+ (V100+) | Yes |
 | `fused_quack` | Quack CUTLASS/CuTe | GPU, SM90+ (H100+) | No |
+| `fused_musa` | MUSA group-gemm | MUSA | Yes |
 | `fused_npu` | NPU group-gemm | Ascend NPU | Yes |
 
 DeepSeek-V4 keeps eager DSA indexer and attention as its defaults, with optional
@@ -396,7 +398,8 @@ uses the independent `moe_implementation` selection and therefore defaults to
 The v4-specific patched experts path passes the merged `gate_up_proj` tensor
 directly to `fused_moe_forward(...)` and forwards `swiglu_limit` so backends
 that implement the clamp preserve V4's clamped SwiGLU pre-activation semantics.
-Clamp-aware fused V4 support is GPU-only today (`fused_triton` / `fused_quack`);
+Clamp-aware fused V4 support is available on GPU and MUSA (`fused_triton` /
+`fused_quack` / `fused_musa`);
 selecting `fused_npu` for a V4 model raises because the NPU fused MoE kernel
 does not yet implement `swiglu_limit`.
 

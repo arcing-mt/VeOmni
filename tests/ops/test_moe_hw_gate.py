@@ -266,6 +266,6 @@ def test_bind_veomni_ops_rejects_unknown_config_slot():
 
 # KERNEL_REGISTRY is a module-level singleton. Assert the registrations the
 # tests rely on are present so a future registry reshuffle trips this early.
-@pytest.mark.parametrize("impl_name", ["triton", "quack", "npu"])
+@pytest.mark.parametrize("impl_name", ["triton", "quack", "npu", "musa"])
 def test_moe_experts_registry_has_kernel(impl_name):
     assert impl_name in KERNEL_REGISTRY.list_available("moe_experts", "standard")
