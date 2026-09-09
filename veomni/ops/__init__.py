@@ -86,7 +86,7 @@ def apply_ops_config(ops_config: OpsImplementationConfig) -> None:
 
     MoE dispatch is applied in ``build_foundation_model`` (via
     ``moe_implementation`` ∈ {``eager``, ``fused_triton``, ``fused_quack``,
-    ``fused_npu``}); per-model kernels are applied by each model's
+    ``fused_musa``, ``fused_npu``}); per-model kernels are applied by each model's
     ``device_patch.py``.
     """
     set_ops_config(ops_config)

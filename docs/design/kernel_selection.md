@@ -27,7 +27,7 @@ selection knob.
 | Causal Conv1D | `causal_conv1d_implementation` | `eager`, `fla`, `npu` | `"fla"` (GPU) | Qwen3.5 OpSlot binding |
 | Gated delta rule | `chunk_gated_delta_rule_implementation` | `eager`, `fla`, `musa` (S5000-tuned FLA bridge), `flash_qla` (SM90), `npu`, `npu_ascendc` | `"fla"` (GPU) | Qwen3.5 OpSlot binding |
 | Load-balancing loss | `load_balancing_loss_implementation` | `eager`, `triton` (CUDA; NPU config normalizes this default to `eager`) | `"triton"` | `apply_ops_config()` (before model build) |
-| MoE experts | `moe_implementation` | `eager`, `fused_triton`, `fused_quack` (SM90+), `fused_npu` | `"fused_triton"` (GPU) | `build_foundation_model` |
+| MoE experts | `moe_implementation` | `eager`, `fused_triton`, `fused_quack` (SM90+), `fused_musa` (MUSA), `fused_npu` | `"fused_triton"` (GPU) | `build_foundation_model` |
 | QAT recipe | `qat_implementation` | `none`, `fp8_blockwise` (DeepSeek-V4, SM90+) | `"none"` | Read by the patched modeling helpers (`veomni/ops/qat/`) |
 
 The last row is the one field that is not a kernel backend: `qat_implementation`
@@ -374,6 +374,7 @@ model:
   ops_implementation:
     moe_implementation: fused_triton   # Triton group-gemm (GPU, SM70+)
     # moe_implementation: fused_quack  # Quack CUTLASS/CuTe (GPU, SM90+)
+    # moe_implementation: fused_musa   # MUSA group-gemm (MUSA)
     # moe_implementation: fused_npu    # NPU group-gemm (Ascend)
     # moe_implementation: eager        # Reference PyTorch loop (very slow, debug only)
 ```
@@ -393,6 +394,7 @@ raise during config validation or kernel binding.
 | `eager` | PyTorch expert loop | Any | No |
 | `fused_triton` | Triton group-gemm | GPU, SM70+ (V100+) | Yes |
 | `fused_quack` | Quack CUTLASS/CuTe | GPU, SM90+ (H100+) | No |
+| `fused_musa` | MUSA group-gemm | MUSA | Yes |
 | `fused_npu` | NPU group-gemm | Ascend NPU | Yes |
 
 DeepSeek-V4 keeps eager DSA indexer and attention as its defaults, with optional
