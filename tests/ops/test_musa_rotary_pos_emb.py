@@ -57,7 +57,7 @@ def test_musa_patch_is_runtime_only_and_preserves_eager_when_unbound() -> None:
     module.apply_rotary_pos_emb = apply_rotary_pos_emb
     install_qwen3_5_musa_rotary_patch(module)
     assert hasattr(module, "veomni_apply_rotary_pos_emb")
-    assert getattr(module, "_VEOMNI_MUSA_ROTARY_PATCHED") is True
+    assert module._VEOMNI_MUSA_ROTARY_PATCHED is True
 
     q = torch.zeros(1)
     k = torch.ones(1)
@@ -83,7 +83,7 @@ def test_musa_vision_patch_is_independent_from_text_patch() -> None:
     install_qwen3_5_musa_rotary_patch(module, install_text=False, install_vision=True)
     assert not hasattr(module, "veomni_apply_rotary_pos_emb")
     assert hasattr(module, "veomni_apply_rotary_pos_emb_vision")
-    assert getattr(module, "_VEOMNI_MUSA_VISION_ROTARY_PATCHED") is True
+    assert module._VEOMNI_MUSA_VISION_ROTARY_PATCHED is True
 
     q = torch.zeros(1)
     k = torch.ones(1)
@@ -128,7 +128,9 @@ def test_musa_vision_rope_matches_eager() -> None:
     q_out, k_out = slot(q, k, cos, sin)
     q_ref, k_ref = eager(q), eager(k)
     torch.musa.synchronize()
-    diff = torch.cat(((q_out.float() - q_ref.float()).abs().flatten(), (k_out.float() - k_ref.float()).abs().flatten()))
+    diff = torch.cat(
+        ((q_out.float() - q_ref.float()).abs().flatten(), (k_out.float() - k_ref.float()).abs().flatten())
+    )
     assert float(diff.max().cpu()) <= 2e-3
 
 
@@ -196,7 +198,9 @@ def test_musa_partial_rope_matches_eager_and_preserves_tail(batch_size: int) -> 
     q_out, k_out = slot(q, k, cos, sin)
     q_ref, k_ref = eager(q), eager(k)
     torch.musa.synchronize()
-    diff = torch.cat(((q_out.float() - q_ref.float()).abs().flatten(), (k_out.float() - k_ref.float()).abs().flatten()))
+    diff = torch.cat(
+        ((q_out.float() - q_ref.float()).abs().flatten(), (k_out.float() - k_ref.float()).abs().flatten())
+    )
     assert float(diff.max().cpu()) <= 4e-3
     assert torch.equal(q_out[..., rotary_dim:], q[..., rotary_dim:])
     assert torch.equal(k_out[..., rotary_dim:], k[..., rotary_dim:])

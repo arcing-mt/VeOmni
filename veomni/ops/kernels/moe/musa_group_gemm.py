@@ -529,7 +529,6 @@ class MusaEPGroupGemm(torch.autograd.Function):
         fc2_weight,
         swiglu_limit=None,
     ):
-
         fc1_1_output = musa_group_gemm_same_nk(
             input_tensor=permute_tokens,
             right_tensor=fc1_1_weight,

@@ -111,6 +111,7 @@ KERNEL_REGISTRY.register(
 
 # ── rms_norm (Torch_musa) ───────────────────────────────────
 
+
 def _musa_standard_rms_norm_factory():
     from .musa import standard_rms_norm_forward_musa
 
