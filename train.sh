@@ -33,7 +33,7 @@ elif command -v rocm-smi &> /dev/null && rocm-smi --showid &> /dev/null; then
     NPROC_PER_NODE=${NPROC_PER_NODE:=$(rocm-smi --showid --csv | grep -c '^card')}
   fi
   export NCCL_DEBUG=WARN
-elif command -v cnmon &> /dev/null; then
+elif command -v cnmon &> /dev/null && cnmon -l 2>/dev/null | grep -q "MLU"; then
   # MLU
   if [[ -n "${MLU_VISIBLE_DEVICES}" ]]; then
     NPROC_PER_NODE=${NPROC_PER_NODE:=$(echo "${MLU_VISIBLE_DEVICES}" | tr ',' '\n' | wc -l)}
