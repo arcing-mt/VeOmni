@@ -115,7 +115,7 @@ def is_fused_moe_available() -> bool:
     import torch
 
     return (
-        (torch.cuda.is_available() or _PACKAGE_FLAGS["torch_mlu"])
+        (torch.cuda.is_available() or is_torch_musa_available() or _PACKAGE_FLAGS["torch_mlu"])
         and not _PACKAGE_FLAGS["torch_npu"]
         and _PACKAGE_FLAGS["triton"]
     )

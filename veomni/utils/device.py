@@ -33,7 +33,7 @@ IS_MLU_AVAILABLE = is_torch_mlu_available()
 if IS_NPU_AVAILABLE:
     torch.npu.config.allow_internal_format = False
 
-MOE_TRITON_DEVICE_TYPES = ("cuda", "mlu")
+MOE_TRITON_DEVICE_TYPES = ("cuda", "musa", "mlu")
 
 
 def get_device_type() -> str:
