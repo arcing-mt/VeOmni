@@ -77,6 +77,19 @@ def test_musa_qwen3_5_rms_norm_matches_eager() -> None:
     assert torch.allclose(output, reference, atol=1e-2, rtol=1e-2)
 
 
+def test_musa_qwen3_5_rms_norm_mixed_dtype_matches_eager() -> None:
+    torch.manual_seed(6104)
+    eps = 1e-6
+    x = torch.randn(32, 128, device="musa", dtype=torch.bfloat16).contiguous()
+    weight = (0.5 * torch.randn(128, device="musa", dtype=torch.float32)).contiguous()
+    slot = OpSlot("rms_norm", "qwen3_5")
+    slot.bind("musa")
+
+    output = slot(x, weight, eps)
+    reference = _eager_qwen3_5(x, weight, eps)
+    torch.testing.assert_close(output, reference, rtol=2e-3, atol=2e-3)
+
+
 def test_musa_unweighted_rms_norm_matches_eager() -> None:
     torch.manual_seed(6103)
     eps = 1e-6

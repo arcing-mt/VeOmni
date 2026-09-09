@@ -32,7 +32,13 @@ def _musa_rms_norm(hidden_states: torch.Tensor, weight: torch.Tensor | None, eps
 
 def standard_rms_norm_forward_musa(hidden_states: torch.Tensor, weight: torch.Tensor, eps: float) -> torch.Tensor:
     """MUSA fused RMSNorm for the standard ``weight * x/rms`` variant."""
-    return _musa_rms_norm(hidden_states, weight, eps)
+    input_dtype = hidden_states.dtype
+    compute_dtype = torch.promote_types(input_dtype, weight.dtype)
+    if hidden_states.dtype != compute_dtype:
+        hidden_states = hidden_states.to(compute_dtype)
+    if weight.dtype != compute_dtype:
+        weight = weight.to(compute_dtype)
+    return _musa_rms_norm(hidden_states, weight, eps).to(input_dtype)
 
 
 def unweighted_rms_norm_forward_musa(
@@ -47,9 +53,9 @@ def unweighted_rms_norm_forward_musa(
 def qwen3_5_rms_norm_forward_musa(hidden_states: torch.Tensor, weight: torch.Tensor, eps: float) -> torch.Tensor:
     """MUSA fused RMSNorm for Qwen3.5's ``(1 + weight) * x/rms`` variant."""
     input_dtype = hidden_states.dtype
-    scale = (1.0 + weight).to(input_dtype)
-    if hidden_states.dtype != scale.dtype:
-        hidden_states = hidden_states.to(scale.dtype)
+    compute_dtype = torch.promote_types(input_dtype, weight.dtype)
+    hidden_states = hidden_states.to(compute_dtype)
+    scale = (1.0 + weight.to(compute_dtype)).to(compute_dtype)
     return _musa_rms_norm(hidden_states, scale, eps).to(input_dtype)
 
 
@@ -58,8 +64,6 @@ def rms_norm_forward_musa(self, hidden_states: torch.Tensor) -> torch.Tensor:
     eps = getattr(self, "variance_epsilon", getattr(self, "eps", None))
     if eps is None:
         raise AttributeError("MUSA RMSNorm adapter requires an `eps` or `variance_epsilon` attribute.")
-    if hidden_states.dtype != self.weight.dtype:
-        hidden_states = hidden_states.to(self.weight.dtype)
     return standard_rms_norm_forward_musa(hidden_states, self.weight, eps)
 
 
