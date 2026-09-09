@@ -96,7 +96,10 @@ def _phase_from_cos_sin(cos: torch.Tensor, sin: torch.Tensor) -> tuple[torch.Ten
     entry: _PhaseCacheEntry
 
     def _remove(
-        _ref: weakref.ReferenceType[torch.Tensor], *, cache_key: int = key, cache: dict[int, _PhaseCacheEntry] = _PHASE_CACHE
+        _ref: weakref.ReferenceType[torch.Tensor],
+        *,
+        cache_key: int = key,
+        cache: dict[int, _PhaseCacheEntry] = _PHASE_CACHE,
     ) -> None:
         if cache.get(cache_key) is entry:
             cache.pop(cache_key, None)
@@ -119,8 +122,7 @@ def _rope_one(x: torch.Tensor, phase: torch.Tensor, shared: bool) -> torch.Tenso
     batch_size, _, sequence_length, rotary_dim = x.shape
     if phase.shape[1] != sequence_length:
         raise ValueError(
-            "MUSA RoPE phase sequence length does not match q/k: "
-            f"phase={phase.shape[1]}, input={sequence_length}."
+            f"MUSA RoPE phase sequence length does not match q/k: phase={phase.shape[1]}, input={sequence_length}."
         )
     if shared:
         # Explicitly shared phase: muDNN consumes [S, D] for a [B, S, H, D]
@@ -153,15 +155,16 @@ def _apply_rotary_pos_emb_musa(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     if unsqueeze_dim != 1:
         raise ValueError(
-            "MUSA RoPE currently supports the HuggingFace [B, H, S, D] calling convention "
-            "with unsqueeze_dim=1 only."
+            "MUSA RoPE currently supports the HuggingFace [B, H, S, D] calling convention with unsqueeze_dim=1 only."
         )
     phase, shared = _phase_from_cos_sin(cos, sin)
     rotary_dim = phase.shape[-1]
     if q.ndim != 4 or k.ndim != 4:
         raise ValueError(f"MUSA RoPE expects q/k with shape [B, H, S, D]; got q={tuple(q.shape)}, k={tuple(k.shape)}.")
     if q.shape[0] != k.shape[0] or q.shape[2] != k.shape[2]:
-        raise ValueError(f"MUSA RoPE requires q/k batch and sequence dimensions to match; got q={q.shape}, k={k.shape}.")
+        raise ValueError(
+            f"MUSA RoPE requires q/k batch and sequence dimensions to match; got q={q.shape}, k={k.shape}."
+        )
     if not partial and (q.shape[-1] != rotary_dim or k.shape[-1] != rotary_dim):
         raise ValueError(
             "MUSA full RoPE requires rotary_dim to equal q/k head_dim; "
@@ -213,9 +216,13 @@ def apply_rotary_pos_emb_vision_musa(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """MUSA full RoPE adapter for Qwen3.5 Vision's ``[S, H, D]`` API."""
     if q.ndim != 3 or k.ndim != 3:
-        raise ValueError(f"MUSA Vision RoPE expects q/k with shape [S, H, D]; got q={tuple(q.shape)}, k={tuple(k.shape)}.")
+        raise ValueError(
+            f"MUSA Vision RoPE expects q/k with shape [S, H, D]; got q={tuple(q.shape)}, k={tuple(k.shape)}."
+        )
     if q.shape[0] != k.shape[0] or q.shape[2] != k.shape[2]:
-        raise ValueError(f"MUSA Vision RoPE requires q/k sequence and head dimensions to match; got q={q.shape}, k={k.shape}.")
+        raise ValueError(
+            f"MUSA Vision RoPE requires q/k sequence and head dimensions to match; got q={q.shape}, k={k.shape}."
+        )
     phase, _ = _phase_from_cos_sin(cos, sin)
     if phase.ndim != 2 or phase.shape[0] != q.shape[0] or phase.shape[1] != q.shape[-1]:
         raise ValueError(

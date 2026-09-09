@@ -1052,6 +1052,7 @@ _MLU_DEFAULT_FALLBACK: Dict[str, str | frozenset] = {
     "moe_implementation": frozenset({"fused_mlu", "fused_mlu_triton"}),
 }
 
+
 @dataclass
 class OpsImplementationConfig:
     """model.ops_implementation.* — kernel backend selection per op.
@@ -1147,10 +1148,7 @@ class OpsImplementationConfig:
     )
     rotary_pos_emb_vision_implementation: str = field(
         default="eager",
-        metadata={
-            "help": "Rotary positional embedding in vision part. 'musa' | "
-            "'npu' | 'eager' (default)."
-        },
+        metadata={"help": "Rotary positional embedding in vision part. 'musa' | 'npu' | 'eager' (default)."},
     )
     load_balancing_loss_implementation: str = field(
         default="triton",

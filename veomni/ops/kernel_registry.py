@@ -77,9 +77,7 @@ class HardwareRequirement:
             # on CPU-only hosts (unit tests, weight materialization, dev boxes
             # without an accelerator).
             return True
-        raise ValueError(
-            f"Unknown device_type: {device_type!r} (expected 'gpu' | 'npu' | 'mlu' | 'musa' | 'any')"
-        )
+        raise ValueError(f"Unknown device_type: {device_type!r} (expected 'gpu' | 'npu' | 'mlu' | 'musa' | 'any')")
 
     def is_satisfied(self) -> bool:
         if isinstance(self.device_type, str):

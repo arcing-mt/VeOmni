@@ -13,6 +13,7 @@ workarounds out of the model and trainer code.
 from .flash_attn import apply_musa_flash_attn_patch
 from .mccl_premul_sum import apply_mccl_premul_sum_patch, mccl_reduce_op_wrapper
 
+
 __all__ = [
     "apply_musa_flash_attn_patch",
     "apply_mccl_premul_sum_patch",
