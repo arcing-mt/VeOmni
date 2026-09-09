@@ -14,7 +14,7 @@
 
 from functools import lru_cache
 
-from veomni.utils.device import IS_MLU_AVAILABLE
+from veomni.utils.device import IS_MLU_AVAILABLE, IS_MUSA_AVAILABLE
 
 from ......utils.device import get_device_name
 
@@ -25,6 +25,9 @@ def get_device_key() -> str:
 
     if IS_MLU_AVAILABLE:
         return "MLU"
+
+    if IS_MUSA_AVAILABLE:
+        return "MUSA"
 
     if torch.cuda.get_device_capability() == (8, 0):
         return "A100"  # A30 is treated the same way as A100 for the moment.

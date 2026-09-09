@@ -33,8 +33,9 @@ import pytest
 
 import veomni.ops  # noqa: F401 — trigger KERNEL_REGISTRY registrations
 from veomni.ops.dispatch import OpsConfigSlot, OpSlot
-from veomni.ops.kernel_registry import KERNEL_REGISTRY
+from veomni.ops.kernel_registry import KERNEL_REGISTRY, HardwareRequirement
 from veomni.ops.kernels.moe import apply_veomni_fused_moe_patch
+from veomni.utils.import_utils import is_fused_moe_available
 
 
 # ---------------------------------------------------------------------------
@@ -101,12 +102,38 @@ def test_opslot_fused_quack_on_npu_raises():
 
 
 @patch(f"{_REGISTRY_MODULE}.IS_CUDA_AVAILABLE", False)
+@patch(f"{_REGISTRY_MODULE}.IS_MUSA_AVAILABLE", False)
 @patch(f"{_REGISTRY_MODULE}.IS_NPU_AVAILABLE", True)
 @patch(f"{_REGISTRY_MODULE}.IS_MLU_AVAILABLE", False)
 def test_opslot_fused_triton_on_npu_raises():
     slot = OpSlot("moe_experts", "standard")
-    with pytest.raises(RuntimeError, match=r"\['gpu', 'mlu'\]"):
+    with pytest.raises(RuntimeError, match=r"\['gpu', 'musa', 'mlu'\]"):
         slot.bind("triton")
+
+
+@patch(f"{_REGISTRY_MODULE}.IS_CUDA_AVAILABLE", False)
+@patch(f"{_REGISTRY_MODULE}.IS_MUSA_AVAILABLE", True)
+@patch(f"{_REGISTRY_MODULE}.IS_NPU_AVAILABLE", False)
+def test_musa_satisfies_fused_moe_hardware_requirement():
+    requirement = HardwareRequirement(device_type=["gpu", "musa", "mlu"], min_compute_capability=70)
+    assert requirement.is_satisfied()
+
+
+@patch("veomni.utils.import_utils.is_torch_musa_available", return_value=True)
+@patch("veomni.utils.import_utils._PACKAGE_FLAGS", {"torch_npu": False, "triton": True})
+@patch("torch.cuda.is_available", return_value=False)
+def test_musa_reports_fused_moe_available(_mock_cuda, _mock_musa):
+    assert is_fused_moe_available()
+
+
+def test_musa_gets_a_non_cuda_triton_device_key(monkeypatch):
+    from veomni.ops.kernels.moe._kernels.utils import device as moe_device
+
+    monkeypatch.setattr(moe_device, "IS_MUSA_AVAILABLE", True)
+    monkeypatch.setattr(moe_device, "IS_MLU_AVAILABLE", False)
+    moe_device.get_device_key.cache_clear()
+    assert moe_device.get_device_key() == "MUSA"
+    moe_device.get_device_key.cache_clear()
 
 
 @patch(f"{_REGISTRY_MODULE}.IS_CUDA_AVAILABLE", True)

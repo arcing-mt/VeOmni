@@ -216,8 +216,8 @@ KERNEL_REGISTRY.register(
         op_name="moe_experts",
         variant="standard",
         factory=_triton_kernel_factory,
-        hardware=HardwareRequirement(device_type=["gpu", "mlu"], min_compute_capability=70),
-        description="Triton group-gemm fused MoE forward",
+        hardware=HardwareRequirement(device_type=["gpu", "musa", "mlu"], min_compute_capability=70),
+        description="Triton group-gemm fused MoE forward (CUDA, MUSA, or MLU)",
     )
 )
 
