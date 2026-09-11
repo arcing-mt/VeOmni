@@ -5,6 +5,7 @@ accepts SUM.  Rewriting to SUM and scaling the completed output is equivalent
 for the reduction sites used by VeOmni and mirrors the existing HCCL shim.
 """
 
+from functools import wraps
 from typing import Any, Callable, Optional, Tuple
 
 import torch
@@ -12,6 +13,7 @@ from torch.distributed.distributed_c10d import ReduceOp
 
 
 _PATCHED = False
+_CUSTOM_OVERLAP_PATCHED = False
 
 
 def _state_value(state: Any) -> Any:
@@ -71,7 +73,81 @@ def _extract_op(args: Tuple[Any, ...], kwargs: dict, op_arg_index: int):
     return None
 
 
-def mccl_reduce_op_wrapper(op: Callable, output_name: str, op_arg_index: int, group_arg_index: int):
+def _wrap_custom_overlap_reduce_scatter(collective: Callable) -> Callable:
+    """Add PREMUL_SUM handling to torch_musa's low-contention FSDP path."""
+
+    @wraps(collective)
+    def wrapper(
+        self,
+        output_tensor: torch.Tensor,
+        input_tensor: torch.Tensor,
+        group: Any,
+        op: Any,
+        async_op: bool = False,
+    ):
+        factor = _premul_factor(op)
+        if factor is None:
+            return collective(
+                self,
+                output_tensor=output_tensor,
+                input_tensor=input_tensor,
+                group=group,
+                op=op,
+                async_op=async_op,
+            )
+
+        # low_contention_reduce_scatter accepts a string reduction mode and
+        # only implements sum/avg. Run the sum on the original stream, then
+        # scale the output in that same stream to preserve FSDP ordering.
+        handle = collective(
+            self,
+            output_tensor=output_tensor,
+            input_tensor=input_tensor,
+            group=group,
+            op=ReduceOp.SUM,
+            async_op=async_op,
+        )
+        if handle is not None:
+            handle.wait()
+        with torch.no_grad():
+            output_tensor.mul_(factor)
+        return handle
+
+    wrapper._mccl_premul_sum_compatible = True
+    return wrapper
+
+
+def _patch_custom_overlap_reduce_scatter() -> None:
+    """Patch torch_musa's COMM_TYPE=1 reduce-scatter implementation."""
+    global _CUSTOM_OVERLAP_PATCHED
+    if _CUSTOM_OVERLAP_PATCHED:
+        return
+
+    try:
+        from torch_musa.distributed._composable.fsdp import custom_overlap_patch
+    except ImportError:
+        # Older torch_musa builds may not ship the custom overlap module.
+        _CUSTOM_OVERLAP_PATCHED = True
+        return
+
+    comm_cls = getattr(
+        custom_overlap_patch,
+        "IntraNodeLowContentionCommReduceScatter",
+        None,
+    )
+    if comm_cls is None:
+        _CUSTOM_OVERLAP_PATCHED = True
+        return
+
+    collective = comm_cls.__call__
+    if not getattr(collective, "_mccl_premul_sum_compatible", False):
+        comm_cls.__call__ = _wrap_custom_overlap_reduce_scatter(collective)
+    _CUSTOM_OVERLAP_PATCHED = True
+
+
+def mccl_reduce_op_wrapper(
+    op: Callable, output_name: str, op_arg_index: int, group_arg_index: int
+):
     """Wrap a collective, translating unsupported reduction operators."""
 
     def wrapper(*args, **kwargs):
@@ -99,6 +175,7 @@ def apply_mccl_premul_sum_patch() -> None:
     global _PATCHED
     if _PATCHED:
         return
+    _patch_custom_overlap_reduce_scatter()
     torch.distributed.all_reduce = mccl_reduce_op_wrapper(
         torch.distributed.all_reduce, "tensor", op_arg_index=1, group_arg_index=2
     )
@@ -106,6 +183,9 @@ def apply_mccl_premul_sum_patch() -> None:
         torch.distributed.reduce_scatter, "output", op_arg_index=2, group_arg_index=3
     )
     torch.distributed.reduce_scatter_tensor = mccl_reduce_op_wrapper(
-        torch.distributed.reduce_scatter_tensor, "output", op_arg_index=2, group_arg_index=3
+        torch.distributed.reduce_scatter_tensor,
+        "output",
+        op_arg_index=2,
+        group_arg_index=3,
     )
     _PATCHED = True
