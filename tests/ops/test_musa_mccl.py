@@ -1,7 +1,10 @@
 import torch
 from torch.distributed import ReduceOp
 
-from veomni.ops.platform.musa.mccl_premul_sum import mccl_reduce_op_wrapper
+from veomni.ops.platform.musa.mccl_premul_sum import (
+    _wrap_custom_overlap_reduce_scatter,
+    mccl_reduce_op_wrapper,
+)
 
 
 class _Handle:
@@ -20,7 +23,9 @@ def test_mccl_wrapper_preserves_async_sum():
         assert kwargs["async_op"] is True
         return handle
 
-    wrapper = mccl_reduce_op_wrapper(collective, "tensor", op_arg_index=1, group_arg_index=2)
+    wrapper = mccl_reduce_op_wrapper(
+        collective, "tensor", op_arg_index=1, group_arg_index=2
+    )
     tensor = torch.ones(2)
     result = wrapper(tensor, op=ReduceOp.SUM, async_op=True)
 
@@ -42,10 +47,82 @@ def test_mccl_wrapper_waits_before_scaling_premul_sum():
         args[0].mul_(4)
         return handle
 
-    wrapper = mccl_reduce_op_wrapper(collective, "tensor", op_arg_index=1, group_arg_index=2)
+    wrapper = mccl_reduce_op_wrapper(
+        collective, "tensor", op_arg_index=1, group_arg_index=2
+    )
     tensor = torch.ones(2)
     result = wrapper(tensor, op=MockPremulSum(), async_op=True)
 
     assert result is handle
     assert handle.wait_calls == 1
     assert torch.equal(tensor, torch.full_like(tensor, 2))
+
+
+def test_custom_overlap_wrapper_translates_premul_sum():
+    handle = _Handle()
+    factor = 0.25
+    calls = []
+
+    class MockPremulSum:
+        def __getstate__(self):
+            return (ReduceOp.PREMUL_SUM.__getstate__(), factor)
+
+    class Comm:
+        def __call__(
+            self,
+            output_tensor,
+            input_tensor,
+            group,
+            op,
+            async_op=False,
+        ):
+            calls.append((group, op, async_op))
+            assert op is ReduceOp.SUM
+            output_tensor.mul_(8)
+            return handle
+
+    comm = Comm()
+    wrapped_call = _wrap_custom_overlap_reduce_scatter(Comm.__call__)
+    output = torch.ones(2)
+    result = wrapped_call(
+        comm,
+        output_tensor=output,
+        input_tensor=torch.ones(2),
+        group="group",
+        op=MockPremulSum(),
+    )
+
+    assert result is handle
+    assert calls == [("group", ReduceOp.SUM, False)]
+    assert handle.wait_calls == 1
+    assert torch.equal(output, torch.full_like(output, 2))
+
+
+def test_custom_overlap_wrapper_preserves_avg():
+    calls = []
+
+    class Comm:
+        def __call__(
+            self,
+            output_tensor,
+            input_tensor,
+            group,
+            op,
+            async_op=False,
+        ):
+            calls.append(op)
+            output_tensor.mul_(2)
+
+    comm = Comm()
+    wrapped_call = _wrap_custom_overlap_reduce_scatter(Comm.__call__)
+    output = torch.ones(2)
+    wrapped_call(
+        comm,
+        output_tensor=output,
+        input_tensor=torch.ones(2),
+        group="group",
+        op=ReduceOp.AVG,
+    )
+
+    assert calls == [ReduceOp.AVG]
+    assert torch.equal(output, torch.full_like(output, 2))
