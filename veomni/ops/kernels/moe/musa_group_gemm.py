@@ -370,14 +370,17 @@ class MergedFc1MusaFusedMoeExpertFunction(torch.autograd.Function):
             transpose_b=True,
         )
 
-        fc1_1_output, fc1_2_output = fc1_output.chunk(2, dim=-1)
-
-        fc1_1_output, fc1_2_output, mask_fc1_1, mask_fc1_2 = _apply_swiglu_clamp(
-            fc1_1_output, fc1_2_output, swiglu_limit
-        )
-
-        fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
-        fc1_activation = fc1_1_activation * fc1_2_output
+        if swiglu_limit is None:
+            fc1_activation = torch.ops.aten.swish_glu.default(fc1_output)
+            fc1_1_output = fc1_output
+            fc1_2_output = fc1_output
+            mask_fc1_1 = mask_fc1_2 = fc1_output
+        else:
+            fc1_1_output, fc1_2_output = fc1_output.chunk(2, dim=-1)
+            fc1_1_output, fc1_2_output, mask_fc1_1, mask_fc1_2 = _apply_swiglu_clamp(
+                fc1_1_output, fc1_2_output, swiglu_limit
+            )
+            fc1_activation = torch.ops.aten.silu(fc1_1_output) * fc1_2_output
 
         reshaped_gate_weight = gate_weights.reshape(-1, 1)
         scattered_gate_weight = torch.empty_like(reshaped_gate_weight)
@@ -407,13 +410,14 @@ class MergedFc1MusaFusedMoeExpertFunction(torch.autograd.Function):
             scatter_index,
             scatter_output,
             cumsum_t,
+            fc1_output,
             fc1_1_output,
             fc1_2_output,
             fc1_activation,
             scattered_gate_weight,
             fc1_weighted_output,
-            mask_fc1_1 if mask_fc1_1 is not None else torch.empty(0, device=hidden_states.device),
-            mask_fc1_2 if mask_fc1_2 is not None else torch.empty(0, device=hidden_states.device),
+            mask_fc1_1,
+            mask_fc1_2,
         )
 
         return output
@@ -428,6 +432,7 @@ class MergedFc1MusaFusedMoeExpertFunction(torch.autograd.Function):
             scatter_index,
             scatter_output,
             cumsum_t,
+            fc1_output,
             fc1_1_output,
             fc1_2_output,
             fc1_activation,
@@ -470,18 +475,16 @@ class MergedFc1MusaFusedMoeExpertFunction(torch.autograd.Function):
         grad_gate_weight = grad_scattered_gate_weight[scatter_index.flatten()]
         grad_gate_weight = grad_gate_weight.reshape(gate_weights.shape)
 
-        fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
-
-        grad_fc1_1_activation = grad_fc1_activation * fc1_2_output
-        grad_fc1_2_output = fc1_1_activation * grad_fc1_activation
-
-        grad_fc1_1_output = torch.ops.aten.silu_backward(grad_fc1_1_activation, fc1_1_output)
-
-        if swiglu_limit is not None:
+        if swiglu_limit is None:
+            grad_fc1_output = torch.ops.aten._fused_swiglu_backward(grad_fc1_activation, fc1_output)
+        else:
+            fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
+            grad_fc1_1_activation = grad_fc1_activation * fc1_2_output
+            grad_fc1_2_output = fc1_1_activation * grad_fc1_activation
+            grad_fc1_1_output = torch.ops.aten.silu_backward(grad_fc1_1_activation, fc1_1_output)
             grad_fc1_1_output.masked_fill_(~mask_fc1_1, 0)
             grad_fc1_2_output.masked_fill_(~mask_fc1_2, 0)
-
-        grad_fc1_output = torch.cat([grad_fc1_1_output, grad_fc1_2_output], dim=-1)
+            grad_fc1_output = torch.cat([grad_fc1_1_output, grad_fc1_2_output], dim=-1)
 
         grad_scatter_output = musa_group_gemm_same_nk(
             input_tensor=grad_fc1_output,
@@ -710,15 +713,17 @@ class MusaEPMergedFc1GroupGemm(torch.autograd.Function):
             transpose_b=True,
         )
 
-        fc1_1_output, fc1_2_output = fc1_output.chunk(2, dim=-1)
-
-        fc1_1_output, fc1_2_output, mask_fc1_1, mask_fc1_2 = _apply_swiglu_clamp(
-            fc1_1_output, fc1_2_output, swiglu_limit
-        )
-
-        fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
-
-        fc1_result = fc1_1_activation * fc1_2_output
+        if swiglu_limit is None:
+            fc1_result = torch.ops.aten.swish_glu.default(fc1_output)
+            fc1_1_output = fc1_output
+            fc1_2_output = fc1_output
+            mask_fc1_1 = mask_fc1_2 = fc1_output
+        else:
+            fc1_1_output, fc1_2_output = fc1_output.chunk(2, dim=-1)
+            fc1_1_output, fc1_2_output, mask_fc1_1, mask_fc1_2 = _apply_swiglu_clamp(
+                fc1_1_output, fc1_2_output, swiglu_limit
+            )
+            fc1_result = torch.ops.aten.silu(fc1_1_output) * fc1_2_output
 
         fc2_output = musa_group_gemm_same_nk(
             input_tensor=fc1_result,
@@ -735,10 +740,11 @@ class MusaEPMergedFc1GroupGemm(torch.autograd.Function):
             cumsum,
             fc1_1_2_weight,
             fc2_weight,
+            fc1_output,
             fc1_1_output,
             fc1_2_output,
-            mask_fc1_1 if mask_fc1_1 is not None else torch.empty(0, device=permute_tokens.device),
-            mask_fc1_2 if mask_fc1_2 is not None else torch.empty(0, device=permute_tokens.device),
+            mask_fc1_1,
+            mask_fc1_2,
         )
 
         return fc2_output
@@ -750,15 +756,18 @@ class MusaEPMergedFc1GroupGemm(torch.autograd.Function):
             cumsum,
             fc1_1_2_weight,
             fc2_weight,
+            fc1_output,
             fc1_1_output,
             fc1_2_output,
             mask_fc1_1,
             mask_fc1_2,
         ) = ctx.saved_tensors
         swiglu_limit = ctx.swiglu_limit
-
-        fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
-        fc1_result = fc1_1_activation * fc1_2_output
+        if swiglu_limit is None:
+            fc1_result = torch.ops.aten.swish_glu.default(fc1_output)
+        else:
+            fc1_1_activation = torch.ops.aten.silu(fc1_1_output)
+            fc1_result = fc1_1_activation * fc1_2_output
 
         grad_fc1_result = musa_group_gemm_same_nk(
             input_tensor=grad_output,
@@ -781,15 +790,15 @@ class MusaEPMergedFc1GroupGemm(torch.autograd.Function):
                 transpose_b=False,
             )
 
-        grad_fc1_2_output = fc1_1_activation * grad_fc1_result
-        grad_fc1_1_activation = grad_fc1_result * fc1_2_output
-        grad_fc1_1_output = torch.ops.aten.silu_backward(grad_fc1_1_activation, fc1_1_output)
-
-        if swiglu_limit is not None:
+        if swiglu_limit is None:
+            grad_fc1_output = torch.ops.aten._fused_swiglu_backward(grad_fc1_result, fc1_output)
+        else:
+            grad_fc1_2_output = fc1_1_activation * grad_fc1_result
+            grad_fc1_1_activation = grad_fc1_result * fc1_2_output
+            grad_fc1_1_output = torch.ops.aten.silu_backward(grad_fc1_1_activation, fc1_1_output)
             grad_fc1_1_output.masked_fill_(~mask_fc1_1, 0)
             grad_fc1_2_output.masked_fill_(~mask_fc1_2, 0)
-
-        grad_fc1_output = torch.cat([grad_fc1_1_output, grad_fc1_2_output], dim=-1)
+            grad_fc1_output = torch.cat([grad_fc1_1_output, grad_fc1_2_output], dim=-1)
 
         grad_permute_tokens = musa_group_gemm_same_nk(
             input_tensor=grad_fc1_output,
