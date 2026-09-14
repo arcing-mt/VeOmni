@@ -15,10 +15,11 @@
 """MUSA-native fused rotary positional embedding implementations.
 
 The torch-musa RoPE binding is backed by muDNN and takes a float32 phase
-table, rather than the ``cos``/``sin`` pair exposed by HuggingFace model
-functions.  The helpers below convert the model representation once per
-``cos`` tensor (the same position embeddings are reused by every layer), then
-choose the muDNN layout according to what is known about the phase batch:
+table, rather than the ``cos``/``sin`` pair exposed by the generic HuggingFace
+model functions.  The full and vision adapters convert that representation
+once per ``cos`` tensor, while Qwen3.5's partial adapter accepts the phase
+directly.  All adapters choose the muDNN layout according to what is known
+about the phase batch:
 
 * ``[1, S, D]`` is explicitly batch-shared and uses the native batch-first
   layout ``[B, S, H, D]``.
@@ -54,6 +55,22 @@ class _PhaseCacheEntry(NamedTuple):
 # introducing a per-layer atan2 launch.  Tensor ids are guarded by weakrefs so
 # id reuse cannot return a stale phase table.
 _PHASE_CACHE: dict[int, _PhaseCacheEntry] = {}
+
+
+def _validate_phase(phase: torch.Tensor) -> tuple[torch.Tensor, bool]:
+    """Validate a native MUSA phase table and return it with its layout."""
+    if phase.ndim not in (2, 3):
+        raise ValueError(
+            "MUSA RoPE expects phase with shape [sequence, rotary_dim] or "
+            "[batch, sequence, rotary_dim]. "
+            f"Got phase.ndim={phase.ndim}."
+        )
+    rotary_dim = phase.shape[-1]
+    if rotary_dim == 0 or rotary_dim % 2:
+        raise ValueError(f"MUSA RoPE requires an even, non-zero rotary dimension; got {rotary_dim}.")
+    if phase.requires_grad:
+        raise ValueError("MUSA RoPE phase must not require gradients.")
+    return phase, phase.ndim == 2 or phase.shape[0] == 1
 
 
 def _phase_from_cos_sin(cos: torch.Tensor, sin: torch.Tensor) -> tuple[torch.Tensor, bool]:
@@ -144,6 +161,53 @@ def _rope_one(x: torch.Tensor, phase: torch.Tensor, shared: bool) -> torch.Tenso
     return out_flat.reshape(batch_size, sequence_length, x.shape[1], rotary_dim).transpose(1, 2)
 
 
+def _apply_rotary_phase_musa(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    phase: torch.Tensor,
+    *,
+    attention_scaling: float = 1.0,
+    unsqueeze_dim: int = 1,
+    partial: bool,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Apply RoPE from a native phase table without reconstructing it."""
+    if unsqueeze_dim != 1:
+        raise ValueError(
+            "MUSA RoPE currently supports the HuggingFace [B, H, S, D] calling convention with unsqueeze_dim=1 only."
+        )
+    phase, shared = _validate_phase(phase)
+    # FSDP-safe phase carriers should preserve FP32, but keep the kernel
+    # boundary strict for direct callers and older wrappers.
+    phase = phase.float()
+    rotary_dim = phase.shape[-1]
+    if q.ndim != 4 or k.ndim != 4:
+        raise ValueError(f"MUSA RoPE expects q/k with shape [B, H, S, D]; got q={tuple(q.shape)}, k={tuple(k.shape)}.")
+    if q.shape[0] != k.shape[0] or q.shape[2] != k.shape[2]:
+        raise ValueError(
+            f"MUSA RoPE requires q/k batch and sequence dimensions to match; got q={q.shape}, k={k.shape}."
+        )
+    if not partial and (q.shape[-1] != rotary_dim or k.shape[-1] != rotary_dim):
+        raise ValueError(
+            "MUSA full RoPE requires rotary_dim to equal q/k head_dim; "
+            f"got rotary_dim={rotary_dim}, q_dim={q.shape[-1]}, k_dim={k.shape[-1]}."
+        )
+    if partial and (rotary_dim > q.shape[-1] or rotary_dim > k.shape[-1]):
+        raise ValueError(
+            "MUSA partial RoPE rotary_dim must not exceed q/k head_dim; "
+            f"got rotary_dim={rotary_dim}, q_dim={q.shape[-1]}, k_dim={k.shape[-1]}."
+        )
+    if phase.ndim == 2:
+        phase = phase.unsqueeze(0)
+    q_embed = _rope_one(q[..., :rotary_dim], phase, shared)
+    k_embed = _rope_one(k[..., :rotary_dim], phase, shared)
+    if attention_scaling != 1.0:
+        q_embed = q_embed * attention_scaling
+        k_embed = k_embed * attention_scaling
+    if not partial:
+        return q_embed, k_embed
+    return torch.cat((q_embed, q[..., rotary_dim:]), dim=-1), torch.cat((k_embed, k[..., rotary_dim:]), dim=-1)
+
+
 def _apply_rotary_pos_emb_musa(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -200,12 +264,25 @@ def apply_rotary_pos_emb_musa(
 def partial_apply_rotary_pos_emb_musa(
     q: torch.Tensor,
     k: torch.Tensor,
-    cos: torch.Tensor,
-    sin: torch.Tensor,
+    phase: torch.Tensor,
+    attention_scaling: float = 1.0,
     unsqueeze_dim: int = 1,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """MUSA partial RoPE adapter used by Qwen3.5 text attention."""
-    return _apply_rotary_pos_emb_musa(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim, partial=True)
+    """MUSA partial RoPE adapter used by Qwen3.5 text attention.
+
+    Unlike the generic HF interface, this registered backend accepts the
+    native phase table directly as ``(phase, attention_scaling)``.  Qwen3.5
+    computes the phase before its usual dtype cast, so no atan2 reconstruction
+    or lossy BF16 cos/sin round trip is needed.
+    """
+    return _apply_rotary_phase_musa(
+        q,
+        k,
+        phase,
+        attention_scaling=attention_scaling,
+        unsqueeze_dim=unsqueeze_dim,
+        partial=True,
+    )
 
 
 def apply_rotary_pos_emb_vision_musa(
