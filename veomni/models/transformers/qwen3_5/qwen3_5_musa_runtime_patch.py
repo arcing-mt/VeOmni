@@ -32,7 +32,19 @@ from __future__ import annotations
 from functools import wraps
 from types import ModuleType
 
+import torch
+
 from ....ops.dispatch import OpSlot
+
+
+class _MusaRotaryPhase:
+    """Opaque phase carrier that FSDP mixed-precision casting leaves intact."""
+
+    __slots__ = ("phase", "attention_scaling")
+
+    def __init__(self, phase: torch.Tensor, attention_scaling: float) -> None:
+        self.phase = phase
+        self.attention_scaling = attention_scaling
 
 
 def install_qwen3_5_musa_rotary_patch(
@@ -54,12 +66,53 @@ def install_qwen3_5_musa_rotary_patch(
         @wraps(original_text)
         def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
             if text_slot.use_non_eager_impl:
-                return text_slot(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
+                # In the MUSA mode the rotary module returns (phase, scale),
+                # while the generated attention code still names them cos/sin.
+                if isinstance(cos, _MusaRotaryPhase):
+                    return text_slot(
+                        q,
+                        k,
+                        cos.phase,
+                        attention_scaling=cos.attention_scaling,
+                        unsqueeze_dim=unsqueeze_dim,
+                    )
+                return text_slot(q, k, cos, attention_scaling=sin, unsqueeze_dim=unsqueeze_dim)
             return original_text(q, k, cos, sin, unsqueeze_dim=unsqueeze_dim)
 
         modeling_module.veomni_apply_rotary_pos_emb = text_slot
         modeling_module.apply_rotary_pos_emb = apply_rotary_pos_emb
         modeling_module._VEOMNI_MUSA_TEXT_ROTARY_PATCHED = True
+
+        rotary_cls = getattr(modeling_module, "Qwen3_5MoeTextRotaryEmbedding", None) or getattr(
+            modeling_module, "Qwen3_5TextRotaryEmbedding", None
+        )
+        if rotary_cls is not None and not getattr(modeling_module, "_VEOMNI_MUSA_TEXT_PHASE_PATCHED", False):
+            @torch.no_grad()
+            @modeling_module.dynamic_rope_update
+            def rotary_forward(self, x, position_ids):
+                """Return phase directly for MUSA; retain HF cos/sin for eager."""
+                if position_ids.ndim == 2:
+                    position_ids = position_ids[None, ...].expand(3, position_ids.shape[0], -1)
+                inv_freq_expanded = (
+                    self.inv_freq[None, None, :, None].float().expand(3, position_ids.shape[1], -1, 1).to(x.device)
+                )
+                position_ids_expanded = position_ids[:, :, None, :].float()
+                device_type = x.device.type if isinstance(x.device.type, str) and x.device.type != "mps" else "cpu"
+                with modeling_module.maybe_autocast(device_type=device_type, enabled=False):
+                    freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(2, 3)
+                    freqs = self.apply_interleaved_mrope(freqs, self.mrope_section)
+                    phase = torch.cat((freqs, freqs), dim=-1).contiguous()
+                if text_slot.use_non_eager_impl:
+                    # FSDP2 recursively casts tensors in forward inputs. A
+                    # plain Python carrier keeps this FP32 phase opaque while
+                    # preserving the generated model's two-item tuple API.
+                    return _MusaRotaryPhase(phase, self.attention_scaling), None
+                cos = phase.cos() * self.attention_scaling
+                sin = phase.sin() * self.attention_scaling
+                return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
+
+            rotary_cls.forward = rotary_forward
+            modeling_module._VEOMNI_MUSA_TEXT_PHASE_PATCHED = True
 
     if install_vision and not getattr(modeling_module, "_VEOMNI_MUSA_VISION_ROTARY_PATCHED", False):
         original_vision = modeling_module.apply_rotary_pos_emb_vision

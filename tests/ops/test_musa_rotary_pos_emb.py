@@ -20,7 +20,10 @@ import pytest
 import torch
 
 import veomni.ops  # noqa: F401 - trigger kernel registrations
-from veomni.models.transformers.qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch
+from veomni.models.transformers.qwen3_5.qwen3_5_musa_runtime_patch import (
+    _MusaRotaryPhase,
+    install_qwen3_5_musa_rotary_patch,
+)
 from veomni.ops.kernel_registry import KERNEL_REGISTRY
 from veomni.ops.kernels.rotary.musa import _phase_from_cos_sin
 from veomni.utils.device import IS_MUSA_AVAILABLE
@@ -66,6 +69,18 @@ def test_musa_patch_is_runtime_only_and_preserves_eager_when_unbound() -> None:
     q_out, k_out = module.apply_rotary_pos_emb(q, k, cos, sin)
     assert torch.equal(q_out, q + cos)
     assert torch.equal(k_out, k + sin)
+
+
+def test_musa_phase_carrier_survives_fsdp_input_cast() -> None:
+    from torch.distributed.utils import _cast_forward_inputs
+
+    phase = torch.zeros(2, 4, 8, dtype=torch.float32)
+    carrier = _MusaRotaryPhase(phase, 1.0)
+    cast_args, _ = _cast_forward_inputs(torch.bfloat16, carrier)
+    cast_args = cast_args[0]
+    assert cast_args is carrier
+    assert cast_args.phase is phase
+    assert cast_args.phase.dtype is torch.float32
 
 
 def test_musa_vision_patch_is_independent_from_text_patch() -> None:
@@ -182,20 +197,20 @@ def test_musa_partial_rope_matches_eager_and_preserves_tail(batch_size: int) -> 
     q = torch.randn(batch, heads, seq, head_dim, device=device, dtype=torch.float16)
     k = torch.randn(batch, 4, seq, head_dim, device=device, dtype=torch.float16)
     angles = torch.randn(batch, seq, rotary_dim // 2, device=device, dtype=torch.float32)
-    cos = torch.cat((angles.cos(), angles.cos()), dim=-1).to(q.dtype)
-    sin = torch.cat((angles.sin(), angles.sin()), dim=-1).to(q.dtype)
+    phase = torch.cat((angles, angles), dim=-1)
 
     def eager(x: torch.Tensor) -> torch.Tensor:
         x_rot, x_pass = x[..., :rotary_dim], x[..., rotary_dim:]
         first, second = x_rot.chunk(2, dim=-1)
         rotated = torch.cat((-second, first), dim=-1)
+        cos, sin = phase.cos().to(x.dtype), phase.sin().to(x.dtype)
         return torch.cat((x_rot * cos.unsqueeze(1) + rotated * sin.unsqueeze(1), x_pass), dim=-1)
 
     from veomni.ops.dispatch import OpSlot
 
     slot = OpSlot("rotary_pos_emb", "partial")
     slot.bind("musa")
-    q_out, k_out = slot(q, k, cos, sin)
+    q_out, k_out = slot(q, k, phase)
     q_ref, k_ref = eager(q), eager(k)
     torch.musa.synchronize()
     diff = torch.cat(
