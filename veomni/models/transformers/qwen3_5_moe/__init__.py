@@ -69,6 +69,15 @@ def register_qwen3_5_moe_modeling(architecture: str):
                     install_text=ops_config.rotary_pos_emb_implementation == "musa",
                     install_vision=ops_config.rotary_pos_emb_vision_implementation == "musa",
                 )
+            if ops_config is not None and (
+                getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
+                and getattr(ops_config, "moe_shared_expert_overlap", False)
+            ):
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import (
+                    install_qwen3_5_moe_shared_expert_overlap_patch,
+                )
+
+                install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module)
         Qwen3_5MoeForCausalLM = modeling_module.Qwen3_5MoeForCausalLM
         Qwen3_5MoeForConditionalGeneration = modeling_module.Qwen3_5MoeForConditionalGeneration
 
@@ -102,6 +111,15 @@ def register_qwen3_5_moe_text_modeling(architecture: str):
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch
 
                 install_qwen3_5_musa_rotary_patch(modeling_module)
+            if ops_config is not None and (
+                getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
+                and getattr(ops_config, "moe_shared_expert_overlap", False)
+            ):
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import (
+                    install_qwen3_5_moe_shared_expert_overlap_patch,
+                )
+
+                install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module)
         Qwen3_5MoeForCausalLM = modeling_module.Qwen3_5MoeForCausalLM
 
     Qwen3_5MoeForCausalLM._convert_lora_targets_to_parameters = staticmethod(

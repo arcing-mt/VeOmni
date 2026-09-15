@@ -1129,6 +1129,20 @@ class OpsImplementationConfig:
             "the reference --moe-deepep-num-sms default."
         },
     )
+    moe_deepep_token_capacity: int = field(
+        default=8192,
+        metadata={
+            "help": "Maximum local input tokens reserved by the DeepEP-ACE "
+            "workspace. Increase this explicitly for larger microbatches."
+        },
+    )
+    moe_shared_expert_overlap: bool = field(
+        default=False,
+        metadata={
+            "help": "Run Qwen3.5's independent shared expert on a separate "
+            "MUSA stream while DeepEP-ACE dispatch/combine is in flight."
+        },
+    )
     cross_entropy_loss_implementation: str = field(
         default="liger_kernel",
         metadata={
@@ -1229,6 +1243,10 @@ class OpsImplementationConfig:
             raise ValueError("moe_dispatcher must be 'alltoall' or 'deepep_ace'.")
         if self.moe_deepep_num_sms <= 0 or self.moe_deepep_num_sms % 2:
             raise ValueError("moe_deepep_num_sms must be a positive even integer.")
+        if self.moe_deepep_token_capacity <= 0:
+            raise ValueError("moe_deepep_token_capacity must be positive.")
+        if self.moe_shared_expert_overlap and self.moe_dispatcher != "deepep_ace":
+            raise ValueError("moe_shared_expert_overlap requires moe_dispatcher='deepep_ace'.")
         # On MUSA, use the locally installed FA3 interface when the upstream
         # GPU default (FA2) is still selected. This is an explicit accelerator
         # mapping, not an eager/fallback substitution; if FA3 is unavailable,

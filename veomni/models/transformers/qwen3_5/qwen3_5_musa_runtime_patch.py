@@ -134,4 +134,49 @@ def install_qwen3_5_musa_rotary_patch(
     )
 
 
-__all__ = ["install_qwen3_5_musa_rotary_patch"]
+def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType) -> None:
+    """Overlap Qwen3.5's shared expert with an opt-in DeepEP-ACE dispatch.
+
+    The generated Qwen3.5 block computes the shared expert before routing, so
+    it cannot cover ACE's dispatch payload.  This runtime-only patch moves the
+    shared expert into the ACE dispatch context; the dispatcher queues it on
+    a side stream before submitting communication and joins before returning
+    the combined MoE output.  It is installed only for the explicit
+    ``moe_dispatcher=deepep_ace, moe_shared_expert_overlap=True`` choice.
+    """
+    if getattr(modeling_module, "_VEOMNI_MUSA_SHARED_EXPERT_OVERLAP_PATCHED", False):
+        return
+    from ....distributed.moe.deepep_ace import shared_expert_overlap
+
+    def sparse_moe_forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        batch_size, sequence_length, hidden_dim = hidden_states.shape
+        hidden_states_reshaped = hidden_states.view(-1, hidden_dim)
+        router_logits, routing_weights, selected_experts = self.gate(hidden_states_reshaped)
+        get_active_replay = getattr(modeling_module, "get_active_replay", None)
+        maybe_replay_indices = getattr(modeling_module, "maybe_replay_indices", None)
+        if get_active_replay is not None and get_active_replay() is not None:
+            target_dtype = routing_weights.dtype
+            routing_scores = torch.nn.functional.softmax(router_logits, dtype=torch.float, dim=-1)
+            selected_experts = maybe_replay_indices(self.gate, routing_scores, selected_experts)
+            routing_weights = routing_scores.gather(1, selected_experts)
+            routing_weights = routing_weights / routing_weights.sum(-1, keepdim=True)
+            routing_weights = routing_weights.to(target_dtype)
+
+        # The ACE dispatcher consumes this context before dispatch submission.
+        # It returns routed output plus the shared result after joining streams.
+        with shared_expert_overlap(self.shared_expert, self.shared_expert_gate, hidden_states_reshaped):
+            expert_output = self.experts(hidden_states_reshaped, selected_experts, routing_weights)
+        expert_output = expert_output.reshape(batch_size, sequence_length, hidden_dim)
+        return expert_output
+
+    sparse_cls = getattr(modeling_module, "Qwen3_5MoeSparseMoeBlock", None)
+    if sparse_cls is None:
+        raise RuntimeError("Qwen3.5 generated module has no Qwen3_5MoeSparseMoeBlock")
+    sparse_cls.forward = sparse_moe_forward
+    modeling_module._VEOMNI_MUSA_SHARED_EXPERT_OVERLAP_PATCHED = True
+
+
+__all__ = [
+    "install_qwen3_5_moe_shared_expert_overlap_patch",
+    "install_qwen3_5_musa_rotary_patch",
+]

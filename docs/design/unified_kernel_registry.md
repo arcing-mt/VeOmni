@@ -296,6 +296,8 @@ PR — see `veomni/arguments/arguments_types.py`):
 | `moe_implementation` | `eager`, `fused_triton`, `fused_quack`, `fused_musa`, `fused_npu` | Single field. On NPU, a value still equal to the GPU default `fused_triton` is normalized to `fused_npu`; incompatible non-default overrides raise. |
 | `moe_dispatcher` | `alltoall`, `deepep_ace` (MUSA) | Communication selection independent of the expert compute backend; `alltoall` remains the default. |
 | `moe_deepep_num_sms` | positive even integer | DeepEP resource setting used only by `moe_dispatcher="deepep_ace"`; default `20` matches the MUSA launcher reference. |
+| `moe_deepep_token_capacity` | positive integer | Fixed per-rank ACE token workspace capacity; default `8192`. Keep it identical across EP ranks. |
+| `moe_shared_expert_overlap` | boolean | Opt-in Qwen3.5 side-stream scheduling experiment; it is not a claim that ACE payload and shared GEMM overlap on every DeepEP/MUSA build. |
 | `cross_entropy_loss_implementation` | `eager`, `liger_kernel`, `chunk_loss`, `npu` | |
 | `load_balancing_loss_implementation` | `eager`, `triton` | `triton` is CUDA-only; current NPU config normalization maps the default-valued `triton` selection to `eager` before binding. |
 | `rms_norm_gated_implementation` | `eager`, `fla`, `npu` | Qwen3.5 GatedDeltaNet `self.norm`; default `fla` |

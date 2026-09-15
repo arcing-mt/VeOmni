@@ -10,18 +10,20 @@ model:
 ```
 
 The backend requires a MUSA DeepEP build with ACE support. It caches
-`Buffer(use_ace=True, train_mode=True)` per process-group/shape/resource tuple,
+`Buffer(use_ace=True)` (and passes `train_mode=True` only when the installed
+wheel exposes that constructor argument) per process-group/shape/resource tuple,
 uses the communication stream for dispatch/combine, and keeps a per-invocation
 communication handle through the custom backward path. The default
 `fused_triton`/MCCL all-to-all path is unchanged.
 
 This integration provides ACE dispatch/combine and explicit asynchronous
 completion while leaving the expert compute selection in `moe_implementation`.
-It does not yet pipeline multiple token chunks with sparse expert GEMM; that is
-a separate optimization. The first validation should therefore compare
+The ACE workspace has a fixed `moe_deepep_token_capacity` and all EP ranks must
+use the same value. The first validation should therefore compare
 forward/backward outputs on fixed input and inspect the dispatch, grouped-GEMM,
 and combine intervals in a multi-card MUSA trace.
 
-The current Qwen3.5 model also has a shared expert. Scheduling that independent
-shared expert before ACE dispatch is a later overlap optimization and is not
-implicitly enabled by selecting this backend.
+The current Qwen3.5 model also has a shared expert. Set
+`moe_shared_expert_overlap=true` only for the side-stream scheduling
+experiment. It is not implicitly enabled by selecting this backend, and a
+trace must confirm useful concurrency before treating it as a speedup.
