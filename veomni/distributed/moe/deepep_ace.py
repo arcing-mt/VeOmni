@@ -379,6 +379,12 @@ def dispatch_to_ep_class_deepep_ace(
 
     invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1])
     overlap = _ACTIVE_SHARED_EXPERT.get()
+    if overlap is not None:
+        # Capture the current stream dependency inside ``start`` before ACE
+        # submits its communication.  The shared expert is a complete module
+        # call, so FSDP keeps its parameter lifecycle intact while the
+        # independent work is queued ahead of the ACE payload.
+        overlap.start()
     recv_hidden, recv_indices, recv_probs = _ACEDispatch.apply(
         hidden_states,
         selected_experts,
@@ -389,15 +395,8 @@ def dispatch_to_ep_class_deepep_ace(
     # stay outside the custom autograd Function: its forward executes with
     # grad recording disabled, while the shared expert needs a normal graph for
     # parameter and input gradients.
-    # The received payload is consumed by local compaction below. Join that
-    # dependency before launching the complete FSDP-managed shared module.
+    # The received payload is consumed by local compaction below.
     invocation.wait_dispatch()
-    if overlap is not None:
-        # Starting after the ACE payload is joined keeps the complete shared
-        # module call within the FSDP block's ready-parameter window.  It can
-        # then overlap the independent local compact/grouped-GEMM work without
-        # splitting FSDP-managed child linears across streams.
-        overlap.start()
     num_local_experts = num_experts // state.ep_group.size()
     permuted, probs, token_rows, counts = _compact_permute(
         recv_hidden,
