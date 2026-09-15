@@ -154,6 +154,27 @@ def dispatch_to_ep_class(
         ``[B, S, H]`` (or ``[N, H]``) — same shape as ``hidden_states``.
     """
     ep_state = get_parallel_state()
+    # The expert compute implementation and token communication backend are
+    # independent choices.  Keep the existing all-to-all path byte-for-byte
+    # below when the dispatcher is ``alltoall``; ACE is an explicit opt-in.
+    from ...ops.config.singleton import get_ops_config
+
+    ops_config = get_ops_config()
+    if (
+        ops_config is not None
+        and getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
+    ):
+        from .deepep_ace import dispatch_to_ep_class_deepep_ace
+
+        return dispatch_to_ep_class_deepep_ace(
+            ep_class,
+            num_experts,
+            routing_weights,
+            selected_experts,
+            hidden_states,
+            *ep_class_args,
+        )
+
     expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=num_experts).permute(2, 1, 0)
     input_splits, output_splits, num_global_tokens_per_local_expert, num_global_sum_tokens_per_local_expert = (
         preprocess(expert_mask=expert_mask, num_experts=num_experts, ep_group=ep_state.ep_group)
