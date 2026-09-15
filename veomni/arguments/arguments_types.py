@@ -1115,6 +1115,20 @@ class OpsImplementationConfig:
             "auto-resolves to fused_quack/fused_npu with a deprecation warning."
         },
     )
+    moe_dispatcher: str = field(
+        default="alltoall",
+        metadata={
+            "help": "MoE token dispatcher. 'alltoall' (default, MCCL) or "
+            "'deepep_ace' (MUSA DeepEP-ACE, explicit opt-in)."
+        },
+    )
+    moe_deepep_num_sms: int = field(
+        default=20,
+        metadata={
+            "help": "DeepEP communication kernel resource setting, matching "
+            "the reference --moe-deepep-num-sms default."
+        },
+    )
     cross_entropy_loss_implementation: str = field(
         default="liger_kernel",
         metadata={
@@ -1211,6 +1225,10 @@ class OpsImplementationConfig:
     )
 
     def __post_init__(self):
+        if self.moe_dispatcher not in {"alltoall", "deepep_ace"}:
+            raise ValueError("moe_dispatcher must be 'alltoall' or 'deepep_ace'.")
+        if self.moe_deepep_num_sms <= 0 or self.moe_deepep_num_sms % 2:
+            raise ValueError("moe_deepep_num_sms must be a positive even integer.")
         # On MUSA, use the locally installed FA3 interface when the upstream
         # GPU default (FA2) is still selected. This is an explicit accelerator
         # mapping, not an eager/fallback substitution; if FA3 is unavailable,
