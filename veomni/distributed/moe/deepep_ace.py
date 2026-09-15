@@ -58,6 +58,14 @@ _CAPACITY_CHECKED: set[tuple[int, int]] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
 
 
+def _prioritize_backward(tensor: torch.Tensor | None) -> None:
+    """Match the reference MoE stream scheduler's backward ordering hint."""
+    grad_fn = getattr(tensor, "grad_fn", None)
+    set_sequence_nr = getattr(grad_fn, "_set_sequence_nr", None)
+    if set_sequence_nr is not None:
+        set_sequence_nr(torch.iinfo(torch.int).max)
+
+
 class _SharedExpertOverlap:
     """Queue an independent shared expert on a side stream and join it later."""
 
@@ -84,6 +92,7 @@ class _SharedExpertOverlap:
         with torch.musa.stream(self.stream):
             self.stream.wait_event(producer_event)
             shared = self.shared_expert(self.hidden_states)
+            _prioritize_backward(shared)
             self.output = torch.sigmoid(self.shared_gate(self.hidden_states)) * shared
             self.event = self.stream.record_event()
 
@@ -345,7 +354,10 @@ def _compact_unpermute(expert_outputs, probs, token_rows, recv_tokens):
         dtype=expert_outputs.dtype,
         device=expert_outputs.device,
     )
-    return restored.index_add(0, token_rows, weighted)
+    # Keep the destination allocation and accumulate in place.  The previous
+    # out-of-place index_add created a second full [recv_tokens, hidden] tensor.
+    restored.index_add_(0, token_rows, weighted)
+    return restored
 
 
 def dispatch_to_ep_class_deepep_ace(
@@ -377,12 +389,15 @@ def dispatch_to_ep_class_deepep_ace(
     # stay outside the custom autograd Function: its forward executes with
     # grad recording disabled, while the shared expert needs a normal graph for
     # parameter and input gradients.
-    if overlap is not None:
-        overlap.start()
-    # The received payload is consumed by local compaction below. Wait only at
-    # that dependency, allowing the side-stream shared expert to cover the
-    # still-in-flight ACE transfer.
+    # The received payload is consumed by local compaction below. Join that
+    # dependency before launching the complete FSDP-managed shared module.
     invocation.wait_dispatch()
+    if overlap is not None:
+        # Starting after the ACE payload is joined keeps the complete shared
+        # module call within the FSDP block's ready-parameter window.  It can
+        # then overlap the independent local compact/grouped-GEMM work without
+        # splitting FSDP-managed child linears across streams.
+        overlap.start()
     num_local_experts = num_experts // state.ep_group.size()
     permuted, probs, token_rows, counts = _compact_permute(
         recv_hidden,
@@ -391,6 +406,10 @@ def dispatch_to_ep_class_deepep_ace(
         num_local_experts,
         invocation.recv_counts,
     )
+    if overlap is not None:
+        # Match the reference dispatch_postprocess hook: schedule dispatch
+        # backward before shared-expert backward, which runs on its own stream.
+        _prioritize_backward(permuted)
     cumsum = counts.cumsum(0)
     expert_outputs = ep_class.apply(permuted, cumsum, *ep_class_args)
     restored = _compact_unpermute(expert_outputs, probs, token_rows, recv_hidden.shape[0])
