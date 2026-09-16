@@ -200,10 +200,11 @@ class _ACEState:
         _BUFFER_CACHE[(*cache_prefix, requested_capacity)] = buffer
         return buffer
 
-    def dispatch(self, hidden_states, selected_experts, routing_weights):
+    def dispatch(self, hidden_states, selected_experts, routing_weights, previous_event=None):
         self.token_num = hidden_states.size(0)
         buffer = self._get_buffer(hidden_states)
-        previous_event = _current_stream_event()
+        if previous_event is None:
+            previous_event = _current_stream_event()
         (
             tokens_per_rank,
             tokens_per_rdma_rank,
@@ -294,8 +295,9 @@ class _ACEState:
 class _ACEDispatch(torch.autograd.Function):
     @staticmethod
     def forward(ctx, hidden_states, selected_experts, routing_weights, state):
+        previous_event = getattr(state, "previous_event", None)
         recv_hidden, recv_indices, recv_probs = state.dispatch(
-            hidden_states, selected_experts, routing_weights
+            hidden_states, selected_experts, routing_weights, previous_event
         )
         ctx.state = state
         return recv_hidden, recv_indices, recv_probs
@@ -380,6 +382,7 @@ def dispatch_to_ep_class_deepep_ace(
     invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1])
     overlap = _ACTIVE_SHARED_EXPERT.get()
     if overlap is not None:
+        invocation.previous_event = _current_stream_event()
         # Capture the current stream dependency inside ``start`` before ACE
         # submits its communication.  The shared expert is a complete module
         # call, so FSDP keeps its parameter lifecycle intact while the
