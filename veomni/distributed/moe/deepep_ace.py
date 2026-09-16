@@ -85,7 +85,7 @@ class _SharedExpertOverlap:
         # expert kernels instead of allowing the two to make progress.
         self.stream = getattr(self.shared_expert, "_veomni_shared_expert_stream", None)
         if self.stream is None:
-            self.stream = torch.musa.Stream()
+            self.stream = torch.musa.Stream(priority=-1)
             self.shared_expert._veomni_shared_expert_stream = self.stream
         producer_event = torch.musa.current_stream().record_event()
         with torch.musa.stream(self.stream):
@@ -239,6 +239,14 @@ class _ACEState:
         # bincount after the dispatch event is joined.
         self.recv_counts = recv_counts
         self.dispatch_event = dispatch_event
+        overlap = _ACTIVE_SHARED_EXPERT.get()
+        if overlap is not None:
+            # Custom autograd Function.forward runs under no_grad. Re-enable
+            # recording for the independent module so its parameter/input
+            # gradients remain connected when its result is joined outside
+            # the communication Function.
+            with torch.enable_grad():
+                overlap.start()
         return recv_hidden, recv_indices, recv_probs
 
     def wait_dispatch(self) -> None:
@@ -383,12 +391,6 @@ def dispatch_to_ep_class_deepep_ace(
         routing_weights.float(),
         invocation,
     )
-    if overlap is not None:
-        # The custom Function's forward runs with grad recording disabled, so
-        # issue the complete shared module immediately after it returns. ACE's
-        # previous_event was recorded before this work and therefore does not
-        # make the communication stream wait for these kernels.
-        overlap.start()
     if overlap is not None:
         # This is the autograd output of the communication dispatch itself.
         # Raising this node matches the reference dispatch-postprocess hint;
