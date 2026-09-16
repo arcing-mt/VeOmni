@@ -7,9 +7,9 @@ only when ``OpsImplementationConfig.moe_dispatcher`` is ``"deepep_ace"``.
 
 from __future__ import annotations
 
+import contextvars
 import inspect
 from contextlib import contextmanager
-import contextvars
 from typing import Any, Callable
 
 import torch
@@ -36,14 +36,13 @@ def _supported_ep_classes() -> tuple[type, ...]:
 def _load_deepep() -> tuple[Any, Any, Any]:
     try:
         from deep_ep import Buffer
+
         # This DeepEP wheel re-exports EventHandle from ``deep_ep.utils`` but
         # keeps EventOverlap in the concrete ``event`` module.  Import both
         # from that module so the supported wheel layout is handled directly.
         from deep_ep.utils.event import EventHandle, EventOverlap
     except ImportError as exc:  # pragma: no cover - hardware image dependent.
-        raise RuntimeError(
-            "moe_dispatcher='deepep_ace' requires a DeepEP build with MUSA ACE support"
-        ) from exc
+        raise RuntimeError("moe_dispatcher='deepep_ace' requires a DeepEP build with MUSA ACE support") from exc
     return Buffer, EventHandle, EventOverlap
 
 
@@ -87,13 +86,13 @@ class _SharedExpertOverlap:
         self.stream = getattr(self.shared_expert, "_veomni_shared_expert_stream", None)
         if self.stream is None:
             self.stream = torch.musa.Stream()
-            setattr(self.shared_expert, "_veomni_shared_expert_stream", self.stream)
+            self.shared_expert._veomni_shared_expert_stream = self.stream
         producer_event = torch.musa.current_stream().record_event()
         with torch.musa.stream(self.stream):
             self.stream.wait_event(producer_event)
             shared = self.shared_expert(self.hidden_states)
-            _prioritize_backward(shared)
             self.output = torch.sigmoid(self.shared_gate(self.hidden_states)) * shared
+            _prioritize_backward(self.output)
             self.event = self.stream.record_event()
 
     def finish(self) -> torch.Tensor:
@@ -144,10 +143,7 @@ class _ACEState:
             capacities = [None] * self.group.size()
             dist.all_gather_object(capacities, int(configured_capacity), group=self.group)
             if any(capacity != int(configured_capacity) for capacity in capacities):
-                raise RuntimeError(
-                    "all EP ranks must use the same moe_deepep_token_capacity: "
-                    f"received {capacities}"
-                )
+                raise RuntimeError(f"all EP ranks must use the same moe_deepep_token_capacity: received {capacities}")
             _CAPACITY_CHECKED.add(capacity_check_key)
         requested_tokens = self.token_num or hidden_states.size(0)
         if requested_tokens > configured_capacity:
@@ -304,9 +300,7 @@ class _ACEDispatch(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_recv_hidden, _grad_indices, grad_recv_probs):
-        grad_hidden, grad_probs = ctx.state.reverse_combine(
-            grad_recv_hidden, grad_recv_probs
-        )
+        grad_hidden, grad_probs = ctx.state.reverse_combine(grad_recv_hidden, grad_recv_probs)
         return grad_hidden, None, grad_probs, None
 
 
@@ -383,17 +377,24 @@ def dispatch_to_ep_class_deepep_ace(
     overlap = _ACTIVE_SHARED_EXPERT.get()
     if overlap is not None:
         invocation.previous_event = _current_stream_event()
-        # Capture the current stream dependency inside ``start`` before ACE
-        # submits its communication.  The shared expert is a complete module
-        # call, so FSDP keeps its parameter lifecycle intact while the
-        # independent work is queued ahead of the ACE payload.
-        overlap.start()
     recv_hidden, recv_indices, recv_probs = _ACEDispatch.apply(
         hidden_states,
         selected_experts,
         routing_weights.float(),
         invocation,
     )
+    if overlap is not None:
+        # The custom Function's forward runs with grad recording disabled, so
+        # issue the complete shared module immediately after it returns. ACE's
+        # previous_event was recorded before this work and therefore does not
+        # make the communication stream wait for these kernels.
+        overlap.start()
+    if overlap is not None:
+        # This is the autograd output of the communication dispatch itself.
+        # Raising this node matches the reference dispatch-postprocess hint;
+        # setting the sequence on a later index_select would only reorder the
+        # local compact operation.
+        _prioritize_backward(recv_hidden)
     # This is immediately after the host-side dispatch call returns.  It must
     # stay outside the custom autograd Function: its forward executes with
     # grad recording disabled, while the shared expert needs a normal graph for
@@ -408,10 +409,6 @@ def dispatch_to_ep_class_deepep_ace(
         num_local_experts,
         invocation.recv_counts,
     )
-    if overlap is not None:
-        # Match the reference dispatch_postprocess hook: schedule dispatch
-        # backward before shared-expert backward, which runs on its own stream.
-        _prioritize_backward(permuted)
     cumsum = counts.cumsum(0)
     expert_outputs = ep_class.apply(permuted, cumsum, *ep_class_args)
     restored = _compact_unpermute(expert_outputs, probs, token_rows, recv_hidden.shape[0])
