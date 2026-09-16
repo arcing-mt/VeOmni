@@ -57,14 +57,6 @@ _CAPACITY_CHECKED: set[tuple[int, int]] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
 
 
-def _prioritize_backward(tensor: torch.Tensor | None) -> None:
-    """Match the reference MoE stream scheduler's backward ordering hint."""
-    grad_fn = getattr(tensor, "grad_fn", None)
-    set_sequence_nr = getattr(grad_fn, "_set_sequence_nr", None)
-    if set_sequence_nr is not None:
-        set_sequence_nr(torch.iinfo(torch.int).max)
-
-
 class _SharedExpertOverlap:
     """Queue an independent shared expert on a side stream and join it later."""
 
@@ -85,14 +77,13 @@ class _SharedExpertOverlap:
         # expert kernels instead of allowing the two to make progress.
         self.stream = getattr(self.shared_expert, "_veomni_shared_expert_stream", None)
         if self.stream is None:
-            self.stream = torch.musa.Stream(priority=-1)
+            self.stream = torch.musa.Stream()
             self.shared_expert._veomni_shared_expert_stream = self.stream
         producer_event = torch.musa.current_stream().record_event()
         with torch.musa.stream(self.stream):
             self.stream.wait_event(producer_event)
             shared = self.shared_expert(self.hidden_states)
             self.output = torch.sigmoid(self.shared_gate(self.hidden_states)) * shared
-            _prioritize_backward(self.output)
             self.event = self.stream.record_event()
 
     def finish(self) -> torch.Tensor:
@@ -391,12 +382,6 @@ def dispatch_to_ep_class_deepep_ace(
         routing_weights.float(),
         invocation,
     )
-    if overlap is not None:
-        # This is the autograd output of the communication dispatch itself.
-        # Raising this node matches the reference dispatch-postprocess hint;
-        # setting the sequence on a later index_select would only reorder the
-        # local compact operation.
-        _prioritize_backward(recv_hidden)
     # This is immediately after the host-side dispatch call returns.  It must
     # stay outside the custom autograd Function: its forward executes with
     # grad recording disabled, while the shared expert needs a normal graph for

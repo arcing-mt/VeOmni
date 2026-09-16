@@ -7,7 +7,6 @@ from veomni.distributed.moe.deepep_ace import (
     _compact_permute,
     _compact_unpermute,
     _load_deepep,
-    _prioritize_backward,
 )
 
 
@@ -38,12 +37,6 @@ def test_deepep_ace_compact_unpermute_backward_cpu():
 
     assert torch.equal(expert_outputs.grad, probs.detach().unsqueeze(-1).expand_as(expert_outputs))
     assert torch.equal(probs.grad, expert_outputs.detach().sum(dim=-1))
-
-
-def test_deepep_ace_prioritize_backward_targets_requested_node():
-    value = torch.tensor([2.0], requires_grad=True).square()
-    _prioritize_backward(value)
-    assert value.grad_fn._sequence_nr() == torch.iinfo(torch.int).max
 
 
 def test_deepep_ace_dispatch_uses_caller_previous_event(monkeypatch):
