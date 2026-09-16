@@ -77,7 +77,7 @@ class _SharedExpertOverlap:
         # expert kernels instead of allowing the two to make progress.
         self.stream = getattr(self.shared_expert, "_veomni_shared_expert_stream", None)
         if self.stream is None:
-            self.stream = torch.musa.Stream()
+            self.stream = torch.musa.Stream(priority=-1)
             self.shared_expert._veomni_shared_expert_stream = self.stream
         producer_event = torch.musa.current_stream().record_event()
         with torch.musa.stream(self.stream):
