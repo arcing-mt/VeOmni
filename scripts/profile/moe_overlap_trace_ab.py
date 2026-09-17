@@ -154,10 +154,24 @@ def step_boundaries(events: list[dict]) -> list[float]:
         if ts - bounds[-1] > cut:
             bounds.append(ts)
     if len(bounds) < 2:
-        raise SystemExit(
-            f"only one optimizer step detected (launch-gap cut={cut:.0f} us); profile at least two consecutive steps"
-        )
+        # A short profiling window can contain only one optimizer step.  Fall back
+        # to the profiled kernel range so the script still reports a comparison,
+        # but say so: that window is the whole trace, not exactly one step.
+        return _single_step_fallback(events, stamps, cut)
     return bounds
+
+
+def _single_step_fallback(events: list[dict], stamps: list[float], cut: float) -> list[float]:
+    """Span the whole profiled region when only one optimizer step is present."""
+    kernel_ts = [e["ts"] for e in events if e.get("cat") in GPU_CATS and e.get("ph") == "X"]
+    start = min(stamps[0], min(kernel_ts)) if kernel_ts else stamps[0]
+    end = max(kernel_ts) if kernel_ts else stamps[-1]
+    print(
+        f"  warning: only one optimizer step detected (launch-gap cut={cut:.0f} us); "
+        "falling back to the whole profiled region, which may span more than one step",
+        flush=True,
+    )
+    return [start, end]
 
 
 def gpu_events(events: list[dict], pid) -> list[dict]:
