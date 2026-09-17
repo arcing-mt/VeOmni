@@ -58,38 +58,57 @@ _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", de
 
 
 class _SharedExpertOverlap:
-    """Queue an independent shared expert on a side stream and join it later."""
+    """Run the independent shared expert inside the ACE dispatch window.
+
+    :meth:`_ACEState.dispatch` submits the ACE dispatch and then calls
+    :meth:`start`, so the shared expert is issued on the compute stream while
+    the dispatch payload is still in flight; ``wait_dispatch`` only joins the
+    payload afterwards.  That is the overlap ``moe_shared_expert_overlap``
+    promises, and it is worth the shared expert's own forward time.
+
+    The shared expert deliberately does **not** get a stream of its own.  An
+    earlier revision queued it on a dedicated MUSA stream and joined it with an
+    event.  Measured on Qwen3.5-35B-A3B (8x MTT S5000, EP8, FSDP2) that cost
+    ~0.7 s/step -- more than the shared expert itself -- because every MoE layer
+    gained a cross-stream ``record_event``/``wait_event`` pair plus a stream
+    switch for each of its kernels, the autograd graph was split across two
+    streams, and the compute stream drained while the side stream was still
+    filling, so the GPU starved between layers.  On the compute stream the
+    shared expert still hides under the dispatch and the regression disappears.
+    """
 
     def __init__(self, shared_expert: torch.nn.Module, shared_gate: torch.nn.Module, hidden_states: torch.Tensor):
         self.shared_expert = shared_expert
         self.shared_gate = shared_gate
         self.hidden_states = hidden_states
-        self.stream = None
-        self.event = None
         self.output = None
+        self.stream = None
 
     def start(self) -> None:
+        """Compute the shared expert on the current stream.
+
+        Must be called after the ACE dispatch has been submitted and before its
+        payload is awaited, which is what puts the shared expert inside the
+        dispatch window (see :meth:`_ACEState.dispatch`).
+        """
         if not hasattr(torch, "musa"):
             raise RuntimeError("shared expert overlap requires torch.musa")
-        # Keep the shared stream at the device default priority.  DeepEP's
-        # communication stream may be high priority; making the compute stream
-        # higher priority would serialize the ACE payload behind all shared
-        # expert kernels instead of allowing the two to make progress.
-        self.stream = getattr(self.shared_expert, "_veomni_shared_expert_stream", None)
-        if self.stream is None:
-            self.stream = torch.musa.Stream(priority=-1)
-            self.shared_expert._veomni_shared_expert_stream = self.stream
-        producer_event = torch.musa.current_stream().record_event()
-        with torch.musa.stream(self.stream):
-            self.stream.wait_event(producer_event)
-            shared = self.shared_expert(self.hidden_states)
-            self.output = torch.sigmoid(self.shared_gate(self.hidden_states)) * shared
-            self.event = self.stream.record_event()
+        if self.output is not None:
+            raise RuntimeError("shared expert overlap was already started")
+        self.stream = torch.musa.current_stream()
+        self.output = torch.sigmoid(self.shared_gate(self.hidden_states)) * self.shared_expert(self.hidden_states)
 
     def finish(self) -> torch.Tensor:
-        if self.event is None or self.output is None:
+        """Return the shared expert result.
+
+        The tensor is only ordered on the stream that ran :meth:`start`, and
+        nothing else re-establishes that ordering now that there is no event to
+        wait on, so verify it rather than relying on the caller.
+        """
+        if self.output is None:
             raise RuntimeError("shared expert overlap was not started")
-        torch.musa.current_stream().wait_event(self.event)
+        if torch.musa.current_stream() != self.stream:
+            raise RuntimeError("shared expert overlap finished on a different stream than it was started on")
         return self.output
 
 
@@ -401,6 +420,7 @@ def dispatch_to_ep_class_deepep_ace(
     restored = _compact_unpermute(expert_outputs, probs, token_rows, recv_hidden.shape[0])
     output = _ACECombine.apply(restored, invocation)
     if overlap is not None:
-        overlap.finish()
-        output = output + overlap.output
+        # The shared expert ran on this stream while the dispatch was in flight,
+        # so `finish` is a plain read; the add is ordered after both branches.
+        output = output + overlap.finish()
     return output

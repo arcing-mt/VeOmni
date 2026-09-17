@@ -1139,8 +1139,10 @@ class OpsImplementationConfig:
     moe_shared_expert_overlap: bool = field(
         default=False,
         metadata={
-            "help": "Run Qwen3.5's independent shared expert on a separate "
-            "MUSA stream while DeepEP-ACE dispatch/combine is in flight."
+            "help": "Issue Qwen3.5's independent shared expert inside the "
+            "DeepEP-ACE dispatch window so its forward hides under the dispatch "
+            "payload. It stays on the compute stream; it does not overlap the "
+            "grouped GEMM or the combine."
         },
     )
     cross_entropy_loss_implementation: str = field(
