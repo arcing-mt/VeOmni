@@ -87,6 +87,7 @@ def install_qwen3_5_musa_rotary_patch(
             modeling_module, "Qwen3_5TextRotaryEmbedding", None
         )
         if rotary_cls is not None and not getattr(modeling_module, "_VEOMNI_MUSA_TEXT_PHASE_PATCHED", False):
+
             @torch.no_grad()
             @modeling_module.dynamic_rope_update
             def rotary_forward(self, x, position_ids):
@@ -139,9 +140,9 @@ def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType)
 
     The generated Qwen3.5 block computes the shared expert before routing, so
     it cannot cover ACE's dispatch payload.  This runtime-only patch moves the
-    shared expert into the ACE dispatch context; the dispatcher queues it on
-    a side stream before submitting communication and joins before returning
-    the combined MoE output.  It is installed only for the explicit
+    shared expert into the ACE dispatch context; the dispatcher issues it on the
+    compute stream once the dispatch is in flight, and joins the two outputs
+    before returning.  It is installed only for the explicit
     ``moe_dispatcher=deepep_ace, moe_shared_expert_overlap=True`` choice.
     """
     if getattr(modeling_module, "_VEOMNI_MUSA_SHARED_EXPERT_OVERLAP_PATCHED", False):
@@ -162,8 +163,10 @@ def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType)
             routing_weights = routing_weights / routing_weights.sum(-1, keepdim=True)
             routing_weights = routing_weights.to(target_dtype)
 
-        # The ACE dispatcher consumes this context before dispatch submission.
-        # It returns routed output plus the shared result after joining streams.
+        # The ACE dispatcher consumes this context after the dispatch call
+        # returns and before it awaits the payload, so the shared expert issued
+        # there hides under the dispatch. The join happens outside, once the
+        # combine is back on the compute stream.
         with shared_expert_overlap(self.shared_expert, self.shared_expert_gate, hidden_states_reshaped):
             expert_output = self.experts(hidden_states_reshaped, selected_experts, routing_weights)
         expert_output = expert_output.reshape(batch_size, sequence_length, hidden_dim)
