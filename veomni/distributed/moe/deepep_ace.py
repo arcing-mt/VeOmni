@@ -134,8 +134,19 @@ class _ACEState:
         self.handle = None
         self.dispatch_event = None
         self.recv_counts = None
+        self._buffer = None
 
     def _get_buffer(self, hidden_states: torch.Tensor):
+        # One state serves one MoE layer invocation, which resolves the same
+        # buffer for dispatch, combine and both backward collectives.  Resolve
+        # it once: the lookup costs ~14 us and would otherwise repeat four times
+        # per layer (~2 ms/step at Qwen3.5-35B-A3B's 40 forward invocations).
+        if self._buffer is not None:
+            return self._buffer
+        self._buffer = self._resolve_buffer(hidden_states)
+        return self._buffer
+
+    def _resolve_buffer(self, hidden_states: torch.Tensor):
         Buffer, _, _ = _load_deepep()
         hidden_size = hidden_states.size(1)
         element_size = hidden_states.element_size()
