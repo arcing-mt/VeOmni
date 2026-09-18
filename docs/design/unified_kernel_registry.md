@@ -299,6 +299,7 @@ PR — see `veomni/arguments/arguments_types.py`):
 | `moe_deepep_num_sms` | positive even integer | DeepEP resource setting used only by `moe_dispatcher="deepep_ace"`; default `20` matches the MUSA launcher reference. |
 | `moe_deepep_token_capacity` | positive integer | Fixed per-rank ACE token workspace capacity; default `8192`. Keep it identical across EP ranks. |
 | `moe_shared_expert_overlap` | boolean | Opt-in Qwen3.5: issue the independent shared expert inside the DeepEP-ACE dispatch window. It runs on the compute stream, so it hides only under the dispatch payload — not under the grouped GEMM or the combine. |
+| `skip_empty_modality_dummy` | boolean | MUSA-only and not a kernel selection: on by default, it skips a modality slot's `dummy_forward` when no rank holds that modality, halving the Qwen3.5-MoE vision-tower passes per step on a single-modality dataset. A no-op when a batch holds both modalities. See `veomni/models/transformers/qwen3_5_moe/qwen3_5_moe_musa_runtime_patch.py`. |
 | `cross_entropy_loss_implementation` | `eager`, `liger_kernel`, `chunk_loss`, `npu` | |
 | `load_balancing_loss_implementation` | `eager`, `triton` | `triton` is CUDA-only; current NPU config normalization maps the default-valued `triton` selection to `eager` before binding. |
 | `rms_norm_gated_implementation` | `eager`, `fla`, `npu` | Qwen3.5 GatedDeltaNet `self.norm`; default `fla` |

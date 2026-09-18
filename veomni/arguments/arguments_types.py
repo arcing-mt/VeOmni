@@ -1277,6 +1277,16 @@ class OpsImplementationConfig:
             "grouped GEMM or the combine."
         },
     )
+    skip_empty_modality_dummy: bool = field(
+        default=True,
+        metadata={
+            "help": "MUSA-only: skip a modality slot's `dummy_forward` when no rank holds that "
+            "modality, instead of running a full extra vision-tower pass just to keep the FSDP "
+            "collective counts level. Only bites on a single-modality dataset (e.g. image-only), "
+            "where it halves the vision-tower passes per step; a batch holding both modalities is "
+            "unaffected. Set to false to restore the generated forward's unconditional dummy."
+        },
+    )
     cross_entropy_loss_implementation: str = field(
         default="liger_kernel",
         metadata={
