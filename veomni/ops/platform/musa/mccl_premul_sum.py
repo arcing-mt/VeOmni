@@ -145,9 +145,7 @@ def _patch_custom_overlap_reduce_scatter() -> None:
     _CUSTOM_OVERLAP_PATCHED = True
 
 
-def mccl_reduce_op_wrapper(
-    op: Callable, output_name: str, op_arg_index: int, group_arg_index: int
-):
+def mccl_reduce_op_wrapper(op: Callable, output_name: str, op_arg_index: int, group_arg_index: int):
     """Wrap a collective, translating unsupported reduction operators."""
 
     def wrapper(*args, **kwargs):

@@ -160,10 +160,7 @@ def dispatch_to_ep_class(
     from ...ops.config.singleton import get_ops_config
 
     ops_config = get_ops_config()
-    if (
-        ops_config is not None
-        and getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
-    ):
+    if ops_config is not None and getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace":
         from .deepep_ace import dispatch_to_ep_class_deepep_ace
 
         return dispatch_to_ep_class_deepep_ace(
