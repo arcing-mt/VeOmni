@@ -26,6 +26,7 @@ from functools import wraps
 from types import ModuleType
 
 import torch
+import torch.nn.functional as F
 
 from ....distributed.parallel_state import get_parallel_state
 from ....utils.dist_utils import all_reduce
@@ -38,6 +39,10 @@ logger = get_logger(__name__)
 # Set on the vision model for the duration of one outer forward call to the
 # number of `dummy_forward` calls it still has to serve.
 _BUDGET_ATTR = "_veomni_dummy_forward_budget"
+
+# Set on the modeling module to the installed patch-embed variant ("conv3d" or "linear").
+# The install is process-global, so this records what the first build in the process chose.
+_PATCH_EMBED_FOLD_ATTR = "_VEOMNI_MUSA_VISION_PATCH_EMBED_FOLD"
 
 
 def _required_dummy_passes(
@@ -168,4 +173,98 @@ def install_qwen3_5_moe_dummy_forward_skip_patch(
     modeling_module._VEOMNI_MUSA_DUMMY_FORWARD_SKIP_PATCHED = True
 
 
-__all__ = ["install_qwen3_5_moe_dummy_forward_skip_patch"]
+def install_qwen3_5_moe_vision_patch_embed_linear_patch(
+    modeling_module: ModuleType,
+    *,
+    enabled: bool = True,
+) -> None:
+    """Rewrite the ViT patch embedder as one GEMM instead of a ``Conv3d``.
+
+    ``Qwen3_5MoeVisionPatchEmbed`` is ``Conv3d(3 -> 1152, kernel=(2,16,16), stride=(2,16,16),
+    padding=0)`` applied to ``hidden_states.view(N, 3, 2, 16, 16)``.  With ``kernel == stride``
+    and no padding the output is spatially 1x1x1, so the convolution is *exactly* a matrix
+    product over the flattened window:
+
+        out[n, m] = sum_{c,t,h,w} w[m, c, t, h, w] * x[n, c, t, h, w] + b[m]
+                  = F.linear(x.view(N, 1536), w.view(1152, 1536), b)
+
+    The two spellings are the same arithmetic in a different reduction order, and on MUSA they
+    are not remotely the same speed.  Measured on one MTT S5000 at the shapes this trainer uses
+    (bf16, N=18432 patches, forward + weight gradient; ``pixel_values`` never requires grad, so
+    there is no input gradient):
+
+    ================================  ============  ============  ========
+    kernel                            conv3d        linear        gain
+    ================================  ============  ============  ========
+    patch embed forward               1.678 ms      0.183 ms      9.2x
+    forward + weight gradient         100.264 ms    0.465 ms      216x
+    effective wgrad throughput        0.7 TFLOP/s   231 TFLOP/s   330x
+    ================================  ============  ============  ========
+
+    ``implicit_gemm_conv3d_bwd_filter_ndhwc_128_128x128`` launches a 128-thread block with
+    64 KiB of shared memory, which caps occupancy at 13% and lands ~0.14% of the dense bf16
+    peak.  The folded form instead reaches the ordinary tensor-core GEMM path, and also drops
+    the NCDHW->NDHWC layout copies the conv path pays for on every call.
+
+    Numerically the fold is *at least* as accurate as the convolution.  Against an fp64
+    reference, ``linear`` sits at 7.0e-7 rms relative while MUSA's ``conv3d`` sits at 7.3e-4 --
+    its implicit-gemm kernel accumulates in reduced precision, so the ~5e-5 rms_rel gap between
+    the two spellings is the convolution's own accumulation error, not fp32 re-association.
+    In bf16 the two agree to one ULP on the worst element (rms relative 5e-5 forward, 7e-5
+    weight gradient), far below the shared bf16 input-quantization error of 1.7e-3.  The swap
+    is therefore not bit-neutral and A/B loss curves will differ in the last digits, but the
+    difference is bounded by the bf16 noise both paths already carry.
+
+    The parameter keeps its ``nn.Conv3d`` layout, so checkpoints, ``state_dict`` keys and the
+    ``parallel_plan`` are untouched; only the forward body changes.  FSDP2 is unaffected: the
+    ``reshape`` is a plain merge of the replicated trailing dims, and the weight gradient comes
+    back in the parameter's own ``(1152, 3, 2, 16, 16)`` shape.
+
+    ``enabled=False`` (from ``model.ops_implementation.vision_patch_embed_implementation='conv3d'``)
+    is the default and leaves the generated forward untouched.  The install is process-global:
+    the first Qwen3.5-MoE model built decides for every later one, and a later build requesting
+    the other value is warned about rather than silently ignored.
+    """
+    installed = getattr(modeling_module, _PATCH_EMBED_FOLD_ATTR, None)
+    requested = "linear" if enabled else "conv3d"
+    if installed is not None:
+        if installed != requested:
+            logger.warning_rank0(
+                f"vision_patch_embed_implementation={requested} ignored: this process already "
+                f"installed the Qwen3.5-MoE ViT patch embedder as '{installed}'. The choice is "
+                f"process-global and one-shot; restart to change it."
+            )
+        return
+
+    if not enabled:
+        setattr(modeling_module, _PATCH_EMBED_FOLD_ATTR, requested)
+        return
+
+    patch_embed_cls = getattr(modeling_module, "Qwen3_5MoeVisionPatchEmbed", None)
+    if patch_embed_cls is None:
+        raise RuntimeError("Qwen3.5-MoE generated module is missing Qwen3_5MoeVisionPatchEmbed")
+
+    original_forward = patch_embed_cls.forward
+
+    @wraps(original_forward)
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        weight = self.proj.weight
+        # A (N, C, T, P, P) block and ``weight.reshape(embed_dim, -1)`` flatten in the same
+        # (c, t, h, w) order, which is what makes the fold exact.  ``reshape`` rather than
+        # ``view`` so a non-contiguous weight degrades to a copy instead of raising -- the
+        # upstream ``conv3d`` accepts such a layout, and nothing should become rejected here.
+        hidden_states = hidden_states.reshape(-1, self.in_channels * self.temporal_patch_size * self.patch_size**2)
+        hidden_states = hidden_states.to(dtype=weight.dtype)
+        return F.linear(hidden_states, weight.reshape(self.embed_dim, -1), self.proj.bias)
+
+    patch_embed_cls.forward = forward
+    setattr(modeling_module, _PATCH_EMBED_FOLD_ATTR, requested)
+    logger.info_rank0(
+        "vision_patch_embed_implementation=linear: Qwen3.5-MoE ViT patch embed folded into a single GEMM."
+    )
+
+
+__all__ = [
+    "install_qwen3_5_moe_dummy_forward_skip_patch",
+    "install_qwen3_5_moe_vision_patch_embed_linear_patch",
+]

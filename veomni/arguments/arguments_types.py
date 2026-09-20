@@ -1155,6 +1155,20 @@ class OpsImplementationConfig:
             "unaffected. Set to false to restore the generated forward's unconditional dummy."
         },
     )
+    vision_patch_embed_implementation: str = field(
+        default="conv3d",
+        metadata={
+            "help": "MUSA-only, Qwen3.5-MoE only: ViT patch-embed implementation. 'conv3d' (default) "
+            "keeps the upstream nn.Conv3d; 'linear' folds the kernel==stride, padding==0 convolution "
+            "into a single GEMM (F.linear over the flattened (temporal, patch, patch) window), which "
+            "computes the same product but avoids MUSA's implicit_gemm_conv3d_bwd_filter "
+            "weight-gradient kernel. The fold is at least as accurate as the conv3d kernel (which "
+            "accumulates in reduced precision) but is not bit-identical, so an A/B differs in the "
+            "last digits. The choice is process-global and one-shot. Dense Qwen3.5 has the same "
+            "patch embedder but is not wired yet, so this field is a no-op there. Set to 'conv3d' "
+            "to restore the generated forward; requesting 'linear' off MUSA raises."
+        },
+    )
     cross_entropy_loss_implementation: str = field(
         default="liger_kernel",
         metadata={
@@ -1456,6 +1470,20 @@ class OpsImplementationConfig:
             raise ValueError(
                 "load_balancing_loss_implementation='triton' requires the 'triton' package "
                 "on CUDA. Install it or set the field to 'eager'."
+            )
+
+        # The ViT patch-embed rewrite is a MUSA runtime patch, wired into the Qwen3.5-MoE
+        # registration only.  Reject the wrong-hardware request and a typo'd variant here
+        # rather than let either silently keep the upstream nn.Conv3d.
+        if self.vision_patch_embed_implementation not in ("conv3d", "linear"):
+            raise ValueError(
+                f"vision_patch_embed_implementation={self.vision_patch_embed_implementation!r} is not "
+                f"supported. Set to 'conv3d' (upstream nn.Conv3d) or 'linear' (folded GEMM)."
+            )
+        if self.vision_patch_embed_implementation == "linear" and not on_musa:
+            raise ValueError(
+                "vision_patch_embed_implementation='linear' requires an active torch-musa/MUSA device. "
+                "Set it to 'conv3d' on other hardware."
             )
 
 
