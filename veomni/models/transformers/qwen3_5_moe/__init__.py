@@ -65,7 +65,10 @@ def register_qwen3_5_moe_modeling(architecture: str):
 
         if IS_MUSA_AVAILABLE:
             from ....ops.config.singleton import get_ops_config
-            from .qwen3_5_moe_musa_runtime_patch import install_qwen3_5_moe_dummy_forward_skip_patch
+            from .qwen3_5_moe_musa_runtime_patch import (
+                install_qwen3_5_moe_dummy_forward_skip_patch,
+                install_qwen3_5_moe_vision_patch_embed_linear_patch,
+            )
 
             ops_config = get_ops_config()
             if ops_config is not None:
@@ -73,6 +76,12 @@ def register_qwen3_5_moe_modeling(architecture: str):
                 install_qwen3_5_moe_dummy_forward_skip_patch(
                     modeling_module,
                     enabled=ops_config.skip_empty_modality_dummy,
+                )
+                # MUSA's conv3d weight-gradient kernel runs at ~0.1% of peak on the
+                # patch-embed shape; the folded GEMM is the same arithmetic at ~216x.
+                install_qwen3_5_moe_vision_patch_embed_linear_patch(
+                    modeling_module,
+                    enabled=ops_config.vision_patch_embed_implementation == "linear",
                 )
 
             if ops_config is not None and (
