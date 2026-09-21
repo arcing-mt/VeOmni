@@ -1,10 +1,27 @@
-"""MCCL compatibility for ReduceOp.PREMUL_SUM and ReduceOp.AVG.
+"""MCCL compatibility for ReduceOp.PREMUL_SUM.
 
-Some torch/FSDP2 releases emit these reduction operations while MCCL only
-accepts SUM.  Rewriting to SUM and scaling the completed output is equivalent
-for the reduction sites used by VeOmni and mirrors the existing HCCL shim.
+Some torch/FSDP2 releases emit this reduction operation while MCCL only accepts
+SUM.  Rewriting to SUM and scaling the completed output is equivalent for the
+reduction sites used by VeOmni and mirrors the existing HCCL shim.
+
+``ReduceOp.AVG`` is passed through untouched by default, matching what the NPU shim
+(:mod:`veomni.ops.platform.npu.hccl_premul_sum`) has always done.  MCCL implements it
+natively on torch_musa 2.9.1, bit-for-bit identically to ``SUM`` plus a separate
+``mul_(1 / group_size)``, but without the extra elementwise pass and the
+``handle.wait()`` sync the rewrite adds per reduce-scatter.  Measured on
+Qwen3.5-35B-A3B, 8x MTT S5000: ``mul_`` launches from the FSDP2 post-backward hook
+drop from 107 to 40 per step, and the step from 3.610 to 3.560 s, with identical
+per-epoch loss.
+
+That is safe by construction on any build that can train at all: this patch is only
+installed when extra parallelism is enabled, while FSDP2 emits ``ReduceOp.AVG``
+whenever ``reduce_dtype`` is a float type regardless of EP — so a non-EP MUSA run
+already reaches MCCL with AVG and no shim, and would fail loudly if MCCL lacked it.
+The rewrite is still reachable as an escape hatch: set ``VEOMNI_MCCL_NATIVE_AVG=0``
+to restore ``AVG -> SUM + mul_(1 / group_size)`` for a build whose MCCL rejects AVG.
 """
 
+import os
 from functools import wraps
 from typing import Any, Callable, Optional, Tuple
 
@@ -14,6 +31,11 @@ from torch.distributed.distributed_c10d import ReduceOp
 
 _PATCHED = False
 _CUSTOM_OVERLAP_PATCHED = False
+
+
+def _native_avg_enabled() -> bool:
+    """Whether MCCL's own ``ReduceOp.AVG`` may be used (``VEOMNI_MCCL_NATIVE_AVG=0`` opts out)."""
+    return os.environ.get("VEOMNI_MCCL_NATIVE_AVG", "1").strip().lower() not in {"0", "false", "no", "off"}
 
 
 def _state_value(state: Any) -> Any:
@@ -150,8 +172,11 @@ def mccl_reduce_op_wrapper(op: Callable, output_name: str, op_arg_index: int, gr
 
     def wrapper(*args, **kwargs):
         reduce_op = _extract_op(args, kwargs, op_arg_index)
+        # ReduceOp.AVG is passed through untouched unless the escape hatch asks otherwise:
+        # MCCL implements it natively (see the module docstring).  PREMUL_SUM, which MCCL
+        # rejects outright, always needs the rewrite.
         factor = _premul_factor(reduce_op)
-        if factor is None and _is_avg(reduce_op):
+        if factor is None and not _native_avg_enabled() and _is_avg(reduce_op):
             factor = 1.0 / _group_size(args, kwargs, group_arg_index)
         if factor is not None:
             args, kwargs = _replace_op(args, kwargs, op_arg_index, ReduceOp.SUM)
@@ -181,9 +206,6 @@ def apply_mccl_premul_sum_patch() -> None:
         torch.distributed.reduce_scatter, "output", op_arg_index=2, group_arg_index=3
     )
     torch.distributed.reduce_scatter_tensor = mccl_reduce_op_wrapper(
-        torch.distributed.reduce_scatter_tensor,
-        "output",
-        op_arg_index=2,
-        group_arg_index=3,
+        torch.distributed.reduce_scatter_tensor, "output", op_arg_index=2, group_arg_index=3
     )
     _PATCHED = True
