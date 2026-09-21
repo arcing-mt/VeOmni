@@ -35,12 +35,8 @@ def _supported_ep_classes() -> tuple[type, ...]:
 
 def _load_deepep() -> tuple[Any, Any, Any]:
     try:
-        from deep_ep import Buffer
-
-        # This DeepEP wheel re-exports EventHandle from ``deep_ep.utils`` but
-        # keeps EventOverlap in the concrete ``event`` module.  Import both
-        # from that module so the supported wheel layout is handled directly.
-        from deep_ep.utils.event import EventHandle, EventOverlap
+        from deep_ep import Buffer, EventOverlap
+        from deep_ep_cpp import EventHandle
     except ImportError as exc:  # pragma: no cover - hardware image dependent.
         raise RuntimeError("moe_dispatcher='deepep_ace' requires a DeepEP build with MUSA ACE support") from exc
     return Buffer, EventHandle, EventOverlap
