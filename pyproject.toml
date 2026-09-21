@@ -11,7 +11,9 @@ name = "veomni"
 dynamic = ["version"]
 description = "VeOmni: Scaling any Modality Model Training to any Accelerators with PyTorch native Training Framework"
 readme = "README.md"
-requires-python = ">=3.11, <3.13"
+# Python 3.10 is supported by the MUSA extra. The GPU and NPU wheel matrices
+# continue to target Python 3.11 and 3.12 only.
+requires-python = ">=3.10, <3.13"
 license = { file = "LICENSE" }
 authors = [
   { name="ByteDance-Seed", email="doubao-llm@bytedance.com" },
@@ -24,7 +26,8 @@ dependencies = [
   "torchdata>=0.8.0,<1.0",
   "tiktoken>=0.9.0",
   # transformers is pinned by the `transformers-stable` dependency group for
-  # uv users; pip users should `pip install transformers==5.16.1` themselves.
+  # uv users; pip users should `pip install transformers==5.16.1` themselves,
+  # unless they install the `musa` extra, which pins 5.17.0 instead.
   "psutil",
   "timm",
   "wandb",
@@ -34,9 +37,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Hardware extras gpu / npu / npu_aarch64 are mutually exclusive
+# Hardware extras gpu / musa / npu / npu_aarch64 are mutually exclusive
 # (`[tool.uv].conflicts`). MagiAttention is optional NVIDIA SM90+ and
 # requires gpu: `uv sync --extra gpu --extra magi`.
+# Python 3.10 MUSA environments use pip inside the base image.
 dev = [
   "pre-commit>=4.0.0,<5.0",
   "ruff>=0.7.0,<1.0",
@@ -104,6 +108,29 @@ magi = [
   "magi-attention==1.1.1; sys_platform == 'linux'",
 ]
 
+# MTT S5000 / MUSA 5.2 environment validated with Qwen3.5-35B-A3B FSDP2.
+# torch==2.11.0.post2, torch_musa==2.11.0.post2 and Triton 3.2.0 are supplied
+# by the MUSA base image because their wheels are tied to the driver/toolkit.
+# Packages carrying a +musa local version come from the MThreads pip index.
+# Keep the FLA commit immutable: the 0.6.0 package metadata alone
+# does not distinguish the MUSA-validated source revision.
+# Install in the base image with pip and the additional MThreads index; see
+# `.agents/knowledge/uv.md`. The Python markers keep the repository-wide uv
+# lock focused on its existing Python 3.11/3.12 GPU and NPU environments.
+musa = [
+  "numpy==1.26.4; python_version == '3.10'",
+  "ml-dtypes==0.5.3; python_version == '3.10'",
+  "torchdata==0.11.0; python_version == '3.10'",
+  "transformers==5.17.0; python_version == '3.10'",
+  "av==14.2.0; python_version == '3.10'",
+  "flash-linear-attention @ git+https://github.com/fla-org/flash-linear-attention.git@a7a32d8b72965282dec45fae723c47cee20ee358 ; python_version == '3.10'",
+  "mate==0.2.7; python_version == '3.10'",
+  "mate-mubin==0.2.7; python_version == '3.10'",
+  "flash-attn-3==0.2.7+musa; python_version == '3.10'",
+  "tilelang-musa==0.1.12+musa.2; python_version == '3.10'",
+  "apache-tvm-ffi==0.1.11.post1+musa.1; python_version == '3.10'",
+]
+
 # Ascend NPU x86_64 — superset minus CUDA-only kernels (FA2/3/4, FlashQLA).
 npu = [
   "torch==2.10.0+cpu",
@@ -166,7 +193,8 @@ test = [
 patchgen = [
   "patchgen>=0.1.0",
 ]
-# In default-groups so `uv sync` always installs transformers==5.16.1.
+# In default-groups so `uv sync` installs the repository-wide 5.16.1 pin. The
+# Python 3.10 musa extra pins its separately validated 5.17.0 version for pip.
 # Kept out of [project.dependencies] so pip users are not forced into a
 # specific 5.x patch release.
 transformers-stable = [
@@ -181,6 +209,7 @@ transformers-stable = [
 required-version = ">=0.9.8,<0.13"
 
 default-groups = ["transformers-stable"]
+environments = ["python_version >= '3.11'"]
 
 # The `(extra == '...')` markers are load-bearing — without them uv resolves
 # torch from PyPI ignoring the +cu130/+cpu variants. Ref astral-sh/uv#11153.
@@ -205,6 +234,7 @@ override-dependencies = [
 conflicts = [
   [
     { extra = "gpu" },
+    { extra = "musa" },
     { extra = "npu" },
     { extra = "npu_aarch64" },
   ],

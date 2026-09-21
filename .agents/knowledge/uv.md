@@ -42,6 +42,10 @@ pyproject.toml
 │   ├── magi         Optional NVIDIA SM90+ MagiAttention FFA (combine with gpu):
 │   │                  magi-attention + create-block-mask-cuda + flash-attn-cute
 │   │                  + magi-to-hstu-cuda + debugpy; source-built CUDA extensions
+│   ├── musa         MTT S5000 / MUSA 5.2 environment (Python 3.10):
+│   │                  MATE + MUSA FA3 + TileLang MUSA + TVM FFI MUSA
+│   │                  + FLA 0.6.0 source revision + Transformers 5.17.0
+│   │                  (torch, torch_musa and Triton come from the base image)
 │   ├── npu          Ascend NPU x86_64 — full superset, minus CUDA-only kernels:
 │   │                  torch 2.10.0+cpu + torch-npu 2.10.0
 │   │                  + diffusers / av / audio / video / peft / megatron-energon
@@ -57,7 +61,7 @@ pyproject.toml
 ├── [tool.uv]
 │   ├── required-version     Allowed uv version range
 │   ├── override-dependencies  Per-extra torch/CUDA pins (markers scoped to gpu/npu/npu_aarch64)
-│   ├── conflicts            gpu/npu/npu_aarch64 mutual exclusion;
+│   ├── conflicts            gpu/musa/npu/npu_aarch64 mutual exclusion;
 │   │                        magi also conflicts with npu / npu_aarch64
 │   └── sources              Custom indexes, direct wheel URLs (av, torch,
 │                            FA2 cp311/cp312, FA3 sm90 abi3, FlashMLA);
@@ -67,8 +71,8 @@ pyproject.toml
 
 ## Hardware Extras
 
-`gpu` / `npu` / `npu_aarch64` are declared as conflicts. MagiAttention is a
-fourth extra that requires `gpu` (`veomni[gpu]` in the magi extra) and
+`gpu` / `musa` / `npu` / `npu_aarch64` are declared as conflicts. MagiAttention is a
+optional extra that requires `gpu` (`veomni[gpu]` in the magi extra) and
 conflicts with the NPU extras.
 
 ```bash
@@ -76,6 +80,8 @@ uv sync --extra gpu --dev                      # NVIDIA GPU
 uv sync --extra gpu --extra magi --dev         # NVIDIA GPU + MagiAttention (SM90+)
 uv sync --extra npu --dev                      # Ascend NPU x86
 uv sync --extra npu_aarch64 --dev              # Ascend NPU ARM
+
+# MUSA: use the pip workflow below
 ```
 
 A fresh `--extra gpu` installs architecture-specific torch, torchcodec, AV,
@@ -91,11 +97,31 @@ stack and multimodal dependencies. Only `npu_aarch64` omits `torchcodec`
 because no compatible aarch64 wheel is available; build it from source when
 video decoding is required.
 
+The `musa` extra installs the Python packages validated on MTT S5000 with
+MUSA 5.2. Its torch, torch_musa and Triton builds remain base-image provided
+because they are coupled to the driver and toolkit. The explicit MThreads
+package index supplies the `+musa` wheels. The pip workflow does not install
+uv's default `transformers-stable` group, because MUSA uses Transformers 5.17.0.
+
+Install the extra directly into the Python 3.10 MUSA base image:
+
+```bash
+python -m pip install \
+  --extra-index-url https://dl.mthreads.com/repo/api/pypi/pypi/simple \
+  ".[musa]"
+```
+
+The MUSA dependencies carry Python 3.10 markers. The uv lock remains scoped to
+the existing Python 3.11/3.12 GPU and NPU environments; pip sees the base
+image's already-installed torch, torch_musa and Triton packages and installs
+the additional Python packages without exact-environment pruning.
+
 ## Transformers Version
 
 `transformers==5.16.1` is pinned by the `transformers-stable` group (in
-`default-groups`). Kept out of `[project.dependencies]` so pip users are not
-forced into a specific 5.x patch.
+`default-groups`). The Python 3.10 `musa` extra pins 5.17.0 for pip installs,
+which do not process uv dependency groups. Transformers remains outside
+`[project.dependencies]` so other pip users are not forced into a specific 5.x patch.
 
 ## torch Source Pinning
 
@@ -149,6 +175,7 @@ pinned `demonatic/flash-attention` fork, and it takes its toolchain from
 ```bash
 uv sync --extra gpu --dev                          # local dev (cp311 or cp312)
 uv sync --extra gpu --extra magi --dev             # + MagiAttention (SM90+)
+# MUSA: use the pip workflow above
 uv lock                                             # after pyproject edits
 uv sync --locked --all-packages --extra gpu --dev  # docker / CI (no magi)
 ```
@@ -161,5 +188,6 @@ uv sync --locked --all-packages --extra gpu --dev  # docker / CI (no magi)
    Bumping torch / Python / cuda requires matching PyTorch/Luosuu releases.
 4. **uv bumps require Docker rebuilds**; concrete pins must stay in range.
 5. **`override-dependencies` `extra == '...'` markers are load-bearing.**
-6. **`transformers==5.16.1` is the only supported version.** New code targets
-   v5 + FSDP2 + patchgen-generated modeling.
+6. **`transformers==5.16.1` is the default supported version; MUSA uses
+   `5.17.0`.** New code targets v5 + FSDP2 + patchgen-generated modeling, and
+   MUSA-specific compatibility changes must be hardware guarded.

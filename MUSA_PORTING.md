@@ -24,10 +24,9 @@ MUSA 代码不能直接 cherry-pick，因为模型、参数系统和 kernel regi
 - Qwen3.5 的 FLA GatedDeltaNet（gated RMSNorm、causal conv1d、chunk gated delta rule）
   可以完成 forward/backward；当前环境实测没有复现先前的卡住问题。
 
-当前仍需注意：目标仓库声明 Python `>=3.11,<3.13`，而本次 shell 是 Python 3.10；
-当前解释器已经有 `torchdata 0.11.0+cpu`，但正式训练仍建议切换到仓库声明的
-Python 3.11/3.12 环境。本文没有自动安装 `torchdata`，也没有自动覆盖任何
-MUSA/torch 依赖。
+当前 MUSA 环境使用 Python 3.10，仓库已将支持范围调整为 `>=3.10,<3.13`，并在
+`musa` extra 中固定经 8 卡训练验证的 Python 包版本。`torch`、`torch_musa` 和
+Triton 仍由 MUSA 基础镜像提供，避免用通用包覆盖与驱动、工具链绑定的版本。
 
 ## 迁移的文件
 
@@ -106,7 +105,7 @@ VeOmni 在 `MODELING_BACKEND=veomni` 下会把它改写为
 执行 Ulysses gather/scatter 和 Transformers FA3 wrapper。
 
 之所以加入 `veomni/ops/platform/musa/flash_attn.py`，不是替换 FA3 kernel，而是修复
-Transformers 的设备可用性判断：Transformers 5.9 的通用 `is_flash_attn_3_available()`
+Transformers 的设备可用性判断：Transformers 5.17.0 的通用 `is_flash_attn_3_available()`
 只检查 `torch.cuda`，而 MUSA 使用 `torch.musa`。这个 shim 只修改运行时 gate 和
 compatibility matrix，不修改已安装的 Transformers 包。
 
@@ -194,7 +193,7 @@ chat_template: chatml
 
 ## 已执行的验证
 
-所有验证均为只读/临时进程，不安装新的依赖：
+验证在独立容器环境中完成：
 
 ```text
 device type                  musa
@@ -224,23 +223,28 @@ Qwen3.5 checkpoint 中的 `mtp.*` 参数会被当前 VeOmni patched model 按设
 
 ## 环境阻塞和已知限制
 
-### 必须由环境提供
+### 安装 MUSA Python 依赖
 
-- Python `>=3.11,<3.13`（目标仓库 `pyproject.toml` 的声明；当前 shell 为 3.10）；
-- `torchdata>=0.8,<1.0`（`veomni.data.data_loader` 的硬依赖；当前环境为 0.11.0+cpu）；
-- `torch_musa` 与 torch 的匹配版本；
-- `flash-linear-attention`（MUSA GDN 默认且唯一 backend）；
-- `flash_attn_interface`（如果使用 FA3；本机已存在）。
+基础镜像需要预先提供匹配的 `torch==2.11.0.post2`、`torch_musa==2.11.0.post2`
+和 Triton 3.2.0。其余已验证依赖由 `musa` extra 统一声明：
 
-本次迁移只显式升级了用户要求的 `transformers==5.9.0`，没有自动安装
-`torchdata`、FA3、FLA 或其它依赖。
+```bash
+python -m pip install \
+  --extra-index-url https://dl.mthreads.com/repo/api/pypi/pypi/simple \
+  ".[musa]"
+```
+
+MUSA 使用 Transformers 5.17.0；pip 不会安装 uv 的默认
+`transformers-stable`（5.9.0）依赖组。MATE、FA3、TileLang 和 TVM FFI 的 MUSA
+wheel 从显式配置的 MThreads index 获取；FLA 使用固定 Git commit，避免 0.6.0
+标签下的源码变化影响复现。pip 会复用基础镜像中已经安装且相互匹配的
+torch、torch_musa 与 Triton；不要先卸载或用通用 PyPI wheel 覆盖它们。
 
 ### 当前环境的非致命警告
 
-本机 `flash-linear-attention` 会提示 Triton 3.2 低于其建议的 3.3，且 Python 3.10
-低于其建议的 3.11；当前 FLA forward/backward 复测正常。这些提示不影响已完成的
-小算子调用，但正式训练应使用目标仓库声明的 Python 3.11+ 环境并确认
-Triton/torch_musa 组合经过验证。
+本机 `flash-linear-attention` 会提示 Triton 3.2 低于其建议的 3.3；当前 FLA
+forward/backward 和 8 卡训练均已复测正常。不要单独升级 Triton，除非同时验证
+它与基础镜像中的 torch_musa 版本兼容。
 
 当前 shell 里还存在若干“已安装但超出最新版 pyproject 范围”的包：`datasets 5.0.1`
 （仓库声明 `<=2.21.0`）、`packaging 26.3`（仓库声明 `<26.0`）。本次按你的要求

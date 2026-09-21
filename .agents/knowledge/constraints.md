@@ -18,9 +18,13 @@ Violating any of these causes silent bugs, crashes, or incorrect training result
    - Manual edits are silently overwritten on the next patchgen run.
    - To change generated behavior, edit the patch spec (`patch_spec.py`) or the modeling patch file (`modeling_*_patch.py`).
 
-4. **Transformers version: pinned to v5.16.1**
+4. **Transformers version: pinned to v5.16.1, except for the MUSA extra**
    - VeOmni installs `transformers==5.16.1` via the `transformers-stable`
      default dependency group in `pyproject.toml`.
+   - The `musa` extra is validated with `transformers==5.17.0`. Install it with
+     pip inside its Python 3.10 base image as documented in
+     `.agents/knowledge/uv.md`; pip does not install uv's
+     `transformers-stable` dependency group.
    - The legacy v4 path was removed; all modeling under
      `veomni/models/transformers/<m>/` is patchgen-generated.
    - `is_transformers_version_greater_or_equal_to()` from
@@ -29,6 +33,7 @@ Violating any of these causes silent bugs, crashes, or incorrect training result
      version gates for versions `<= 5.16.1` (the legacy `>= 5.0.0` …
      `>= 5.15.x` interval is dead code).
    - Patchgen regeneration must be done with `transformers==5.16.1` installed.
+     MUSA-specific compatibility adjustments must remain guarded by MUSA availability.
 
 ## Distributed Training
 

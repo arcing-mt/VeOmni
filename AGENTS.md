@@ -5,7 +5,7 @@
 **VeOmni** is a modular distributed training framework for multi-modality models (text, vision, audio, diffusion, omni) across various accelerators (GPUs, NPUs). Developed by ByteDance Seed Team.
 
 - Homepage: https://github.com/ByteDance-Seed/VeOmni
-- Python: `>=3.11, <3.13`
+- Python: `>=3.10, <3.13` (3.10 is MUSA-only; GPU/NPU require 3.11 or 3.12)
 - Package: `veomni`
 
 **Language**: Match user's language (English).
@@ -44,9 +44,11 @@ source .venv/bin/activate
 ```
 
 This installs `transformers==5.16.1` via the `transformers-stable` dependency
-group. `gpu` / `npu` / `npu_aarch64` are mutually exclusive hardware extras;
+group. `gpu` / `musa` / `npu` / `npu_aarch64` are mutually exclusive hardware extras;
 each is a complete superset for that accelerator. MagiAttention is an
 optional `--extra magi` that combines with `gpu` (`uv sync --extra gpu --extra magi`).
+The MUSA environment uses Python 3.10 and Transformers 5.17; install its extra
+with pip inside the base image as described in `.agents/knowledge/uv.md`.
 New code must target transformers v5 and FSDP2.
 See `.agents/knowledge/uv.md` and `.agents/knowledge/constraints.md`.
 
