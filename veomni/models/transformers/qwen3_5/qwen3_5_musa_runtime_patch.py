@@ -87,6 +87,7 @@ def install_qwen3_5_musa_rotary_patch(
             modeling_module, "Qwen3_5TextRotaryEmbedding", None
         )
         if rotary_cls is not None and not getattr(modeling_module, "_VEOMNI_MUSA_TEXT_PHASE_PATCHED", False):
+
             @torch.no_grad()
             @modeling_module.dynamic_rope_update
             def rotary_forward(self, x, position_ids):
