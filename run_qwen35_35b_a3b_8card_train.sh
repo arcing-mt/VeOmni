@@ -31,6 +31,10 @@ fi
 # assignment from the card owner.
 MAX_EXISTING_MIB="${MAX_EXISTING_MIB:-0}"
 PYTHON_BIN="${PYTHON_BIN:-${PYTHON:-/usr/bin/python}}"
+MOE_DISPATCHER="${MOE_DISPATCHER:-alltoall}"
+MOE_DEEPEP_NUM_SMS="${MOE_DEEPEP_NUM_SMS:-20}"
+MOE_DEEPEP_TOKEN_CAPACITY="${MOE_DEEPEP_TOKEN_CAPACITY:-8192}"
+MOE_SHARED_EXPERT_OVERLAP="${MOE_SHARED_EXPERT_OVERLAP:-false}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   echo "ERROR: Python interpreter does not exist or is not executable: ${PYTHON_BIN}" >&2
   exit 2
@@ -52,6 +56,47 @@ PY
 then
   echo "ERROR: ${PYTHON_BIN} is not a usable eight-card torch_musa environment." >&2
   exit 2
+fi
+
+if [[ "${MOE_DISPATCHER}" != "alltoall" && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+  echo "ERROR: MOE_DISPATCHER must be alltoall or deepep_ace; got '${MOE_DISPATCHER}'." >&2
+  exit 2
+fi
+if [[ ! "${MOE_DEEPEP_NUM_SMS}" =~ ^[1-9][0-9]*$ ]] || (( MOE_DEEPEP_NUM_SMS % 2 != 0 )); then
+  echo "ERROR: MOE_DEEPEP_NUM_SMS must be a positive even integer; got '${MOE_DEEPEP_NUM_SMS}'." >&2
+  exit 2
+fi
+if [[ ! "${MOE_DEEPEP_TOKEN_CAPACITY}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: MOE_DEEPEP_TOKEN_CAPACITY must be a positive integer; got '${MOE_DEEPEP_TOKEN_CAPACITY}'." >&2
+  exit 2
+fi
+case "${MOE_SHARED_EXPERT_OVERLAP,,}" in
+  0|false|no|off) MOE_SHARED_EXPERT_OVERLAP=false ;;
+  1|true|yes|on) MOE_SHARED_EXPERT_OVERLAP=true ;;
+  *) echo "ERROR: MOE_SHARED_EXPERT_OVERLAP must be a boolean value: ${MOE_SHARED_EXPERT_OVERLAP}" >&2; exit 2 ;;
+esac
+if [[ "${MOE_SHARED_EXPERT_OVERLAP}" == true && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+  echo "ERROR: MOE_SHARED_EXPERT_OVERLAP requires MOE_DISPATCHER=deepep_ace." >&2
+  exit 2
+fi
+if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+  if ! "${PYTHON_BIN}" - <<'PY'
+import importlib.metadata as metadata
+import inspect
+
+from deep_ep import Buffer, EventOverlap
+from deep_ep_cpp import EventHandle
+
+required = {"use_ace", "token_num", "hidden_size", "num_topk"}
+missing = required.difference(inspect.signature(Buffer).parameters)
+if missing:
+    raise RuntimeError(f"DeepEP Buffer is missing ACE parameters: {sorted(missing)}")
+print(f"DeepEP-ACE preflight: deep_ep={metadata.version('deep_ep')}")
+PY
+  then
+    echo "ERROR: MOE_DISPATCHER=deepep_ace requires a compatible DeepEP-ACE wheel." >&2
+    exit 2
+  fi
 fi
 
 for _card in "${_MUSA_CARDS[@]}"; do
@@ -170,6 +215,12 @@ echo "  MAX_SEQ_LEN=${MAX_SEQ_LEN}"
 echo "  MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE}"
 echo "  GLOBAL_BATCH_SIZE=${GLOBAL_BATCH_SIZE}"
 echo "  ATTN_IMPLEMENTATION=${ATTN_IMPLEMENTATION}"
+echo "  MOE_DISPATCHER=${MOE_DISPATCHER}"
+if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+  echo "  MOE_DEEPEP_NUM_SMS=${MOE_DEEPEP_NUM_SMS}"
+  echo "  MOE_DEEPEP_TOKEN_CAPACITY=${MOE_DEEPEP_TOKEN_CAPACITY}"
+  echo "  MOE_SHARED_EXPERT_OVERLAP=${MOE_SHARED_EXPERT_OVERLAP}"
+fi
 echo "  FSDP=8 (fsdp2), EP=8, SP=1"
 echo "  STEPS_PER_EPOCH=${STEPS_PER_EPOCH}"
 echo "  NUM_TRAIN_EPOCHS=${NUM_TRAIN_EPOCHS}"
@@ -226,6 +277,10 @@ bash train.sh \
   --model.ops_implementation.attn_implementation "${ATTN_IMPLEMENTATION}" \
   --model.ops_implementation.rms_norm_implementation musa \
   --model.ops_implementation.moe_implementation fused_musa \
+  --model.ops_implementation.moe_dispatcher "${MOE_DISPATCHER}" \
+  --model.ops_implementation.moe_deepep_num_sms "${MOE_DEEPEP_NUM_SMS}" \
+  --model.ops_implementation.moe_deepep_token_capacity "${MOE_DEEPEP_TOKEN_CAPACITY}" \
+  --model.ops_implementation.moe_shared_expert_overlap "${MOE_SHARED_EXPERT_OVERLAP}" \
   --model.ops_implementation.rotary_pos_emb_implementation eager \
   --model.ops_implementation.rotary_pos_emb_vision_implementation musa \
   --model.ops_implementation.cross_entropy_loss_implementation chunk_loss \
