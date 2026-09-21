@@ -23,9 +23,7 @@ def test_mccl_wrapper_preserves_async_sum():
         assert kwargs["async_op"] is True
         return handle
 
-    wrapper = mccl_reduce_op_wrapper(
-        collective, "tensor", op_arg_index=1, group_arg_index=2
-    )
+    wrapper = mccl_reduce_op_wrapper(collective, "tensor", op_arg_index=1, group_arg_index=2)
     tensor = torch.ones(2)
     result = wrapper(tensor, op=ReduceOp.SUM, async_op=True)
 
@@ -47,9 +45,7 @@ def test_mccl_wrapper_waits_before_scaling_premul_sum():
         args[0].mul_(4)
         return handle
 
-    wrapper = mccl_reduce_op_wrapper(
-        collective, "tensor", op_arg_index=1, group_arg_index=2
-    )
+    wrapper = mccl_reduce_op_wrapper(collective, "tensor", op_arg_index=1, group_arg_index=2)
     tensor = torch.ones(2)
     result = wrapper(tensor, op=MockPremulSum(), async_op=True)
 
