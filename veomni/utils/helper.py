@@ -764,8 +764,16 @@ def create_profiler(
             p.export_chrome_trace(trace_file)
         logger.info(f"Profiling result saved at {trace_file}.")
 
-        get_torch_device().memory._dump_snapshot(gpu_memory_file)
-        logger.info(f"Profiling memory visualization saved at {gpu_memory_file}.")
+        if profile_memory:
+            device_memory = get_torch_device().memory
+            if hasattr(device_memory, "_dump_snapshot"):
+                device_memory._dump_snapshot(gpu_memory_file)
+                logger.info(f"Profiling memory visualization saved at {gpu_memory_file}.")
+            else:
+                logger.warning(
+                    "Memory profiling was requested, but the current accelerator backend "
+                    "does not provide memory._dump_snapshot(); skipping the memory snapshot."
+                )
 
         if trace_dir.startswith("hdfs://"):
             copy(trace_file, trace_dir)
