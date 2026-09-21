@@ -244,7 +244,13 @@ def _raise_if_nonfinite(total_norm: torch.Tensor, norm_type: float, error_if_non
 
 
 def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:
-    """Compute the local p-th norm sum without materializing fp32 gradients."""
+    """Compute the local p-th norm sum without materializing fp32 gradients.
+
+    The MUSA platform plugin rebinds this function (and :func:`_local_max`) to a
+    batched implementation -- see
+    :mod:`veomni.ops.platform.musa.fsdp2_clip_grad_norm` -- so keep the name and
+    the signature stable.
+    """
     reduce_device = torch.device(get_device_type())
     res = torch.tensor(0.0, device=reduce_device, dtype=torch.float32)
 
@@ -256,9 +262,12 @@ def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:
             if isinstance(g, DTensor):
                 g = g.to_local()
             g = g.detach()
-            # ``dtype`` controls accumulation inside the reduction kernel. In
-            # contrast, ``g.to(float32)`` creates a full-size temporary, which
-            # can exceed the remaining VRAM for multi-billion-element experts.
+            # ``dtype`` selects the accumulation dtype, but it does *not* avoid a
+            # temporary: ``linalg_vector_norm`` casts ``g`` to it first, so this
+            # still allocates one fp32-sized copy per gradient -- the largest
+            # gradient sets the high-water mark. The batched MUSA spelling in
+            # ``veomni/ops/platform/musa/fsdp2_clip_grad_norm.py`` accumulates
+            # inside the reduce kernel and needs no such copy.
             if g.dtype in (torch.float16, torch.bfloat16, torch.float32):
                 norm = torch.linalg.vector_norm(g, ord=p, dtype=torch.float32)
             else:
@@ -271,6 +280,7 @@ def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:
 
 
 def _local_max(params: List[torch.nn.Parameter]) -> torch.Tensor:
+    """Compute the largest absolute local gradient (also rebound on the MUSA path)."""
     reduce_device = torch.device(get_device_type())
     mx = None
     for q in params:

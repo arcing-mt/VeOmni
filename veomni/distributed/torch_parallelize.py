@@ -587,6 +587,14 @@ def parallelize_model_fsdp2(
 
             apply_hccl_premul_sum_patch()
 
+    # MUSA-only: batch the local gradient-norm reduction of the FSDP2 clip path.
+    # Installed for every MUSA run rather than only under the extra-parallel
+    # condition above, because the cpu-offload clip path reaches the same helpers.
+    if IS_MUSA_AVAILABLE:
+        from veomni.ops.platform.musa import apply_musa_fsdp2_clip_grad_norm_patch
+
+        apply_musa_fsdp2_clip_grad_norm_patch()
+
     # Sort layer_pairs by fqn by submodule order, as fully_shard should starts from bottom modules to top modules
     #   e.g. sorted_fqn_list = ['decoder.embed_tokens', 'embed_tokens', 'decoder']
     sorted_fqn_list = sort_fqn_by_submodule_first(list(layer_pairs.keys()))
