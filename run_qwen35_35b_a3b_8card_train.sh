@@ -101,8 +101,8 @@ then
   exit 2
 fi
 
-if [[ "${MOE_DISPATCHER}" != "alltoall" && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
-  echo "ERROR: MOE_DISPATCHER must be alltoall or deepep_ace; got '${MOE_DISPATCHER}'." >&2
+if [[ "${MOE_DISPATCHER}" != "alltoall" && "${MOE_DISPATCHER}" != "deepep" && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+  echo "ERROR: MOE_DISPATCHER must be alltoall, deepep, or deepep_ace; got '${MOE_DISPATCHER}'." >&2
   exit 2
 fi
 if [[ ! "${MOE_DEEPEP_NUM_SMS}" =~ ^[1-9][0-9]*$ ]] || (( MOE_DEEPEP_NUM_SMS % 2 != 0 )); then
@@ -161,13 +161,13 @@ case "${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" in
   fla|musa|musa_tilelang) ;;
   *) echo "ERROR: CHUNK_GATED_DELTA_RULE_IMPLEMENTATION must be fla, musa, or musa_tilelang: ${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" >&2; exit 2 ;;
 esac
-if [[ "${MOE_SHARED_EXPERT_OVERLAP}" == true && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
-  echo "ERROR: MOE_SHARED_EXPERT_OVERLAP requires MOE_DISPATCHER=deepep_ace." >&2
+if [[ "${MOE_SHARED_EXPERT_OVERLAP}" == true && "${MOE_DISPATCHER}" != "deepep" && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+  echo "ERROR: MOE_SHARED_EXPERT_OVERLAP requires a DeepEP dispatcher." >&2
   exit 2
 fi
 if [[ "${FSDP_DEEPEP_STREAM_COMPAT}" == true ]]; then
-  if [[ "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
-    echo "ERROR: FSDP_DEEPEP_STREAM_COMPAT requires MOE_DISPATCHER=deepep_ace." >&2
+  if [[ "${MOE_DISPATCHER}" != "deepep" && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+    echo "ERROR: FSDP_DEEPEP_STREAM_COMPAT requires a DeepEP dispatcher." >&2
     exit 2
   fi
   if [[ "${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}" != 2 || "${TORCH_MUSA_FSDP2_COMM_TYPE:-0}" != 0 ]]; then
@@ -182,22 +182,37 @@ if [[ "${FSDP_DEEPEP_SHARED_COMM_STREAM}" == true && "${FSDP_DEEPEP_STREAM_COMPA
   echo "ERROR: FSDP_DEEPEP_SHARED_COMM_STREAM requires FSDP_DEEPEP_STREAM_COMPAT=true." >&2
   exit 2
 fi
-if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+if [[ "${MOE_DISPATCHER}" == "deepep" && "${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}" != 0 && "${FSDP_DEEPEP_SHARED_COMM_STREAM}" != true ]]; then
+  echo "ERROR: standard DeepEP with non-zero FSDP2 overlap requires the validated shared communication stream mode." >&2
+  echo "       Set TORCH_MUSA_FSDP2_OVERLAP_LEVEL=2, FSDP_DEEPEP_STREAM_COMPAT=true, and FSDP_DEEPEP_SHARED_COMM_STREAM=true." >&2
+  exit 2
+fi
+if [[ "${MOE_DISPATCHER}" == "deepep" || "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
   if ! "${PYTHON_BIN}" - <<'PY'
 import importlib.metadata as metadata
-import inspect
 
 from deep_ep import Buffer, EventOverlap
 from deep_ep_cpp import EventHandle
+
+print(f"DeepEP preflight: deep_ep={metadata.version('deep_ep')}")
+PY
+  then
+    echo "ERROR: ${MOE_DISPATCHER} requires a compatible DeepEP wheel." >&2
+    exit 2
+  fi
+fi
+if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+  if ! "${PYTHON_BIN}" - <<'PY'
+import inspect
+from deep_ep import Buffer
 
 required = {"use_ace", "token_num", "hidden_size", "num_topk"}
 missing = required.difference(inspect.signature(Buffer).parameters)
 if missing:
     raise RuntimeError(f"DeepEP Buffer is missing ACE parameters: {sorted(missing)}")
-print(f"DeepEP-ACE preflight: deep_ep={metadata.version('deep_ep')}")
 PY
   then
-    echo "ERROR: MOE_DISPATCHER=deepep_ace requires a compatible DeepEP-ACE wheel." >&2
+    echo "ERROR: MOE_DISPATCHER=deepep_ace requires a DeepEP wheel with MUSA ACE support." >&2
     exit 2
   fi
 fi
@@ -319,10 +334,12 @@ echo "  MICRO_BATCH_SIZE=${MICRO_BATCH_SIZE}"
 echo "  GLOBAL_BATCH_SIZE=${GLOBAL_BATCH_SIZE}"
 echo "  ATTN_IMPLEMENTATION=${ATTN_IMPLEMENTATION}"
 echo "  MOE_DISPATCHER=${MOE_DISPATCHER}"
-if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+if [[ "${MOE_DISPATCHER}" == "deepep" || "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
   echo "  MOE_DEEPEP_NUM_SMS=${MOE_DEEPEP_NUM_SMS}"
-  echo "  MOE_DEEPEP_TOKEN_CAPACITY=${MOE_DEEPEP_TOKEN_CAPACITY}"
   echo "  MOE_SHARED_EXPERT_OVERLAP=${MOE_SHARED_EXPERT_OVERLAP}"
+fi
+if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
+  echo "  MOE_DEEPEP_TOKEN_CAPACITY=${MOE_DEEPEP_TOKEN_CAPACITY}"
 fi
 echo "  DATALOADER_USE_BACKGROUND_PREFETCHER=${DATALOADER_USE_BACKGROUND_PREFETCHER}"
 echo "  SYNC_EACH_TRAIN_STEP=${SYNC_EACH_TRAIN_STEP}"
@@ -377,7 +394,7 @@ else
 fi
 
 export TORCH_MUSA_FSDP2_COMM_TYPE="${TORCH_MUSA_FSDP2_COMM_TYPE:-0}"
-# Keep the production default conservative. To combine DeepEP-ACE with level 2,
+# Keep the production default conservative. To combine DeepEP with level 2,
 # also set FSDP_DEEPEP_STREAM_COMPAT=true; VeOmni then keeps FSDP copy-in on the
 # compute stream and runs its collectives on a normal-priority stream.
 export TORCH_MUSA_FSDP2_OVERLAP_LEVEL="${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}"

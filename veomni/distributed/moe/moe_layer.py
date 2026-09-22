@@ -156,14 +156,17 @@ def dispatch_to_ep_class(
     ep_state = get_parallel_state()
     # The expert compute implementation and token communication backend are
     # independent choices.  Keep the existing all-to-all path byte-for-byte
-    # below when the dispatcher is ``alltoall``; ACE is an explicit opt-in.
+    # below when the dispatcher is ``alltoall``; DeepEP is an explicit opt-in.
     from ...ops.config.singleton import get_ops_config
 
     ops_config = get_ops_config()
-    if ops_config is not None and getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace":
-        from .deepep_ace import dispatch_to_ep_class_deepep_ace
+    if ops_config is not None and getattr(ops_config, "moe_dispatcher", "alltoall") in {
+        "deepep",
+        "deepep_ace",
+    }:
+        from .deepep_ace import dispatch_to_ep_class_deepep
 
-        return dispatch_to_ep_class_deepep_ace(
+        return dispatch_to_ep_class_deepep(
             ep_class,
             num_experts,
             routing_weights,

@@ -57,17 +57,17 @@ def _set_musa_deepep_fsdp_shared_comm_stream(stream) -> None:
         context.reduce_scatter_stream = stream
     if not _MUSA_DEEPEP_SHARED_STREAM_LOGGED:
         logger.warning_rank0(
-            "FSDP2 all-gather/reduce-scatter now share DeepEP's ACE communication "
+            "FSDP2 all-gather/reduce-scatter now share DeepEP's communication "
             "stream; all-gather copy-in remains on the compute stream."
         )
         _MUSA_DEEPEP_SHARED_STREAM_LOGGED = True
 
 
 def _apply_musa_deepep_fsdp_stream_compat_patch() -> None:
-    """Give DeepEP's ACE stream priority over overlapped FSDP2 collectives.
+    """Give DeepEP's communication stream priority over FSDP2 collectives.
 
     The MUSA DeepEP runtime owns a high-priority communication stream and its
-    ACE dispatch enters a cross-rank notification barrier. torch_musa FSDP2
+    dispatch enters a cross-rank notification barrier. torch_musa FSDP2
     overlap level 2 also puts copy-in and collectives on one high-priority
     stream. If ranks reach the two communication domains in a different order,
     neither domain can make progress and DeepEP eventually reports a CPU receive
@@ -75,7 +75,7 @@ def _apply_musa_deepep_fsdp_stream_compat_patch() -> None:
 
     This VeOmni-only compatibility patch keeps copy-in on the current compute
     stream and moves all-gather/reduce-scatter to one normal-priority stream.
-    ACE can then preempt an in-flight FSDP collective on every rank, finish its
+    DeepEP can then preempt an in-flight FSDP collective on every rank, finish its
     barrier, and let FSDP resume in a consistent order. DeepEP itself is not
     modified.
     """
@@ -118,7 +118,7 @@ def _apply_musa_deepep_fsdp_stream_compat_patch() -> None:
     logger.warning_rank0(
         "Enabled VeOmni MUSA DeepEP/FSDP2 stream compatibility: FSDP2 overlap "
         "copy-in uses the current stream and FSDP2 collective streams use normal "
-        "priority so the DeepEP ACE stream can make progress."
+        "priority so the DeepEP communication stream can make progress."
     )
 
 

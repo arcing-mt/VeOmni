@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from veomni.arguments.arguments_types import OpsImplementationConfig
+from veomni.distributed.moe import deepep_ace
 from veomni.distributed.moe.deepep_ace import (
     _ACTIVE_SHARED_EXPERT,
     _ACEState,
@@ -76,6 +77,72 @@ def test_deepep_ace_is_a_dispatcher_selection():
     assert config.moe_dispatcher == "deepep_ace"
     assert config.moe_deepep_num_sms == 20
     assert config.moe_deepep_token_capacity == 8192
+
+
+def test_standard_deepep_is_a_dispatcher_selection():
+    config = OpsImplementationConfig(moe_dispatcher="deepep", moe_shared_expert_overlap=True)
+    assert config.moe_dispatcher == "deepep"
+
+
+def test_standard_deepep_constructs_buffer_without_ace_workspace(monkeypatch):
+    class FakeGroup:
+        def size(self):
+            return 2
+
+    class FakeSizeHint:
+        def get_nvl_buffer_size_hint(self, *_args):
+            return 1024
+
+        def get_rdma_buffer_size_hint(self, *_args):
+            return 0
+
+    class FakeBuffer:
+        num_sms = None
+
+        @classmethod
+        def set_num_sms(cls, value):
+            cls.num_sms = value
+
+        @staticmethod
+        def get_dispatch_config(_group_size):
+            return FakeSizeHint()
+
+        @staticmethod
+        def get_combine_config(_group_size):
+            return FakeSizeHint()
+
+        def __init__(
+            self,
+            group,
+            nvl_bytes,
+            rdma_bytes,
+            use_ace=False,
+            num_ace_buffers=1,
+            token_num=0,
+            hidden_size=0,
+            num_topk=0,
+        ):
+            self.args = (group, nvl_bytes, rdma_bytes)
+            self.use_ace = use_ace
+            self.workspace = (num_ace_buffers, token_num, hidden_size, num_topk)
+
+    monkeypatch.setattr(deepep_ace, "_load_deepep", lambda: (FakeBuffer, object, object))
+    monkeypatch.setattr(
+        deepep_ace,
+        "get_ops_config",
+        lambda: SimpleNamespace(moe_deepep_num_sms=20, moe_deepep_token_capacity=8192),
+    )
+    state = _ACEState(FakeGroup(), num_experts=4, top_k=2, use_ace=False)
+    buffer = state._resolve_buffer(torch.ones(3, 8))
+
+    assert FakeBuffer.num_sms == 20
+    assert buffer.use_ace is False
+    assert buffer.workspace == (1, 0, 0, 0)
+
+
+def test_shared_expert_overlap_rejects_non_deepep_dispatcher():
+    with pytest.raises(ValueError, match="requires a DeepEP dispatcher"):
+        OpsImplementationConfig(moe_dispatcher="alltoall", moe_shared_expert_overlap=True)
 
 
 def test_deepep_ace_num_sms_must_be_even_and_positive():
