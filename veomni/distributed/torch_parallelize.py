@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import os
 import types
 from functools import partial
 from typing import List, Optional, Tuple
@@ -38,6 +39,87 @@ from .utils import check_fqn_match, sort_fqn_by_submodule_first
 
 
 logger = logging.get_logger(__name__)
+
+_MUSA_DEEPEP_FSDP_COMM_CONTEXTS: list[object] = []
+_MUSA_DEEPEP_COMM_STREAM = None
+_MUSA_DEEPEP_SHARED_STREAM_LOGGED = False
+
+
+def _set_musa_deepep_fsdp_shared_comm_stream(stream) -> None:
+    """Put FSDP collectives on DeepEP's stream when explicitly requested."""
+    enabled = os.environ.get("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0").lower()
+    if enabled not in {"1", "true", "yes", "on"}:
+        return
+    global _MUSA_DEEPEP_COMM_STREAM, _MUSA_DEEPEP_SHARED_STREAM_LOGGED
+    _MUSA_DEEPEP_COMM_STREAM = stream
+    for context in _MUSA_DEEPEP_FSDP_COMM_CONTEXTS:
+        context.all_gather_stream = stream
+        context.reduce_scatter_stream = stream
+    if not _MUSA_DEEPEP_SHARED_STREAM_LOGGED:
+        logger.warning_rank0(
+            "FSDP2 all-gather/reduce-scatter now share DeepEP's ACE communication "
+            "stream; all-gather copy-in remains on the compute stream."
+        )
+        _MUSA_DEEPEP_SHARED_STREAM_LOGGED = True
+
+
+def _apply_musa_deepep_fsdp_stream_compat_patch() -> None:
+    """Give DeepEP's ACE stream priority over overlapped FSDP2 collectives.
+
+    The MUSA DeepEP runtime owns a high-priority communication stream and its
+    ACE dispatch enters a cross-rank notification barrier. torch_musa FSDP2
+    overlap level 2 also puts copy-in and collectives on one high-priority
+    stream. If ranks reach the two communication domains in a different order,
+    neither domain can make progress and DeepEP eventually reports a CPU receive
+    timeout.
+
+    This VeOmni-only compatibility patch keeps copy-in on the current compute
+    stream and moves all-gather/reduce-scatter to one normal-priority stream.
+    ACE can then preempt an in-flight FSDP collective on every rank, finish its
+    barrier, and let FSDP resume in a consistent order. DeepEP itself is not
+    modified.
+    """
+    enabled = os.environ.get("VEOMNI_MUSA_DEEPEP_FSDP_STREAM_COMPAT", "0").lower()
+    if (
+        not IS_MUSA_AVAILABLE
+        or enabled not in {"1", "true", "yes", "on"}
+        or os.environ.get("TORCH_MUSA_FSDP2_OVERLAP_LEVEL") != "2"
+    ):
+        return
+
+    from torch.distributed.fsdp._fully_shard._fsdp_state import FSDPCommContext
+    from torch_musa.distributed._composable.fsdp import custom_overlap_patch
+
+    original = custom_overlap_patch.comm_context_lazy_init
+    if getattr(original, "_veomni_deepep_stream_compat", False):
+        return
+
+    def comm_context_lazy_init_with_deepep_priority(self, device):
+        original(self, device)
+        overlap_level = custom_overlap_patch._FSDP2_OVERLAP_LEVEL.value
+        if overlap_level != 2:
+            return
+        self.all_gather_copy_in_stream = torch.musa.current_stream()
+        shared_stream_enabled = os.environ.get(
+            "VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0"
+        ).lower() in {"1", "true", "yes", "on"}
+        if shared_stream_enabled and _MUSA_DEEPEP_COMM_STREAM is not None:
+            self.all_gather_stream = _MUSA_DEEPEP_COMM_STREAM
+        else:
+            self.all_gather_stream = torch.musa.Stream(priority=0)
+        self.reduce_scatter_stream = self.all_gather_stream
+        if shared_stream_enabled and self not in _MUSA_DEEPEP_FSDP_COMM_CONTEXTS:
+            _MUSA_DEEPEP_FSDP_COMM_CONTEXTS.append(self)
+
+    comm_context_lazy_init_with_deepep_priority._veomni_deepep_stream_compat = True
+    custom_overlap_patch.comm_context_lazy_init = comm_context_lazy_init_with_deepep_priority
+    if FSDPCommContext.lazy_init is original:
+        FSDPCommContext.lazy_init = comm_context_lazy_init_with_deepep_priority
+    logger.warning_rank0(
+        "Enabled VeOmni MUSA DeepEP/FSDP2 stream compatibility: FSDP2 overlap "
+        "copy-in uses the current stream and FSDP2 collective streams use normal "
+        "priority so the DeepEP ACE stream can make progress."
+    )
 
 
 def _reset_hf_initialized_flag(module: nn.Module) -> None:
@@ -344,6 +426,7 @@ def parallelize_model_fsdp2(
         ep_size, emb_size = 2, 4
     We will use this model for illustration of Expert Parallel + Embed Parallel below.
     """
+    _apply_musa_deepep_fsdp_stream_compat_patch()
     parallel_state = get_parallel_state()
 
     model_no_split_modules = getattr(model, "_no_split_modules", None) or []
@@ -636,7 +719,12 @@ def parallelize_model_fsdp2(
     # MUSA-only: batch the local gradient-norm reduction of the FSDP2 clip path.
     # Installed for every MUSA run rather than only under the extra-parallel
     # condition above, because the cpu-offload clip path reaches the same helpers.
-    if IS_MUSA_AVAILABLE:
+    if IS_MUSA_AVAILABLE and os.environ.get("VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM", "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }:
         from veomni.ops.platform.musa import apply_musa_fsdp2_clip_grad_norm_patch
 
         apply_musa_fsdp2_clip_grad_norm_patch()
@@ -722,25 +810,29 @@ def parallelize_model_fsdp2(
     model._persistent_extra_parallel_param_ids = {id(param) for param in persistent_extra_parallel_params}
 
     # configure manual prefetching when needed
+    enable_forward_prefetch = kwargs.pop("enable_forward_prefetch", True)
+    enable_backward_prefetch = kwargs.pop("enable_backward_prefetch", True)
     need_manual_prefetch = (
         parallel_state.any_extra_parallel_enabled or mp_ignored_classes is not None
-    ) and kwargs.pop("enable_forward_prefetch", True)
+    ) and (enable_forward_prefetch or enable_backward_prefetch)
     if need_manual_prefetch:
         blocks = [pair[1][0] for pair in layer_pairs_list]  # all target modules
-        next_blocks = blocks[1:] + [None]
-        for current_block, next_block in zip(blocks, next_blocks):
-            if next_block is not None:
-                prefetch_modules = next_block._fsdp_modules
-                # prefetch in order of attn, gate, experts
-                current_block.set_modules_to_forward_prefetch(list(reversed(prefetch_modules)))
+        if enable_forward_prefetch:
+            next_blocks = blocks[1:] + [None]
+            for current_block, next_block in zip(blocks, next_blocks):
+                if next_block is not None:
+                    prefetch_modules = next_block._fsdp_modules
+                    # prefetch in order of attn, gate, experts
+                    current_block.set_modules_to_forward_prefetch(list(reversed(prefetch_modules)))
 
         # configure backward prefetch
-        rev_blocks = list(reversed(blocks))
-        prev_blocks = rev_blocks[1:] + [None]
-        for current_block, prev_block in zip(rev_blocks, prev_blocks):
-            if prev_block is not None:
-                prefetch_modules = prev_block._fsdp_modules
-                current_block.set_modules_to_backward_prefetch(list(reversed(prefetch_modules)))
+        if enable_backward_prefetch:
+            rev_blocks = list(reversed(blocks))
+            prev_blocks = rev_blocks[1:] + [None]
+            for current_block, prev_block in zip(rev_blocks, prev_blocks):
+                if prev_block is not None:
+                    prefetch_modules = prev_block._fsdp_modules
+                    current_block.set_modules_to_backward_prefetch(list(reversed(prefetch_modules)))
 
     # Handle meta initialization for FSDP2 (fallback if pre-load not done)
     assert kwargs.get("init_device") == "meta", "Please use init_device: meta for FSDP2"

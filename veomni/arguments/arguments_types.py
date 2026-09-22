@@ -529,6 +529,10 @@ class FSDPConfig:
         default=True,
         metadata={"help": "Enable forward prefetch."},
     )
+    backward_prefetch: bool = field(
+        default=True,
+        metadata={"help": "Enable backward prefetch."},
+    )
     offload: bool = field(
         default=False,
         metadata={"help": "Enable CPU offload for FSDP2."},

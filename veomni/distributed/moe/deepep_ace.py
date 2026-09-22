@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextvars
 import inspect
+import os
 from contextlib import contextmanager
 from typing import Any, Callable
 
@@ -50,6 +51,7 @@ def _current_stream_event():
 
 _BUFFER_CACHE: dict[tuple[int, int, int, int, int, int, int], Any] = {}
 _CAPACITY_CHECKED: set[tuple[int, int]] = set()
+_FSDP_SHARED_STREAM_REGISTERED_BUFFERS: set[int] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
 
 
@@ -140,6 +142,20 @@ class _ACEState:
         if self._buffer is not None:
             return self._buffer
         self._buffer = self._resolve_buffer(hidden_states)
+        share_fsdp_stream = os.environ.get("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0").lower()
+        get_comm_stream = getattr(self._buffer, "get_comm_stream", None)
+        if (
+            share_fsdp_stream in {"1", "true", "yes", "on"}
+            and id(self._buffer) not in _FSDP_SHARED_STREAM_REGISTERED_BUFFERS
+            and get_comm_stream is not None
+        ):
+            # The stream is exposed by the installed DeepEP wheel. Sharing it
+            # serializes FSDP and ACE communication in one per-rank launch
+            # order while both remain asynchronous with compute.
+            from ..torch_parallelize import _set_musa_deepep_fsdp_shared_comm_stream
+
+            _set_musa_deepep_fsdp_shared_comm_stream(get_comm_stream())
+            _FSDP_SHARED_STREAM_REGISTERED_BUFFERS.add(id(self._buffer))
         return self._buffer
 
     def _resolve_buffer(self, hidden_states: torch.Tensor):

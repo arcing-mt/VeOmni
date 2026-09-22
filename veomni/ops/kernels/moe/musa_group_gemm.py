@@ -840,6 +840,7 @@ def musa_fused_moe_forward(
     fc2_weight: torch.Tensor,
     fc1_1_2_weight: torch.Tensor | None = None,
     swiglu_limit: float | None = None,
+    assume_distinct_experts: bool = False,
 ):
     """MATE grouped-GEMM fused MoE forward pass.
 
@@ -856,6 +857,11 @@ def musa_fused_moe_forward(
     ``None`` disables the clamp (default, zero overhead — used by every legacy
     MoE model).
     """
+    # The unified MoE OpSlot adapter passes this backend-neutral hint to every
+    # fused implementation. MUSA currently computes its grouped-GEMM bounds
+    # from the actual dispatch counts and has no tighter distinct-expert path.
+    del assume_distinct_experts
+
     if get_parallel_state().ep_enabled:
         from ....distributed.moe import dispatch_to_ep_class
 

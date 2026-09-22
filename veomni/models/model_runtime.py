@@ -398,6 +398,7 @@ class VeOmniModelRuntime:
             enable_reentrant=args.accelerator.gradient_checkpointing.enable_reentrant,
             early_stop=args.accelerator.gradient_checkpointing.early_stop,
             enable_forward_prefetch=args.accelerator.fsdp_config.forward_prefetch,
+            enable_backward_prefetch=args.accelerator.fsdp_config.backward_prefetch,
             enable_fsdp_offload=args.accelerator.fsdp_config.offload,
             fsdp_offload_pin_memory=args.accelerator.fsdp_config.offload_pin_memory,
             broadcast_model_weights_from_rank0=args.broadcast_model_weights_from_rank0,

@@ -20,7 +20,29 @@ if ! command -v mthreads-gmi >/dev/null 2>&1; then
   exit 2
 fi
 
+export OMP_NUM_THREADS=4
 export MUSA_VISIBLE_DEVICES="${MUSA_VISIBLE_DEVICES:-0,1,2,3,4,5,6,7}"
+export MUSA_KERNEL_TIMEOUT=3200000
+export ACCELERATOR_BACKEND="musa"
+if [[ -d /usr/local/mtshmem/lib ]]; then
+  export LD_LIBRARY_PATH="/usr/local/mtshmem/lib:${LD_LIBRARY_PATH:-}"
+fi
+export MCCL_CTA_POLICY="${MCCL_CTA_POLICY:-2}"
+export MCCL_PROTOS="${MCCL_PROTOS:-2}"
+export MCCL_ALGOS="${MCCL_ALGOS:-1}"
+# Two 50-step runs were indistinguishable by cumulative stable-step time;
+# the native-AVG run's final smoothed rate was ~0.02 s/step slower. Keep the
+# established SUM+scale path by default and retain native AVG for explicit A/B.
+export VEOMNI_MCCL_NATIVE_AVG="${VEOMNI_MCCL_NATIVE_AVG:-0}"
+export VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM="${VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM:-1}"
+# export MCCL_BUFFSIZE=20971520
+# export MUSA_BLOCK_SCHEDULE_MODE=1
+# export MCCL_IB_GID_INDEX=3
+# export MCCL_NET_SHARED_BUFFERS=0
+# Two repeated 20-step runs on 8x S5000 selected 32 channels over
+# auto/8/16/24/48/64 for this FSDP2 + DeepEP workload.
+export MCCL_MAX_NCHANNELS="${MCCL_MAX_NCHANNELS:-32}"
+export MCCL_MIN_NCHANNELS="${MCCL_MIN_NCHANNELS:-32}"
 IFS=',' read -r -a _MUSA_CARDS <<< "${MUSA_VISIBLE_DEVICES}"
 if [[ "${#_MUSA_CARDS[@]}" -ne 8 ]]; then
   echo "ERROR: MUSA_VISIBLE_DEVICES must contain exactly eight cards for this launcher; got '${MUSA_VISIBLE_DEVICES}'." >&2
@@ -31,13 +53,34 @@ fi
 # assignment from the card owner.
 MAX_EXISTING_MIB="${MAX_EXISTING_MIB:-0}"
 PYTHON_BIN="${PYTHON_BIN:-${PYTHON:-/usr/bin/python}}"
-MOE_DISPATCHER="${MOE_DISPATCHER:-alltoall}"
+MOE_DISPATCHER="${MOE_DISPATCHER:-deepep_ace}"
+# Keep the DeepEP package default. Callers can override it with an even value
+# for explicit A/B tests.
 MOE_DEEPEP_NUM_SMS="${MOE_DEEPEP_NUM_SMS:-20}"
 MOE_DEEPEP_TOKEN_CAPACITY="${MOE_DEEPEP_TOKEN_CAPACITY:-8192}"
-MOE_SHARED_EXPERT_OVERLAP="${MOE_SHARED_EXPERT_OVERLAP:-false}"
+MOE_SHARED_EXPERT_OVERLAP="${MOE_SHARED_EXPERT_OVERLAP:-true}"
+FSDP_FORWARD_PREFETCH="${FSDP_FORWARD_PREFETCH:-true}"
+FSDP_BACKWARD_PREFETCH="${FSDP_BACKWARD_PREFETCH:-true}"
+FSDP_DEEPEP_STREAM_COMPAT="${FSDP_DEEPEP_STREAM_COMPAT:-false}"
+FSDP_DEEPEP_SHARED_COMM_STREAM="${FSDP_DEEPEP_SHARED_COMM_STREAM:-false}"
+DATALOADER_USE_BACKGROUND_PREFETCHER="${DATALOADER_USE_BACKGROUND_PREFETCHER:-false}"
+SYNC_EACH_TRAIN_STEP="${SYNC_EACH_TRAIN_STEP:-true}"
+SKIP_EMPTY_MODALITY_DUMMY="${SKIP_EMPTY_MODALITY_DUMMY:-true}"
+VISION_PATCH_EMBED_IMPLEMENTATION="${VISION_PATCH_EMBED_IMPLEMENTATION:-linear}"
+CHUNK_GATED_DELTA_RULE_IMPLEMENTATION="${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION:-}"
+RMS_NORM_GATED_IMPLEMENTATION="${RMS_NORM_GATED_IMPLEMENTATION:-fla}"
+CAUSAL_CONV1D_IMPLEMENTATION="${CAUSAL_CONV1D_IMPLEMENTATION:-fla}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   echo "ERROR: Python interpreter does not exist or is not executable: ${PYTHON_BIN}" >&2
   exit 2
+fi
+if [[ -z "${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" ]]; then
+  if "${PYTHON_BIN}" -c 'from torch_kernels.attention import gated_delta_net' >/dev/null 2>&1; then
+    CHUNK_GATED_DELTA_RULE_IMPLEMENTATION=musa_tilelang
+  else
+    # The production image currently has tuned FLA but no torch_kernels package.
+    CHUNK_GATED_DELTA_RULE_IMPLEMENTATION=musa
+  fi
 fi
 
 if ! "${PYTHON_BIN}" - <<'PY'
@@ -75,8 +118,68 @@ case "${MOE_SHARED_EXPERT_OVERLAP,,}" in
   1|true|yes|on) MOE_SHARED_EXPERT_OVERLAP=true ;;
   *) echo "ERROR: MOE_SHARED_EXPERT_OVERLAP must be a boolean value: ${MOE_SHARED_EXPERT_OVERLAP}" >&2; exit 2 ;;
 esac
+case "${FSDP_FORWARD_PREFETCH,,}" in
+  0|false|no|off) FSDP_FORWARD_PREFETCH=false ;;
+  1|true|yes|on) FSDP_FORWARD_PREFETCH=true ;;
+  *) echo "ERROR: FSDP_FORWARD_PREFETCH must be a boolean value: ${FSDP_FORWARD_PREFETCH}" >&2; exit 2 ;;
+esac
+case "${FSDP_BACKWARD_PREFETCH,,}" in
+  0|false|no|off) FSDP_BACKWARD_PREFETCH=false ;;
+  1|true|yes|on) FSDP_BACKWARD_PREFETCH=true ;;
+  *) echo "ERROR: FSDP_BACKWARD_PREFETCH must be a boolean value: ${FSDP_BACKWARD_PREFETCH}" >&2; exit 2 ;;
+esac
+case "${FSDP_DEEPEP_STREAM_COMPAT,,}" in
+  0|false|no|off) FSDP_DEEPEP_STREAM_COMPAT=false ;;
+  1|true|yes|on) FSDP_DEEPEP_STREAM_COMPAT=true ;;
+  *) echo "ERROR: FSDP_DEEPEP_STREAM_COMPAT must be a boolean value: ${FSDP_DEEPEP_STREAM_COMPAT}" >&2; exit 2 ;;
+esac
+case "${FSDP_DEEPEP_SHARED_COMM_STREAM,,}" in
+  0|false|no|off) FSDP_DEEPEP_SHARED_COMM_STREAM=false ;;
+  1|true|yes|on) FSDP_DEEPEP_SHARED_COMM_STREAM=true ;;
+  *) echo "ERROR: FSDP_DEEPEP_SHARED_COMM_STREAM must be a boolean value: ${FSDP_DEEPEP_SHARED_COMM_STREAM}" >&2; exit 2 ;;
+esac
+case "${DATALOADER_USE_BACKGROUND_PREFETCHER,,}" in
+  0|false|no|off) DATALOADER_USE_BACKGROUND_PREFETCHER=false ;;
+  1|true|yes|on) DATALOADER_USE_BACKGROUND_PREFETCHER=true ;;
+  *) echo "ERROR: DATALOADER_USE_BACKGROUND_PREFETCHER must be a boolean value: ${DATALOADER_USE_BACKGROUND_PREFETCHER}" >&2; exit 2 ;;
+esac
+case "${SYNC_EACH_TRAIN_STEP,,}" in
+  0|false|no|off) SYNC_EACH_TRAIN_STEP=false ;;
+  1|true|yes|on) SYNC_EACH_TRAIN_STEP=true ;;
+  *) echo "ERROR: SYNC_EACH_TRAIN_STEP must be a boolean value: ${SYNC_EACH_TRAIN_STEP}" >&2; exit 2 ;;
+esac
+case "${SKIP_EMPTY_MODALITY_DUMMY,,}" in
+  0|false|no|off) SKIP_EMPTY_MODALITY_DUMMY=false ;;
+  1|true|yes|on) SKIP_EMPTY_MODALITY_DUMMY=true ;;
+  *) echo "ERROR: SKIP_EMPTY_MODALITY_DUMMY must be a boolean value: ${SKIP_EMPTY_MODALITY_DUMMY}" >&2; exit 2 ;;
+esac
+case "${VISION_PATCH_EMBED_IMPLEMENTATION}" in
+  conv3d|linear) ;;
+  *) echo "ERROR: VISION_PATCH_EMBED_IMPLEMENTATION must be conv3d or linear: ${VISION_PATCH_EMBED_IMPLEMENTATION}" >&2; exit 2 ;;
+esac
+case "${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" in
+  fla|musa|musa_tilelang) ;;
+  *) echo "ERROR: CHUNK_GATED_DELTA_RULE_IMPLEMENTATION must be fla, musa, or musa_tilelang: ${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" >&2; exit 2 ;;
+esac
 if [[ "${MOE_SHARED_EXPERT_OVERLAP}" == true && "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
   echo "ERROR: MOE_SHARED_EXPERT_OVERLAP requires MOE_DISPATCHER=deepep_ace." >&2
+  exit 2
+fi
+if [[ "${FSDP_DEEPEP_STREAM_COMPAT}" == true ]]; then
+  if [[ "${MOE_DISPATCHER}" != "deepep_ace" ]]; then
+    echo "ERROR: FSDP_DEEPEP_STREAM_COMPAT requires MOE_DISPATCHER=deepep_ace." >&2
+    exit 2
+  fi
+  if [[ "${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}" != 2 || "${TORCH_MUSA_FSDP2_COMM_TYPE:-0}" != 0 ]]; then
+    echo "ERROR: FSDP_DEEPEP_STREAM_COMPAT is validated only with FSDP2 COMM_TYPE=0 and OVERLAP_LEVEL=2." >&2
+    exit 2
+  fi
+elif [[ "${MOE_DISPATCHER}" == "deepep_ace" && "${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}" == 2 ]]; then
+  echo "ERROR: raw FSDP2 level 2 deadlocks with DeepEP-ACE; set FSDP_DEEPEP_STREAM_COMPAT=true." >&2
+  exit 2
+fi
+if [[ "${FSDP_DEEPEP_SHARED_COMM_STREAM}" == true && "${FSDP_DEEPEP_STREAM_COMPAT}" != true ]]; then
+  echo "ERROR: FSDP_DEEPEP_SHARED_COMM_STREAM requires FSDP_DEEPEP_STREAM_COMPAT=true." >&2
   exit 2
 fi
 if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
@@ -125,8 +228,8 @@ if [[ "${NPROC_PER_NODE}" != 8 ]]; then
   exit 2
 fi
 
-MODEL_PATH="${MODEL_PATH:?Set MODEL_PATH to the Qwen3.5-35B-A3B checkpoint directory}"
-DATA_PATH="${DATA_PATH:?Set DATA_PATH to the prepared ShareGPT4V-COCO annotation file}"
+export MODEL_PATH="${MODEL_PATH:-/data/share/models/Qwen3.5-35B-A3B}"
+export DATA_PATH="${DATA_PATH:-/data/share/liang.geng/fsdp_overlap_test/data/sharegpt4v_coco_full/sharegpt4v_coco_full.json}"
 DATA_TYPE="${DATA_TYPE:-conversation}"
 TEXT_KEYS="${TEXT_KEYS:-messages}"
 MAX_SEQ_LEN="${MAX_SEQ_LEN:-4096}"
@@ -134,8 +237,8 @@ TRAIN_SIZE="${TRAIN_SIZE:-52428800}"
 MICRO_BATCH_SIZE="${MICRO_BATCH_SIZE:-2}"
 GLOBAL_BATCH_SIZE="${GLOBAL_BATCH_SIZE:-$((MICRO_BATCH_SIZE * NPROC_PER_NODE))}"
 ATTN_IMPLEMENTATION="${ATTN_IMPLEMENTATION:-flash_attention_3}"
-STEPS_PER_EPOCH="${STEPS_PER_EPOCH:-1}"
-NUM_TRAIN_EPOCHS="${NUM_TRAIN_EPOCHS:-20}"
+STEPS_PER_EPOCH="${STEPS_PER_EPOCH:-50}"
+NUM_TRAIN_EPOCHS="${NUM_TRAIN_EPOCHS:-1}"
 # VeOmni applies train.max_steps inside each epoch, so the maximum total is
 # STEPS_PER_EPOCH * NUM_TRAIN_EPOCHS.
 
@@ -221,12 +324,36 @@ if [[ "${MOE_DISPATCHER}" == "deepep_ace" ]]; then
   echo "  MOE_DEEPEP_TOKEN_CAPACITY=${MOE_DEEPEP_TOKEN_CAPACITY}"
   echo "  MOE_SHARED_EXPERT_OVERLAP=${MOE_SHARED_EXPERT_OVERLAP}"
 fi
+echo "  DATALOADER_USE_BACKGROUND_PREFETCHER=${DATALOADER_USE_BACKGROUND_PREFETCHER}"
+echo "  SYNC_EACH_TRAIN_STEP=${SYNC_EACH_TRAIN_STEP}"
+echo "  SKIP_EMPTY_MODALITY_DUMMY=${SKIP_EMPTY_MODALITY_DUMMY}"
+echo "  VISION_PATCH_EMBED_IMPLEMENTATION=${VISION_PATCH_EMBED_IMPLEMENTATION}"
+echo "  CHUNK_GATED_DELTA_RULE_IMPLEMENTATION=${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}"
+echo "  RMS_NORM_GATED_IMPLEMENTATION=${RMS_NORM_GATED_IMPLEMENTATION}"
+echo "  CAUSAL_CONV1D_IMPLEMENTATION=${CAUSAL_CONV1D_IMPLEMENTATION}"
+echo "  VEOMNI_MCCL_NATIVE_AVG=${VEOMNI_MCCL_NATIVE_AVG}"
+echo "  VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM=${VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM}"
 echo "  FSDP=8 (fsdp2), EP=8, SP=1"
+echo "  FSDP_FORWARD_PREFETCH=${FSDP_FORWARD_PREFETCH}"
+echo "  FSDP_BACKWARD_PREFETCH=${FSDP_BACKWARD_PREFETCH}"
+echo "  FSDP_DEEPEP_STREAM_COMPAT=${FSDP_DEEPEP_STREAM_COMPAT}"
+echo "  FSDP_DEEPEP_SHARED_COMM_STREAM=${FSDP_DEEPEP_SHARED_COMM_STREAM}"
 echo "  STEPS_PER_EPOCH=${STEPS_PER_EPOCH}"
 echo "  NUM_TRAIN_EPOCHS=${NUM_TRAIN_EPOCHS}"
 echo "  OUTPUT_DIR=${OUTPUT_DIR}"
 echo "  NPROC_PER_NODE=${NPROC_PER_NODE}"
 echo "  PROFILE_ENABLE=${PROFILE_ENABLE}"
+echo "  TORCH_MUSA_FSDP2_COMM_TYPE=${TORCH_MUSA_FSDP2_COMM_TYPE:-0}"
+echo "  TORCH_MUSA_FSDP2_OVERLAP_LEVEL=${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}"
+echo "  MCCL_PROTOS=${MCCL_PROTOS}"
+echo "  MCCL_ALGOS=${MCCL_ALGOS}"
+echo "  MCCL_BUFFSIZE=${MCCL_BUFFSIZE:-auto}"
+echo "  MCCL_CTA_POLICY=${MCCL_CTA_POLICY}"
+echo "  MCCL_MAX_NCHANNELS=${MCCL_MAX_NCHANNELS:-auto}"
+echo "  MCCL_MIN_NCHANNELS=${MCCL_MIN_NCHANNELS:-auto}"
+echo "  MUSA_BLOCK_SCHEDULE_MODE=${MUSA_BLOCK_SCHEDULE_MODE:-auto}"
+echo "  MCCL_IB_GID_INDEX=${MCCL_IB_GID_INDEX:-auto}"
+echo "  MCCL_NET_SHARED_BUFFERS=${MCCL_NET_SHARED_BUFFERS:-auto}"
 if [[ "${PROFILE_ENABLE}" == true ]]; then
   echo "  PROFILE_TRACE_DIR=${PROFILE_TRACE_DIR}"
 fi
@@ -249,11 +376,13 @@ else
   PROFILE_ARGS+=(--train.profile.enable false)
 fi
 
-# export TORCH_MUSA_FSDP2_COMM_TYPE=1
-# export TORCH_MUSA_FSDP2_OVERLAP_LEVEL=2
-# export TORCH_MUSA_FSDP2_MEMORY_EFFICIENT_OVERLAP=1
-# export TORCH_MUSA_FSDP2_MEMORY_EFFICIENT_REDUCE_OUTPUT=1
-export MCCL_CTA_POLICY=2
+export TORCH_MUSA_FSDP2_COMM_TYPE="${TORCH_MUSA_FSDP2_COMM_TYPE:-0}"
+# Keep the production default conservative. To combine DeepEP-ACE with level 2,
+# also set FSDP_DEEPEP_STREAM_COMPAT=true; VeOmni then keeps FSDP copy-in on the
+# compute stream and runs its collectives on a normal-priority stream.
+export TORCH_MUSA_FSDP2_OVERLAP_LEVEL="${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}"
+export VEOMNI_MUSA_DEEPEP_FSDP_STREAM_COMPAT="${FSDP_DEEPEP_STREAM_COMPAT}"
+export VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM="${FSDP_DEEPEP_SHARED_COMM_STREAM}"
 
 # The MoE VLM config supplies Qwen3.5 multimodal processing and mm_configs.
 bash train.sh \
@@ -270,10 +399,12 @@ bash train.sh \
   --data.dataloader.num_workers 8 \
   --data.dataloader.prefetch_factor 4 \
   --data.dataloader.persistent_workers true \
+  --data.dataloader.use_background_prefetcher "${DATALOADER_USE_BACKGROUND_PREFETCHER}" \
   --train.max_steps "${STEPS_PER_EPOCH}" \
   --train.num_train_epochs "${NUM_TRAIN_EPOCHS}" \
   --train.global_batch_size "${GLOBAL_BATCH_SIZE}" \
   --train.micro_batch_size "${MICRO_BATCH_SIZE}" \
+  --train.sync_each_train_step "${SYNC_EACH_TRAIN_STEP}" \
   --model.ops_implementation.attn_implementation "${ATTN_IMPLEMENTATION}" \
   --model.ops_implementation.rms_norm_implementation musa \
   --model.ops_implementation.moe_implementation fused_musa \
@@ -281,16 +412,22 @@ bash train.sh \
   --model.ops_implementation.moe_deepep_num_sms "${MOE_DEEPEP_NUM_SMS}" \
   --model.ops_implementation.moe_deepep_token_capacity "${MOE_DEEPEP_TOKEN_CAPACITY}" \
   --model.ops_implementation.moe_shared_expert_overlap "${MOE_SHARED_EXPERT_OVERLAP}" \
+  --model.ops_implementation.skip_empty_modality_dummy "${SKIP_EMPTY_MODALITY_DUMMY}" \
+  --model.ops_implementation.vision_patch_embed_implementation "${VISION_PATCH_EMBED_IMPLEMENTATION}" \
   --model.ops_implementation.rotary_pos_emb_implementation eager \
   --model.ops_implementation.rotary_pos_emb_vision_implementation musa \
   --model.ops_implementation.cross_entropy_loss_implementation chunk_loss \
-  --model.ops_implementation.chunk_gated_delta_rule_implementation musa \
-  --train.gradient_checkpointing.enable true \
-  --train.accelerator.dp_shard_size 8 \
-  --train.accelerator.ep_size 8 \
-  --train.accelerator.ulysses_size 1 \
-  --train.accelerator.fsdp_config.fsdp_mode fsdp2 \
-  --train.init_device meta \
+  --model.ops_implementation.rms_norm_gated_implementation "${RMS_NORM_GATED_IMPLEMENTATION}" \
+  --model.ops_implementation.causal_conv1d_implementation "${CAUSAL_CONV1D_IMPLEMENTATION}" \
+  --model.ops_implementation.chunk_gated_delta_rule_implementation "${CHUNK_GATED_DELTA_RULE_IMPLEMENTATION}" \
+  --model.accelerator.gradient_checkpointing.enable true \
+  --model.accelerator.dp_shard_size 8 \
+  --model.accelerator.ep_size 8 \
+  --model.accelerator.ulysses_size 1 \
+  --model.accelerator.fsdp_config.fsdp_mode fsdp2 \
+  --model.accelerator.fsdp_config.forward_prefetch "${FSDP_FORWARD_PREFETCH}" \
+  --model.accelerator.fsdp_config.backward_prefetch "${FSDP_BACKWARD_PREFETCH}" \
+  --model.accelerator.init_device meta \
   --train.checkpoint.output_dir "${OUTPUT_DIR}" \
   --train.checkpoint.save_steps 0 \
   --train.checkpoint.save_epochs 0 \
