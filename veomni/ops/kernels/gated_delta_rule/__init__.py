@@ -216,7 +216,12 @@ def _musa_tilelang_chunk_gated_delta_rule_factory():
     the kernels save, so this bridge normalizes with FLA's Triton ``l2norm``
     first and calls the TileLang entry with normalization disabled.
     """
-    from .musa_tilelang import chunk_gated_delta_rule
+    from .musa_tilelang import _require_torch_kernels, chunk_gated_delta_rule
+
+    # Resolve the optional runtime dependency while binding the OpSlot. This
+    # fails before model construction and lets capability probes distinguish an
+    # installed backend from a registry entry whose package is unavailable.
+    _require_torch_kernels()
 
     return chunk_gated_delta_rule
 

@@ -31,8 +31,8 @@ def test_musa_tilelang_chunk_gated_delta_rule_is_registered() -> None:
     assert "musa_tilelang" in registry.list_available("chunk_gated_delta_rule", "standard")
 
 
-def test_musa_tilelang_backend_is_gated_on_musa() -> None:
-    """Resolve must succeed on MUSA and be refused everywhere else.
+def test_musa_tilelang_backend_is_gated_on_musa_and_dependency() -> None:
+    """Resolve succeeds only when both MUSA and torch_kernels are available.
 
     Asserts the enforced behaviour through ``resolve()`` rather than reading the
     ``device_type`` field back -- a field check would still pass if the gate itself
@@ -43,7 +43,13 @@ def test_musa_tilelang_backend_is_gated_on_musa() -> None:
     from veomni.ops.kernel_registry import KERNEL_REGISTRY as registry
 
     if hasattr(torch, "musa") and torch.musa.is_available():
-        assert callable(registry.resolve("chunk_gated_delta_rule", "standard", "musa_tilelang"))
+        try:
+            from torch_kernels.attention import gated_delta_net  # noqa: F401
+        except ImportError:
+            with pytest.raises(ImportError, match="torch_kernels"):
+                registry.resolve("chunk_gated_delta_rule", "standard", "musa_tilelang")
+        else:
+            assert callable(registry.resolve("chunk_gated_delta_rule", "standard", "musa_tilelang"))
     else:
         with pytest.raises(RuntimeError, match="musa"):
             registry.resolve("chunk_gated_delta_rule", "standard", "musa_tilelang")
