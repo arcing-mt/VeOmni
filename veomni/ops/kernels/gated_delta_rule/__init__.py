@@ -36,8 +36,13 @@ Backends per op:
 - ``rms_norm_gated``: ``fla`` (GPU/MLU/MUSA/NPU), ``npu``.
 - ``causal_conv1d``: ``fla`` (GPU/MLU/MUSA/NPU), ``npu``.
 - ``chunk_gated_delta_rule``: ``fla`` (GPU/MLU/MUSA/NPU), ``musa`` (S5000-tuned FLA
-  bridge), ``flash_qla`` (GPU ``gpu`` extra, Hopper SM90), ``npu`` (vendored
+  bridge), ``musa_tilelang`` (MUSA TileLang via ``torch_kernels``), ``flash_qla``
+  (GPU ``gpu`` extra, Hopper SM90), ``npu`` (vendored
   Triton), ``npu_ascendc`` (AscendC fused ops).
+
+The ``musa_tilelang`` ``chunk_gated_delta_rule`` backend is a thin adapter
+(``musa_tilelang``) that keeps L2 normalization out of ``torch_kernels``' slower
+torch-level normalizer; see that module's docstring for the measurements.
 
 The ``npu`` ``causal_conv1d`` backend is a thin adapter (``npu_causal_conv1d``)
 over the vendored kernel; the ``npu`` ``chunk_gated_delta_rule`` binds the
@@ -199,6 +204,31 @@ KERNEL_REGISTRY.register(
         factory=_musa_chunk_gated_delta_rule_factory,
         hardware=HardwareRequirement(device_type="musa"),
         description="Built-in S5000-tuned FLA chunk gated delta rule adapter for MUSA",
+    )
+)
+
+
+def _musa_tilelang_chunk_gated_delta_rule_factory():
+    """Return the MUSA TileLang bridge over ``torch_kernels``.
+
+    See ``musa_tilelang.py``: the TileLang kernels are MUSA-native, but their
+    ``use_qk_l2norm_in_kernel`` path is a torch-level chain that costs more than
+    the kernels save, so this bridge normalizes with FLA's Triton ``l2norm``
+    first and calls the TileLang entry with normalization disabled.
+    """
+    from .musa_tilelang import chunk_gated_delta_rule
+
+    return chunk_gated_delta_rule
+
+
+KERNEL_REGISTRY.register(
+    KernelSpec(
+        name="musa_tilelang",
+        op_name="chunk_gated_delta_rule",
+        variant="standard",
+        factory=_musa_tilelang_chunk_gated_delta_rule_factory,
+        hardware=HardwareRequirement(device_type="musa"),
+        description="MUSA TileLang chunk gated delta rule (torch_kernels; L2 via FLA Triton l2norm)",
     )
 )
 

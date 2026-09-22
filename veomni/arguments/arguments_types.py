@@ -1370,6 +1370,8 @@ class OpsImplementationConfig:
             "help": "Chunk gated delta-rule kernel for Qwen3.5 linear attention. "
             "'fla' (default) uses fla.ops.gated_delta_rule.chunk_gated_delta_rule (requires flash-linear-attention, GPU, MLU, MUSA, or NPU). "
             "'musa' uses the built-in S5000-tuned FLA bridge (MUSA only). "
+            "'musa_tilelang' uses the torch_kernels TileLang kernels (MUSA only; packed varlen "
+            "training only — no dense batches, no initial or final state). "
             "'flash_qla' uses QwenLM FlashQLA (ships under the gpu extra, Hopper SM90 only — "
             "no Ampere/Ada below or Blackwell above; SM10x wheels are WIP upstream). "
             "'eager' uses transformers' torch_chunk_gated_delta_rule, which does NOT support "
