@@ -19,16 +19,22 @@ def test_deepep_ace_compact_round_trip_cpu():
     recv_indices = torch.tensor([[1, 0], [-1, 1], [0, -1]], dtype=torch.int64)
     recv_probs = torch.tensor([[0.25, 0.75], [0.0, 1.0], [1.0, 0.0]])
 
-    permuted, probs, rows, counts = _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts=2)
-    _, _, _, host_counts = _compact_permute(
+    permuted, probs, rows, counts, row_map, width = _compact_permute(
+        recv_hidden, recv_indices, recv_probs, num_local_experts=2
+    )
+    _, _, _, host_counts, _, _ = _compact_permute(
         recv_hidden, recv_indices, recv_probs, num_local_experts=2, expert_counts=[2, 2]
     )
-    restored = _compact_unpermute(permuted, probs, rows, recv_hidden.shape[0])
+    restored = _compact_unpermute(permuted, probs, rows, recv_hidden.shape[0], row_map=row_map, width=width)
 
     expected = torch.tensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
     assert counts.tolist() == [2, 2]
     assert host_counts.tolist() == [2, 2]
     assert torch.equal(restored, expected)
+    # The CPU path is driven by ``token_rows`` (row -> received token) with the
+    # top-k slot count as its width; the expert-major map is a TE-path artifact.
+    assert row_map is None and width == 2
+    assert rows.tolist() == [0, 2, 0, 1]
 
 
 def test_deepep_ace_compact_unpermute_backward_cpu():
