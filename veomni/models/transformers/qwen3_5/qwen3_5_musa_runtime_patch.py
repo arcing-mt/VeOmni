@@ -16,15 +16,24 @@
 
 The current loader shares Qwen3.5's generated GPU module between CUDA and
 MUSA. This module is intentionally a small runtime installer, not a patchgen
-``PatchConfig``: it leaves the GPU/NPU generated files untouched and adds one
-partial/full RoPE OpSlots only on the active MUSA model path.
+``PatchConfig``: it leaves the GPU/NPU generated files untouched and installs
+what the MUSA run needs on the active model path.
 
-The MUSA chunk gated delta-rule backend does not need another runtime wrapper:
-the shared generated module already exposes
-``OpSlot("chunk_gated_delta_rule", "standard")``. At model-build time,
-``_bind_veomni_ops`` resolves ``chunk_gated_delta_rule_implementation=musa``
-through the normal kernel registry. Keeping that selection in the ops layer
-avoids duplicating Qwen3.5's GatedDeltaNet forward here.
+Two installers live here:
+
+* the RoPE OpSlots (text and/or vision), and
+* ``install_qwen3_5_gdn_cpu_seqlens_patch``, which hands the collator's host-side
+  packed offsets to the linear-attention kernels so they stop reading the device
+  ``cu_seqlens`` once per layer.
+
+The second one wraps the decoder layer rather than the GDN layer: the generated
+``GatedDeltaNet.forward`` builds its own kernel call, so the offsets cannot reach
+it as an argument without regenerating the model, and the decoder layer is also
+the block gradient checkpointing re-runs -- so the recompute re-enters the wrapper
+and re-binds the value for its own forward. Kernel selection stays in the ops
+layer: at model-build time ``_bind_veomni_ops`` resolves
+``chunk_gated_delta_rule_implementation`` through the normal kernel registry, and
+this module never touches that.
 """
 
 from __future__ import annotations
@@ -35,6 +44,7 @@ from types import ModuleType
 import torch
 
 from ....ops.dispatch import OpSlot
+from ....ops.kernels.gated_delta_rule.musa_tilelang import forward_cu_seqlens_cpu
 
 
 class _MusaRotaryPhase:
@@ -135,6 +145,51 @@ def install_qwen3_5_musa_rotary_patch(
     )
 
 
+def _wrap_gdn_decoder_layer_forward(original_forward):
+    """Scope ``linear_attn_cu_seq_lens_q_cpu`` to one decoder-layer forward."""
+
+    @wraps(original_forward)
+    def forward(self, *args, **kwargs):
+        cu_seqlens_cpu = kwargs.pop("linear_attn_cu_seq_lens_q_cpu", None)
+        if cu_seqlens_cpu is None:
+            # Batch predates the collator field (or a caller built its own
+            # micro-batch): leave the forward exactly as it was.
+            return original_forward(self, *args, **kwargs)
+        with forward_cu_seqlens_cpu(cu_seqlens_cpu):
+            return original_forward(self, *args, **kwargs)
+
+    return forward
+
+
+def install_qwen3_5_gdn_cpu_seqlens_patch(modeling_module: ModuleType) -> None:
+    """Feed the collator's host-side GDN offsets to the linear-attention kernels.
+
+    The generated ``GatedDeltaNet.forward`` learns the packed per-sequence lengths
+    from ``cu_seqlens`` inside ``torch_kernels``, whose ``varlen_lengths`` does a
+    blocking ``.tolist()``: one device-to-host sync per layer per forward, plus one
+    more per layer for the gradient-checkpoint recompute. The collator already has
+    the same offsets on the host -- it builds them from ``position_ids`` before the
+    batch ever reaches the device -- and ships them as
+    ``linear_attn_cu_seq_lens_q_cpu``.
+
+    The kernel call sits inside the generated forward, so the value cannot travel
+    as an argument without regenerating the model; this installer threads it by
+    context instead. Wrapping the decoder layer (rather than the GDN layer) is
+    deliberate: the decoder layer is what gradient checkpointing re-runs, so the
+    recompute on the autograd thread re-enters this wrapper and re-binds the value
+    for its own forward instead of reading a stale module attribute.
+
+    Installed only for ``chunk_gated_delta_rule_implementation="musa_tilelang"``,
+    which is the backend that takes ``cu_seqlens_cpu``.
+    """
+    for class_name in ("Qwen3_5MoeDecoderLayer", "Qwen3_5DecoderLayer"):
+        decoder_layer = getattr(modeling_module, class_name, None)
+        if decoder_layer is None or getattr(decoder_layer, "_VEOMNI_GDN_CPU_SEQLENS_PATCHED", False):
+            continue
+        decoder_layer.forward = _wrap_gdn_decoder_layer_forward(decoder_layer.forward)
+        decoder_layer._VEOMNI_GDN_CPU_SEQLENS_PATCHED = True
+
+
 def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType) -> None:
     """Overlap Qwen3.5's shared expert with an opt-in DeepEP-ACE dispatch.
 
@@ -180,6 +235,7 @@ def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType)
 
 
 __all__ = [
+    "install_qwen3_5_gdn_cpu_seqlens_patch",
     "install_qwen3_5_moe_shared_expert_overlap_patch",
     "install_qwen3_5_musa_rotary_patch",
 ]

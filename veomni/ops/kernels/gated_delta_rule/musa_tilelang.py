@@ -61,7 +61,61 @@ Hardware: MUSA only (the TileLang kernels are compiled with ``target="musa"``).
 
 from __future__ import annotations
 
+import functools
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 import torch
+
+
+def _probe_accepts_host_cu_seqlens(gdn_chunk) -> bool:
+    """Whether one ``torch_kernels`` GDN entry point takes ``cu_seqlens_cpu``.
+
+    Duck-typed off the code object: a callable the probe cannot introspect (a
+    ``partial``, a builtin) reports ``False``, which costs the optimisation but
+    never changes a result.
+    """
+    code = getattr(gdn_chunk, "__code__", None)
+    return code is not None and "cu_seqlens_cpu" in code.co_varnames[: code.co_argcount + code.co_kwonlyargcount]
+
+
+@functools.lru_cache(maxsize=1)
+def _accepts_host_cu_seqlens() -> bool:
+    """Whether the installed ``torch_kernels`` takes host-side packed offsets.
+
+    ``torch_kernels`` is not a declared dependency of VeOmni -- the MUSA
+    environment provides it -- so an install that predates ``cu_seqlens_cpu`` has
+    to keep working. It does: the offsets are simply not handed over, and the
+    backend pays its device-to-host sync exactly as it did before.
+    """
+    try:
+        from torch_kernels.attention.tilelang.flash_linear_attention.gdn_chunk_bwd import gdn_chunk
+    except ImportError:  # a layout this probe does not know: assume the older ABI
+        return False
+    return _probe_accepts_host_cu_seqlens(gdn_chunk)
+
+
+#: Host-side packed offsets for the GDN forward running on this thread.
+#:
+#: The generated ``GatedDeltaNet.forward`` builds its kernel call itself, so a
+#: caller cannot hand these in as an argument without regenerating the model; the
+#: MUSA runtime patch scopes them around the decoder layer instead (see
+#: ``qwen3_5_musa_runtime_patch.install_qwen3_5_gdn_cpu_seqlens_patch``), which is
+#: also the block gradient checkpointing re-runs. A context variable is what makes
+#: that safe: the recompute runs on the autograd thread, and the value stays bound
+#: to the forward that set it rather than to a module attribute two threads would
+#: race on. Defaults to ``None`` -- without the patch, nothing changes.
+_forward_cu_seqlens_cpu: ContextVar[tuple[int, ...] | None] = ContextVar("gdn_forward_cu_seqlens_cpu", default=None)
+
+
+@contextmanager
+def forward_cu_seqlens_cpu(cu_seqlens_cpu):
+    """Scope host-side packed offsets to every GDN forward nested in this block."""
+    token = _forward_cu_seqlens_cpu.set(tuple(cu_seqlens_cpu))
+    try:
+        yield
+    finally:
+        _forward_cu_seqlens_cpu.reset(token)
 
 
 def _require_torch_kernels():
@@ -118,6 +172,8 @@ def chunk_gated_delta_rule(
     output_final_state: bool = False,
     use_qk_l2norm_in_kernel: bool = False,
     cu_seqlens: torch.Tensor | None = None,
+    *,
+    cu_seqlens_cpu: list[int] | None = None,
     **kwargs,
 ):
     """Chunk gated delta rule on MUSA via ``torch_kernels`` (TileLang).
@@ -130,6 +186,20 @@ def chunk_gated_delta_rule(
     normalized. That is numerically equivalent to what FLA does in-kernel and ~4x
     cheaper than letting ``torch_kernels`` run its own torch-level normalizer.
 
+    ``cu_seqlens_cpu`` is the host twin of ``cu_seqlens`` -- the same ``[NS + 1]``
+    cumulative offsets, as a plain sequence. Passing it is worth more than it looks:
+    ``torch_kernels`` learns the per-sequence lengths by reading the device vector
+    (``varlen_lengths``), and that read is a blocking device-to-host sync which
+    drains the queue. It is reached once per layer per forward and once more per
+    layer by the gradient-checkpoint recompute: 60 syncs and ~430 ms of CPU per step
+    on the 30-layer Qwen3.5-35B-A3B MUSA run, 12.9 ms of it per recompute call.
+    Callers that hold the offsets on the host (the collator does) pass them here or
+    scope them with ``forward_cu_seqlens_cpu``; otherwise the backend syncs.
+
+    ``cu_seqlens_cpu`` is keyword-only on purpose: it keeps the positional layout of
+    the FLA entry point this adapter mirrors, so a caller that passes FLA's
+    ``head_first`` positionally cannot silently bind it here.
+
     Unsupported argument combinations raise ``NotImplementedError`` rather than
     return a wrong result; see the module docstring for the list.
     """
@@ -138,18 +208,40 @@ def chunk_gated_delta_rule(
     if kwargs:
         # Deliberately stricter than the fla backend, which swallows **kwargs. The
         # generated forward passes none today; if it starts passing one of FLA's extras
-        # (cu_seqlens_cpu, chunk_indices, cp_context, ...) this raises and names it,
-        # rather than silently dropping something that changes the result.
+        # (chunk_indices, cp_context, ...) this raises and names it, rather than
+        # silently dropping something that changes the result.
         unexpected = ", ".join(sorted(kwargs))
         raise TypeError(f"musa_tilelang chunk_gated_delta_rule got unsupported kwargs: {unexpected}")
 
     _reject_unsupported_paths(initial_state, output_final_state, cu_seqlens)
+
+    if cu_seqlens_cpu is None:
+        # Scoped by the MUSA runtime patch around the decoder layer that is about to
+        # call us; ``None`` when the patch is not installed or the batch carries no
+        # host offsets, in which case the backend falls back to the device read.
+        cu_seqlens_cpu = _forward_cu_seqlens_cpu.get()
+
+    if cu_seqlens_cpu is not None and cu_seqlens is not None and len(cu_seqlens_cpu) != cu_seqlens.numel():
+        # The host offsets ARE the segmentation, and torch_kernels only checks that
+        # they sum to the packed length -- a same-total pair with different boundaries
+        # would resegment silently. Comparing entry counts is sync-free and catches
+        # the realistic failure, which is one of the two being re-derived downstream.
+        raise ValueError(
+            f"cu_seqlens_cpu has {len(cu_seqlens_cpu)} entries but cu_seqlens has "
+            f"{cu_seqlens.numel()}; both must describe the same segmentation"
+        )
 
     if use_qk_l2norm_in_kernel:
         from fla.modules.l2norm import l2norm
 
         q = l2norm(q)
         k = l2norm(k)
+
+    # Only hand the offsets over when the installed torch_kernels can take them; a
+    # pre-``cu_seqlens_cpu`` build would otherwise reject the keyword outright.
+    host_offsets = (
+        {"cu_seqlens_cpu": cu_seqlens_cpu} if cu_seqlens_cpu is not None and _accepts_host_cu_seqlens() else {}
+    )
 
     out, final_state = gated_delta_net(
         q,
@@ -163,8 +255,9 @@ def chunk_gated_delta_rule(
         use_qk_l2norm_in_kernel=False,
         cu_seqlens=cu_seqlens,
         backend="tilelang",
+        **host_offsets,
     )
     return out, final_state
 
 
-__all__ = ["chunk_gated_delta_rule"]
+__all__ = ["chunk_gated_delta_rule", "forward_cu_seqlens_cpu"]

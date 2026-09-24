@@ -137,6 +137,7 @@ def test_add_flash_attention_kwargs_coalesces_fa_and_linear_cu_seqlens():
     assert torch.equal(batch["cu_seq_lens_q"], expected)
     assert torch.equal(batch["cu_seq_lens_k"], expected)
     assert torch.equal(batch["linear_attn_cu_seq_lens_q"], expected)
+    assert batch["linear_attn_cu_seq_lens_q_cpu"] == expected.tolist()
     assert int(batch["tail_padding_length"]) == tail_padding_length
     assert max_q == 4 and max_k == 4
     assert torch.equal(
@@ -165,6 +166,24 @@ def test_valid_seqlens_with_exact_tail_padding_preserves_real_one_token_sequence
     )
 
 
+def test_linear_attn_cu_seqlens_cpu_is_a_host_list():
+    """The host twin exists so linear-attention kernels can skip a D2H sync.
+
+    It has to stay a plain list: the trainer moves tensors to the device and
+    recurses into dicts, so a tensor here would land on the device and the sync
+    would come straight back.
+    """
+    pos = make_pos_ids_concat([4, 3]).unsqueeze(0)
+    batch = {"position_ids": pos}
+
+    add_flash_attention_kwargs_from_position_ids(batch, 0)
+
+    host_offsets = batch["linear_attn_cu_seq_lens_q_cpu"]
+    assert isinstance(host_offsets, list)
+    assert host_offsets == batch["linear_attn_cu_seq_lens_q"].tolist()
+    assert host_offsets == [0, 4, 7]
+
+
 if __name__ == "__main__":
     run_test("basic", test_basic)
     run_test("randomized", test_randomized)
@@ -183,3 +202,4 @@ if __name__ == "__main__":
         "valid_seqlens_with_exact_tail_padding_preserves_real_one_token_sequence",
         test_valid_seqlens_with_exact_tail_padding_preserves_real_one_token_sequence,
     )
+    run_test("linear_attn_cu_seqlens_cpu_is_a_host_list", test_linear_attn_cu_seqlens_cpu_is_a_host_list)

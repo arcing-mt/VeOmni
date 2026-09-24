@@ -62,8 +62,12 @@ def add_flash_attention_kwargs_from_position_ids(
 
     Args:
         batch: The batch dictionary containing position_ids. Will be modified in-place to add
-               cu_seq_lens_q, cu_seq_lens_k, max_length_q, max_length_k, and
-               linear_attn_cu_seq_lens_q. When ``linear_attn_tail_padding_length > 0``,
+               cu_seq_lens_q, cu_seq_lens_k, max_length_q, max_length_k,
+               linear_attn_cu_seq_lens_q, and its host-side twin
+               ``linear_attn_cu_seq_lens_q_cpu`` (a plain list of the same cumulative
+               offsets, for linear-attention kernels that take host offsets and would
+               otherwise read the device vector once per layer). When
+               ``linear_attn_tail_padding_length > 0``,
                also stores ``tail_padding_length`` (0-d ``torch.int32`` tensor) so
                downstream valid-seqlens helpers can strip the coalesced pad segment and
                distributed/PP stages preserve the metadata.
@@ -99,6 +103,17 @@ def add_flash_attention_kwargs_from_position_ids(
     batch["max_length_q"] = max_length_q
     batch["max_length_k"] = max_length_k
     batch["linear_attn_cu_seq_lens_q"] = cu_seq_lens_q
+    # Host-side twin of the packed offsets, and it must stay an exact copy of
+    # ``linear_attn_cu_seq_lens_q``: it defines the linear attention's segmentation,
+    # and ``torch_kernels`` (which consumes it) only checks that the lengths sum to
+    # the packed token count, so a same-total pair with different boundaries would
+    # resegment silently. This runs in the collator, while the offsets are still on
+    # the CPU, so ``.tolist()`` costs nothing; handing them on saves one blocking
+    # device-to-host sync per layer per forward. Deliberately a plain list: the
+    # trainer's ``_to_device`` (``BaseTrainer.preforward``) moves tensors and
+    # recurses into dicts, so a list is the one container that reaches the model
+    # without a device copy.
+    batch["linear_attn_cu_seq_lens_q_cpu"] = cu_seq_lens_q.tolist()
 
     return cu_seq_lens_q, cu_seq_lens_k, max_length_q, max_length_k
 
