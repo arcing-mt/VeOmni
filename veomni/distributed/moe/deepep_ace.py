@@ -523,15 +523,23 @@ def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts
     multi_hot.scatter_(1, (recv_indices + 1).to(torch.int64), True)
     multi_hot = multi_hot[:, 1:].contiguous()
     counts = multi_hot.sum(0, dtype=torch.long)
-    # One device->host read yields both the number of permuted rows and whether a
-    # slot was collapsed (the count the fallback's ``nonzero`` needs anyway).
-    num_out, slot_total = torch.stack([counts.sum(), (recv_indices >= 0).sum()]).tolist()
+    # One device->host read carries the per-expert counts and the number of valid
+    # slots, so both guards below reach the same decisions as the ``torch.equal``
+    # and ``num_out != slot_total`` pair they replace -- for integral counts, which
+    # is what DeepEP's host-side split is -- without the H2D copy and the second
+    # round-trip.  Keep them: ``num_out`` becomes TE's permute row count, and a
+    # mismatch that reaches the kernel would make it write past the rows the map
+    # fills.
+    host = torch.cat([counts, (recv_indices >= 0).sum().reshape(1)]).tolist()
+    counts_host, slot_total = host[:-1], host[-1]
+    num_out = sum(counts_host)
     if num_out != slot_total:
         return None
-    if expert_counts is not None and not torch.equal(
-        counts, torch.as_tensor(expert_counts, device=recv_hidden.device, dtype=torch.long)
-    ):
-        return None
+    if expert_counts is not None:
+        # Host-resident by contract: DeepEP returns a ``list[int]`` here.
+        target = expert_counts.tolist() if isinstance(expert_counts, torch.Tensor) else list(expert_counts)
+        if counts_host != target:
+            return None
     row_id_map, row_nt = make_row_id_map(multi_hot, num_tokens, num_local_experts)
     # Routing weights in the same expert-major layout the permute kernel reads.
     weights = torch.zeros((num_tokens, num_local_experts + 1), dtype=torch.float32, device=recv_hidden.device)
@@ -597,7 +605,11 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
             return built
         if not _ACE_TE_FELL_BACK:
             _ACE_TE_FELL_BACK.append(True)
-            logger.info_rank0("ACE compaction: routing is not a multi-hot map, using the PyTorch path")
+            # Per rank, not rank 0 only: every rank decides this for its own
+            # routing, so a rank-0-only notice hides a fallback everywhere else,
+            # and the rank has to be in the line to tell the ranks apart.
+            rank = dist.get_rank() if dist.is_initialized() else -1
+            logger.info(f"ACE compaction: routing is not a multi-hot map, using the PyTorch path (rank {rank})")
     return _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts)
 
 
