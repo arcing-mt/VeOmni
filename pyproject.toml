@@ -124,6 +124,10 @@ musa = [
   "transformers==5.17.0; python_version == '3.10'",
   "av==14.2.0; python_version == '3.10'",
   "flash-linear-attention @ git+https://github.com/fla-org/flash-linear-attention.git@a7a32d8b72965282dec45fae723c47cee20ee358 ; python_version == '3.10'",
+  # Internal MUSA TileLang GDN used by the `musa_tilelang` backend. Keep the
+  # commit immutable: the package has no published wheel/version that identifies
+  # the validated kernels. GitLab SSH access is required for this private source.
+  "torch-kernels @ git+ssh://git@sh-code.mthreads.com/ai/torch_kernels.git@c269562436d96e7510d5fcf456c2771b7a0fbca6 ; python_version == '3.10'",
   "mate==0.2.7; python_version == '3.10'",
   "mate-mubin==0.2.7; python_version == '3.10'",
   "flash-attn-3==0.2.7+musa; python_version == '3.10'",

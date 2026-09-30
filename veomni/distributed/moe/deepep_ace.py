@@ -364,6 +364,30 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
     if recv_indices is None or recv_probs is None:
         raise RuntimeError("DeepEP did not return routing metadata")
     flat_indices = recv_indices.reshape(-1)
+    use_counting_sort = os.environ.get("VEOMNI_MUSA_DEEPEP_COUNTING_SORT", "0").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if use_counting_sort and expert_counts is not None and flat_indices.device.type == "musa":
+        if len(expert_counts) != num_local_experts:
+            raise RuntimeError(
+                f"DeepEP returned {len(expert_counts)} expert counts for {num_local_experts} local experts"
+            )
+        counts = torch.as_tensor(expert_counts, device=recv_hidden.device, dtype=torch.long)
+        from ...ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+        slots, token_rows = musa_deepep_stable_slots(
+            flat_indices,
+            counts,
+            recv_indices.shape[1],
+            sum(expert_counts),
+        )
+        permuted = recv_hidden.index_select(0, token_rows)
+        probs = recv_probs.reshape(-1).index_select(0, slots)
+        return permuted, probs, token_rows, counts
+
     valid_slots = torch.nonzero(flat_indices >= 0, as_tuple=False).flatten()
     experts = flat_indices.index_select(0, valid_slots).to(torch.long)
     order = torch.argsort(experts, stable=True)

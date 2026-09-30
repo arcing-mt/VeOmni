@@ -44,6 +44,56 @@ def test_deepep_ace_compact_unpermute_backward_cpu():
     assert torch.equal(probs.grad, expert_outputs.detach().sum(dim=-1))
 
 
+@pytest.mark.skipif(not hasattr(torch, "musa") or not torch.musa.is_available(), reason="requires MUSA")
+def test_deepep_ace_musa_counting_sort_matches_stable_argsort():
+    from veomni.ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+    generator = torch.Generator().manual_seed(17)
+    num_tokens, top_k, num_experts, num_assignments = 257, 8, 32, 1500
+    flat_cpu = torch.full((num_tokens * top_k,), -1, dtype=torch.long)
+    valid_slots = torch.randperm(flat_cpu.numel(), generator=generator)[:num_assignments].sort().values
+    expert_ids = torch.randint(0, num_experts, (num_assignments,), generator=generator)
+    flat_cpu[valid_slots] = expert_ids
+
+    flat = flat_cpu.musa()
+    counts = torch.bincount(expert_ids, minlength=num_experts).musa()
+    actual_slots, actual_rows = musa_deepep_stable_slots(flat, counts, top_k, num_assignments)
+
+    reference_valid = torch.nonzero(flat >= 0, as_tuple=False).flatten()
+    reference_order = torch.argsort(flat.index_select(0, reference_valid), stable=True)
+    reference_slots = reference_valid.index_select(0, reference_order)
+    reference_rows = torch.div(reference_slots, top_k, rounding_mode="floor")
+
+    assert torch.equal(actual_slots, reference_slots)
+    assert torch.equal(actual_rows, reference_rows)
+
+
+@pytest.mark.skipif(not hasattr(torch, "musa") or not torch.musa.is_available(), reason="requires MUSA")
+def test_deepep_ace_musa_counting_sort_handles_empty_receive():
+    from veomni.ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+    flat = torch.empty(0, dtype=torch.long, device="musa")
+    counts = torch.zeros(32, dtype=torch.long, device="musa")
+    slots, rows = musa_deepep_stable_slots(flat, counts, top_k=8, num_assignments=0)
+
+    assert slots.shape == (0,)
+    assert rows.shape == (0,)
+
+
+@pytest.mark.parametrize(
+    ("actual", "expected"),
+    [
+        ([2, 1], [1, 2]),
+        ([0, 0], [1, 0]),
+    ],
+)
+def test_deepep_ace_counting_sort_rejects_mismatched_counts(actual, expected):
+    from veomni.ops.kernels.moe.musa_deepep_compact import _require_matching_counts
+
+    with pytest.raises(RuntimeError, match="expert counts do not match"):
+        _require_matching_counts(torch.tensor(actual), torch.tensor(expected))
+
+
 def test_deepep_ace_dispatch_uses_caller_previous_event(monkeypatch):
     previous_event = object()
     layout_event = object()

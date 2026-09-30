@@ -1276,7 +1276,7 @@ class OpsImplementationConfig:
         default=False,
         metadata={
             "help": "Issue Qwen3.5's independent shared expert inside the "
-            "DeepEP-ACE dispatch window so its forward hides under the dispatch "
+            "DeepEP dispatch window so its forward hides under the dispatch "
             "payload. It stays on the compute stream; it does not overlap the "
             "grouped GEMM or the combine."
         },

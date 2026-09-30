@@ -100,9 +100,12 @@ def _apply_musa_deepep_fsdp_stream_compat_patch() -> None:
         if overlap_level != 2:
             return
         self.all_gather_copy_in_stream = torch.musa.current_stream()
-        shared_stream_enabled = os.environ.get(
-            "VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0"
-        ).lower() in {"1", "true", "yes", "on"}
+        shared_stream_enabled = os.environ.get("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         if shared_stream_enabled and _MUSA_DEEPEP_COMM_STREAM is not None:
             self.all_gather_stream = _MUSA_DEEPEP_COMM_STREAM
         else:
@@ -812,9 +815,9 @@ def parallelize_model_fsdp2(
     # configure manual prefetching when needed
     enable_forward_prefetch = kwargs.pop("enable_forward_prefetch", True)
     enable_backward_prefetch = kwargs.pop("enable_backward_prefetch", True)
-    need_manual_prefetch = (
-        parallel_state.any_extra_parallel_enabled or mp_ignored_classes is not None
-    ) and (enable_forward_prefetch or enable_backward_prefetch)
+    need_manual_prefetch = (parallel_state.any_extra_parallel_enabled or mp_ignored_classes is not None) and (
+        enable_forward_prefetch or enable_backward_prefetch
+    )
     if need_manual_prefetch:
         blocks = [pair[1][0] for pair in layer_pairs_list]  # all target modules
         if enable_forward_prefetch:
