@@ -136,14 +136,14 @@ def install_qwen3_5_musa_rotary_patch(
 
 
 def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType) -> None:
-    """Overlap Qwen3.5's shared expert with an opt-in DeepEP-ACE dispatch.
+    """Overlap Qwen3.5's shared expert with an opt-in DeepEP dispatch.
 
     The generated Qwen3.5 block computes the shared expert before routing, so
-    it cannot cover ACE's dispatch payload.  This runtime-only patch moves the
-    shared expert into the ACE dispatch context; the dispatcher issues it on the
+    it cannot cover DeepEP's dispatch payload.  This runtime-only patch moves the
+    shared expert into the DeepEP dispatch context; the dispatcher issues it on the
     compute stream once the dispatch is in flight, and joins the two outputs
     before returning.  It is installed only for the explicit
-    ``moe_dispatcher=deepep_ace, moe_shared_expert_overlap=True`` choice.
+    ``moe_dispatcher=deepep[_ace], moe_shared_expert_overlap=True`` choice.
     """
     if getattr(modeling_module, "_VEOMNI_MUSA_SHARED_EXPERT_OVERLAP_PATCHED", False):
         return
@@ -163,7 +163,7 @@ def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType)
             routing_weights = routing_weights / routing_weights.sum(-1, keepdim=True)
             routing_weights = routing_weights.to(target_dtype)
 
-        # The ACE dispatcher consumes this context after the dispatch call
+        # The DeepEP dispatcher consumes this context after the dispatch call
         # returns and before it awaits the payload, so the shared expert issued
         # there hides under the dispatch. The join happens outside, once the
         # combine is back on the compute stream.

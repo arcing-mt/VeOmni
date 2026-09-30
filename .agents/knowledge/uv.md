@@ -97,24 +97,42 @@ stack and multimodal dependencies. Only `npu_aarch64` omits `torchcodec`
 because no compatible aarch64 wheel is available; build it from source when
 video decoding is required.
 
-The `musa` extra installs the Python packages validated on MTT S5000 with
-MUSA 5.2. Its torch, torch_musa and Triton builds remain base-image provided
+The `musa` extra installs the public Python packages validated on MTT S5000
+with MUSA 5.2. Its torch, torch_musa and Triton builds remain base-image provided
 because they are coupled to the driver and toolkit. The explicit MThreads
 package index supplies the `+musa` wheels. The pip workflow does not install
 uv's default `transformers-stable` group, because MUSA uses Transformers 5.17.0.
 
+The internal `torch-kernels` package is an optional performance overlay for the
+`musa_tilelang` GatedDeltaNet backend. It is deliberately absent from the
+public package metadata because public CI cannot resolve the private repository.
+The launcher falls back to the built-in tuned FLA backend when this overlay is
+unavailable.
+
 Install the extra directly into the Python 3.10 MUSA base image:
 
 ```bash
+# Optional: install the validated `torch-kernels` overlay before the MUSA extra.
+git clone ssh://git@sh-code.mthreads.com/ai/torch_kernels.git
+cd torch_kernels
+git checkout c269562436d96e7510d5fcf456c2771b7a0fbca6
+GIT_CONFIG_COUNT=1 \
+GIT_CONFIG_KEY_0='url.ssh://git@sh-code.mthreads.com/.insteadOf' \
+GIT_CONFIG_VALUE_0='https://sh-code.mthreads.com/' \
+  git submodule update --init --recursive
+python -m pip install --no-build-isolation .
+cd /path/to/VeOmni
+
 python -m pip install \
   --extra-index-url https://dl.mthreads.com/repo/api/pypi/pypi/simple \
   ".[musa]"
 ```
 
-The MUSA dependencies carry Python 3.10 markers. The uv lock remains scoped to
-the existing Python 3.11/3.12 GPU and NPU environments; pip sees the base
-image's already-installed torch, torch_musa and Triton packages and installs
-the additional Python packages without exact-environment pruning.
+The MUSA dependencies carry Python 3.10 markers and are recorded in the uv lock
+because the project supports Python 3.10. Installation still uses pip inside the
+validated base image: pip sees its already-installed torch, torch_musa, Triton
+and optional `torch-kernels` packages and installs the remaining Python packages
+without exact-environment pruning.
 
 ## Transformers Version
 

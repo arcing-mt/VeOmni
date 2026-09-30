@@ -28,7 +28,7 @@ selection knob.
 | Gated delta rule | `chunk_gated_delta_rule_implementation` | `eager`, `fla`, `musa` (S5000-tuned FLA bridge), `musa_tilelang` (MUSA), `flash_qla` (SM90), `npu`, `npu_ascendc` | `"fla"` (GPU) | Qwen3.5 OpSlot binding |
 | Load-balancing loss | `load_balancing_loss_implementation` | `eager`, `triton` (CUDA; NPU config normalizes this default to `eager`) | `"triton"` | `apply_ops_config()` (before model build) |
 | MoE experts | `moe_implementation` | `eager`, `fused_triton`, `fused_quack` (SM90+), `fused_musa` (MUSA), `fused_npu` | `"fused_triton"` (GPU) | `build_foundation_model` |
-| MoE token dispatcher | `moe_dispatcher` | `alltoall`, `deepep_ace` (MUSA) | `"alltoall"` | `dispatch_to_ep_class` (ACE is explicit opt-in) |
+| MoE token dispatcher | `moe_dispatcher` | `alltoall`, `deepep` (standard MUSA DeepEP), `deepep_ace` (MUSA ACE) | `"alltoall"` | `dispatch_to_ep_class` (DeepEP is explicit opt-in) |
 | QAT recipe | `qat_implementation` | `none`, `fp8_blockwise` (DeepSeek-V4, SM90+) | `"none"` | Read by the patched modeling helpers (`veomni/ops/qat/`) |
 
 The last row is the one field that is not a kernel backend: `qat_implementation`
@@ -378,7 +378,8 @@ model:
     # moe_implementation: fused_musa   # MUSA group-gemm (MUSA)
     # moe_implementation: fused_npu    # NPU group-gemm (Ascend)
     # moe_implementation: eager        # Reference PyTorch loop (very slow, debug only)
-    # moe_dispatcher: deepep_ace       # MUSA DeepEP-ACE communication (opt-in)
+    # moe_dispatcher: deepep           # Standard MUSA DeepEP communication (opt-in)
+    # moe_dispatcher: deepep_ace       # MUSA DeepEP-ACE workspace path (opt-in)
 ```
 
 **Field:** `OpsImplementationConfig.moe_implementation`
@@ -388,8 +389,8 @@ dataclass default—including an explicit YAML value—is normalized to
 non-default overrides such as `"fused_quack"` raise at config validation time.
 
 The expert compute backend and token dispatcher are independent fields. The
-default dispatcher is `alltoall`; `deepep_ace` is a MUSA-only opt-in and does
-not change the selected expert GEMM implementation.
+default dispatcher is `alltoall`; `deepep` and `deepep_ace` are MUSA-only
+opt-ins and do not change the selected expert GEMM implementation.
 
 | Value | Kernel | Hardware | EP support |
 |-------|--------|----------|:----------:|

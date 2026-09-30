@@ -121,8 +121,7 @@ def test_musa_satisfies_fused_moe_hardware_requirement():
 
 @patch("veomni.utils.import_utils.is_torch_musa_available", return_value=True)
 @patch("veomni.utils.import_utils._PACKAGE_FLAGS", {"torch_npu": False, "triton": True})
-@patch("torch.cuda.is_available", return_value=False)
-def test_musa_reports_fused_moe_available(_mock_cuda, _mock_musa):
+def test_musa_reports_fused_moe_available(_mock_musa):
     assert is_fused_moe_available()
 
 
