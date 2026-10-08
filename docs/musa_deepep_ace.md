@@ -79,6 +79,13 @@ by four; otherwise the whole compaction falls back, including on every CPU test.
 The two paths are driven by different maps (expert-major against top-k slot
 order), so they must not be mixed halfway.
 
+On MUSA, routing validation reduces a contiguous `[experts, tokens]` copy of
+the multi-hot map. The tested torch_musa 2.9.1 runtime can undercount a tall
+`[tokens, experts]` map when reducing dimension 0 (for example `[32640, 32]`),
+incorrectly sending valid routing through the slower PyTorch fallback. The
+contiguous reduction preserves exact integer counts. Duplicate-slot and
+DeepEP-count mismatch checks remain enabled; this requires no extra option.
+
 ## Selective checkpoint caching
 
 Select the policy through `model.ops_implementation` (CLI or YAML):

@@ -98,6 +98,7 @@ Core entry points:
    - Expert computation: `EPGroupGemm` runs fused expert MLP on grouped tokens per rank.
    - Device mesh: `init_parallel_state()` builds `[ep × ep_fsdp]` submesh; accessed via `ParallelState.extra_parallel_mesh("ep")`, `ep_group`, `ep_rank`.
    - In FSDP2: expert modules get `fully_shard()` on the `ep_fsdp` submesh with `Shard(1)` placement so hidden-dim sharding composes with EP's dim-0 sharding.
+   - MUSA ACE routing-count validation reduces contiguous expert rows. The tested torch_musa 2.9.1 runtime undercounts some tall `[tokens, experts]` maps with `sum(dim=0)`, causing false TE fallback. Keep the duplicate-slot and DeepEP-count guards; regression coverage is in `tests/ops/test_deepep_routing_counts.py`.
 
 ## Data Pipeline
 

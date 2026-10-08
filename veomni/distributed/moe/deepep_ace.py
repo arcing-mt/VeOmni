@@ -522,7 +522,13 @@ def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts
     scatter_indices = (recv_indices + 1).to(torch.int64)
     multi_hot.scatter_(1, scatter_indices, True)
     multi_hot = multi_hot[:, 1:].contiguous()
-    counts = multi_hot.sum(0, dtype=torch.long)
+    if getattr(multi_hot, "is_musa", False):
+        # MUSA can undercount tall strided reductions (e.g. [32640, 32]),
+        # incorrectly rejecting valid routing. Reduce contiguous expert rows;
+        # the routing/count guards below still reject real mismatches.
+        counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
+    else:
+        counts = multi_hot.sum(0, dtype=torch.long)
     # One device->host read carries the per-expert counts and the number of valid
     # slots, so both guards below reach the same decisions as the ``torch.equal``
     # and ``num_out != slot_total`` pair they replace -- for integral counts, which
