@@ -95,6 +95,14 @@ def register_qwen3_5_moe_modeling(architecture: str):
                 )
 
                 install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module)
+            if ops_config is not None and ops_config.moe_deepep_recompute_cache == "compact":
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import (
+                    install_qwen3_5_moe_deepep_recompute_patch,
+                )
+
+                install_qwen3_5_moe_deepep_recompute_patch(
+                    modeling_module, cache_stride=ops_config.moe_deepep_cache_layer_stride
+                )
             if ops_config is not None and ops_config.chunk_gated_delta_rule_implementation == "musa_tilelang":
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import (
                     install_qwen3_5_gdn_cpu_seqlens_patch,
@@ -143,6 +151,14 @@ def register_qwen3_5_moe_text_modeling(architecture: str):
                 )
 
                 install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module)
+            if ops_config is not None and ops_config.moe_deepep_recompute_cache == "compact":
+                from ..qwen3_5.qwen3_5_musa_runtime_patch import (
+                    install_qwen3_5_moe_deepep_recompute_patch,
+                )
+
+                install_qwen3_5_moe_deepep_recompute_patch(
+                    modeling_module, cache_stride=ops_config.moe_deepep_cache_layer_stride
+                )
             if ops_config is not None and ops_config.chunk_gated_delta_rule_implementation == "musa_tilelang":
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import (
                     install_qwen3_5_gdn_cpu_seqlens_patch,

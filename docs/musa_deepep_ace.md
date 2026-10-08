@@ -78,3 +78,69 @@ is 16-byte-vector aligned, FP32 routing weights and a local-expert count divisib
 by four; otherwise the whole compaction falls back, including on every CPU test.
 The two paths are driven by different maps (expert-major against top-k slot
 order), so they must not be mixed halfway.
+
+## Selective checkpoint caching
+
+Select the policy through `model.ops_implementation` (CLI or YAML):
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `moe_deepep_recompute_cache` | `none` | `none`: normal recomputation; `compact`: retain the compacted expert input to skip forward dispatch and compaction in selected layers. |
+| `moe_deepep_cache_layer_stride` | `2` | Positive integer. With `compact`, cache zero-based decoder indices divisible by the stride. `2` selects layers 0, 2, 4, ...; `1` selects every layer. Ignored in `none` mode. |
+
+```bash
+--model.ops_implementation.moe_deepep_recompute_cache compact \
+--model.ops_implementation.moe_deepep_cache_layer_stride 2
+```
+
+```yaml
+model:
+  ops_implementation:
+    moe_dispatcher: deepep_ace
+    moe_deepep_recompute_cache: compact
+    moe_deepep_cache_layer_stride: 2
+train:
+  gradient_checkpointing:
+    enable: true
+    enable_reentrant: false
+```
+
+Set `moe_deepep_recompute_cache=none` to restore the normal path; no other
+cache setting needs changing. All EP ranks must use the same arguments.
+The explicit configuration is logged and saved in `veomni_cli.yaml`.
+
+The compact policy currently supports the Qwen3.5-MoE MUSA runtime path with
+enabled non-reentrant gradient checkpointing. Checkpoint debug mode and
+`torch.compile` are rejected. It does not disable global checkpointing, expert
+GEMMs, shared-expert recomputation, combine, or either gradient collective.
+Invalid modes, non-positive/non-integral strides, and non-ACE dispatchers are
+rejected before training. The selected model must expose the Qwen3.5-MoE
+runtime cache scopes.
+
+Each checkpoint invocation owns its compact activation, routing plan, and
+completion event. The original received payload is released; large int64 TE
+row maps are rebuilt from the small bool routing map. A single autograd
+Function owns dispatch and compaction on both passes, preserving saved-tensor
+metadata order and routing-weight gradients. Records are consumed during
+recomputation and released on context exit, including early-stop. Deterministic
+checkpoint routing and a single backward per invocation are required.
+
+Caching every layer is not necessarily faster: the measured partial-layer
+policy avoids the regression seen with full-layer caching. Historical timings,
+traces, and validation limits are recorded in
+`traces/deepep_compact_boundary_20261008/README.md`; they are not a performance
+claim for arbitrary launcher/data changes.
+
+### Migration from the experimental switches
+
+The three experimental booleans (`moe_deepep_reuse_layout_on_recompute`,
+`moe_deepep_cache_dispatch_on_recompute`, and
+`moe_deepep_reuse_dispatch_handle_on_recompute`) have been removed along with
+the layout/handle/global-stack and received-payload-cache implementations.
+Old CLI flags are rejected; old YAML keys produce an explicit migration error.
+
+The earlier `VEOMNI_DEEPEP_*` cache/recompute environment switches no longer
+control any active code, including the compact-dispatch and layer-stride
+switches. Remove them and set the two arguments above. Retired experiment
+artifacts under `traces/` retain their original names for reproducibility.
+The unrelated `VEOMNI_ACE_TE` kernel-fallback override is unchanged.

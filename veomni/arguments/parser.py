@@ -123,6 +123,12 @@ def _instantiate_recursive(cls: Type[T], config_dict: Dict[str, Any]) -> T:
     if not is_dataclass(cls):
         return config_dict
 
+    # Retired options with an explicit migration must not silently disappear
+    # when YAML keys are filtered to the current dataclass fields below.
+    for key, message in getattr(cls, "_removed_config_keys", {}).items():
+        if key in config_dict:
+            raise ValueError(message)
+
     try:
         type_hints = get_type_hints(cls)
     except Exception:

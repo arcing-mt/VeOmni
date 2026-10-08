@@ -561,6 +561,17 @@ class BaseTrainer(Stateful, ABC):
         if args.model.fqn_to_index_mapping is not None:
             kwargs["fqn_to_index_mapping"] = args.model.fqn_to_index_mapping
 
+        if args.model.ops_implementation.moe_deepep_recompute_cache == "compact":
+            from ..distributed.moe.deepep_ace_checkpoint import (
+                deepep_recompute_context_fn,
+                validate_model_cache_scopes,
+            )
+
+            if getattr(self.model_config, "model_type", None) not in {"qwen3_5_moe", "qwen3_5_moe_text"}:
+                raise ValueError("DeepEP compact caching currently supports Qwen3.5-MoE only.")
+            validate_model_cache_scopes(self.model)
+            kwargs["recompute_context_fn"] = deepep_recompute_context_fn
+
         # A full non-LoRA resume already contains model weights. Skip the HF
         # materialization pass to avoid a second peak (HF load then checkpoint
         # overwrite) that can OOM large MoE jobs. LoRA resumes still need the HF base.

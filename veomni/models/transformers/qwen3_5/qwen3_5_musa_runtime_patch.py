@@ -190,6 +190,49 @@ def install_qwen3_5_gdn_cpu_seqlens_patch(modeling_module: ModuleType) -> None:
         decoder_layer._VEOMNI_GDN_CPU_SEQLENS_PATCHED = True
 
 
+def install_qwen3_5_moe_deepep_recompute_patch(modeling_module: ModuleType, *, cache_stride: int = 2) -> None:
+    """Select per-instance decoder cache scopes for non-reentrant checkpoints.
+
+    The trainer installs the cache context. This wrapper supplies a stable MoE
+    identity and a layer selection; it does not change expert computation.
+    """
+    from ....distributed.moe.deepep_ace_checkpoint import moe_dispatch_context
+
+    sparse_cls = getattr(modeling_module, "Qwen3_5MoeSparseMoeBlock", None)
+    decoder_cls = getattr(modeling_module, "Qwen3_5MoeDecoderLayer", None)
+    if sparse_cls is None or decoder_cls is None:
+        raise RuntimeError("Qwen3.5 generated module has no MoE decoder/block class")
+    if type(cache_stride) is not int or cache_stride < 1:
+        raise ValueError("moe_deepep_cache_layer_stride must be a positive integer")
+    # Registration can build another model from the shared modeling module.
+    # Capture selection on each instance; existing models keep their setting.
+    decoder_cls._VEOMNI_DEEPEP_CACHE_STRIDE = cache_stride
+    if not getattr(modeling_module, "_VEOMNI_MUSA_DEEPEP_RECOMPUTE_PATCHED", False):
+        original_init = decoder_cls.__init__
+
+        @wraps(original_init)
+        def decoder_init(self, config, layer_idx):
+            original_init(self, config, layer_idx)
+            self.mlp._veomni_cache_payload = layer_idx % self._VEOMNI_DEEPEP_CACHE_STRIDE == 0
+
+        decoder_cls.__init__ = decoder_init
+        modeling_module._VEOMNI_MUSA_DEEPEP_RECOMPUTE_PATCHED = True
+
+    # Another runtime patch (such as shared-expert overlap) can replace forward
+    # between model constructions. Restore its scope without wrapping init twice.
+    if getattr(sparse_cls.forward, "_veomni_deepep_cache_scope", False):
+        return
+    original_forward = sparse_cls.forward
+
+    @wraps(original_forward)
+    def sparse_moe_forward(self, *args, **kwargs):
+        with moe_dispatch_context(id(self), getattr(self, "_veomni_cache_payload", True)):
+            return original_forward(self, *args, **kwargs)
+
+    sparse_moe_forward._veomni_deepep_cache_scope = True
+    sparse_cls.forward = sparse_moe_forward
+
+
 def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType) -> None:
     """Overlap Qwen3.5's shared expert with an opt-in DeepEP-ACE dispatch.
 
@@ -236,6 +279,7 @@ def install_qwen3_5_moe_shared_expert_overlap_patch(modeling_module: ModuleType)
 
 __all__ = [
     "install_qwen3_5_gdn_cpu_seqlens_patch",
+    "install_qwen3_5_moe_deepep_recompute_patch",
     "install_qwen3_5_moe_shared_expert_overlap_patch",
     "install_qwen3_5_musa_rotary_patch",
 ]

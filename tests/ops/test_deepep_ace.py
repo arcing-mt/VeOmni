@@ -94,6 +94,78 @@ def test_deepep_ace_token_capacity_must_be_positive():
         OpsImplementationConfig(moe_deepep_token_capacity=0)
 
 
+def test_deepep_payload_cache_scope_restored_after_excluded_layer():
+    from veomni.distributed.moe import deepep_ace_checkpoint as ace
+
+    records = []
+    token = ace._CHECKPOINT_DISPATCH_CACHE.set(records)
+    try:
+        with ace.moe_dispatch_context(12, cache_payload=False):
+            assert ace._CHECKPOINT_DISPATCH_CACHE.get() is None
+        assert ace._CHECKPOINT_DISPATCH_CACHE.get() is records
+        with pytest.raises(ValueError), ace.moe_dispatch_context(13, cache_payload=False):
+            raise ValueError("test context cleanup")
+        assert ace._CHECKPOINT_DISPATCH_CACHE.get() is records
+    finally:
+        ace._CHECKPOINT_DISPATCH_CACHE.reset(token)
+
+
+def test_qwen_checkpoint_cache_stride_uses_decoder_layer_index(monkeypatch):
+    from veomni.distributed.moe import deepep_ace_checkpoint as ace
+    from veomni.models.transformers.qwen3_5.qwen3_5_musa_runtime_patch import (
+        install_qwen3_5_moe_deepep_recompute_patch,
+    )
+
+    class Sparse:
+        def forward(self):
+            return ace._CHECKPOINT_DISPATCH_CACHE.get()
+
+    class Decoder:
+        def __init__(self, config, layer_idx):
+            self.mlp = Sparse()
+
+    module = SimpleNamespace(Qwen3_5MoeSparseMoeBlock=Sparse, Qwen3_5MoeDecoderLayer=Decoder)
+    monkeypatch.setenv("VEOMNI_DEEPEP_CACHE_LAYER_STRIDE", "1")
+    install_qwen3_5_moe_deepep_recompute_patch(module, cache_stride=4)
+    layers = [Decoder(None, idx) for idx in range(8)]
+    # A second model may choose a different stride using the same classes.
+    install_qwen3_5_moe_deepep_recompute_patch(module, cache_stride=2)
+    second_layers = [Decoder(None, idx) for idx in range(8)]
+    # Shared-expert overlap may replace forward when constructing a later model.
+    original_init = Decoder.__init__
+    Sparse.forward = lambda self: ace._CHECKPOINT_DISPATCH_CACHE.get()
+    install_qwen3_5_moe_deepep_recompute_patch(module, cache_stride=2)
+    assert Decoder.__init__ is original_init
+    records = []
+    token = ace._CHECKPOINT_DISPATCH_CACHE.set(records)
+    try:
+        for idx, layer in enumerate(second_layers):
+            assert layer.mlp.forward() is (records if idx % 2 == 0 else None)
+        for idx, layer in enumerate(layers):
+            assert layer.mlp.forward() is (records if idx % 4 == 0 else None)
+            assert ace._CHECKPOINT_DISPATCH_CACHE.get() is records
+    finally:
+        ace._CHECKPOINT_DISPATCH_CACHE.reset(token)
+
+
+def test_compact_cache_rejects_models_without_active_scopes():
+    from veomni.distributed.moe.deepep_ace_checkpoint import validate_model_cache_scopes
+
+    class Sparse(torch.nn.Module):
+        def forward(self, value):
+            return value
+
+    model = torch.nn.Sequential(Sparse(), Sparse())
+    with pytest.raises(ValueError, match="installed Qwen3.5-MoE cache scopes"):
+        validate_model_cache_scopes(model)
+    for idx, block in enumerate(model):
+        block._veomni_cache_payload = idx % 2 == 0
+    with pytest.raises(ValueError, match="installed Qwen3.5-MoE cache scopes"):
+        validate_model_cache_scopes(model)
+    Sparse.forward._veomni_deepep_cache_scope = True
+    validate_model_cache_scopes(model)
+
+
 def test_deepep_wheel_event_exports_are_resolved():
     _, event_handle, event_overlap = _load_deepep()
     assert event_handle is not None
@@ -215,3 +287,73 @@ def test_shared_expert_is_issued_between_dispatch_and_wait(monkeypatch):
     monkeypatch.setattr(state, "wait_dispatch", wait)
     state.wait_dispatch()
     assert order[-1] == "wait_dispatch"
+
+
+@pytest.mark.parametrize("backward_order", [(0, 1), (1, 0)])
+@pytest.mark.parametrize("owned_receive", [False, True])
+def test_compact_checkpoint_preserves_gradients(monkeypatch, backward_order, owned_receive):
+    """Exercise the public dispatcher, both backward orders, and workspace reuse."""
+    from torch.utils.checkpoint import checkpoint
+
+    from veomni.distributed.moe import deepep_ace as ace
+    from veomni.distributed.moe import deepep_ace_checkpoint as cache
+
+    class Event:
+        def current_stream_wait(self):
+            pass
+
+    class Buffer:
+        calls = 0
+        workspace = torch.zeros(3, 4)
+
+        def get_dispatch_layout(self, *args, **kwargs):
+            return None, None, None, None, Event()
+
+        def dispatch(self, hidden_states, **kwargs):
+            self.calls += 1
+            self.workspace.copy_(hidden_states)
+            received = self.workspace.clone() if owned_receive else self.workspace
+            return received, kwargs["topk_idx"].clone(), kwargs["topk_weights"].clone(), [3, 3], (), Event()
+
+    class Expert:
+        @staticmethod
+        def apply(compact, counts, weight):
+            return (compact @ weight).sin()
+
+    buffer = Buffer()
+    group = SimpleNamespace(size=lambda: 2)
+    monkeypatch.setattr(ace, "get_parallel_state", lambda: SimpleNamespace(ep_enabled=True, ep_group=group))
+    monkeypatch.setattr(ace, "_supported_ep_classes", lambda: (Expert,))
+    monkeypatch.setattr(ace, "_current_stream_event", Event)
+    monkeypatch.setattr(ace._ACEState, "_get_buffer", lambda *args: buffer)
+    monkeypatch.setattr(ace._ACEState, "reverse_combine", lambda self, x, p: (x, p))
+    monkeypatch.setattr(ace._ACEState, "combine", lambda self, x: x.clone())
+    monkeypatch.setattr(ace._ACEState, "reverse_dispatch", lambda self, x: x)
+    monkeypatch.setattr(ace, "_ace_te_supported", lambda *args: False)
+    config = SimpleNamespace(moe_dispatcher="deepep_ace", moe_deepep_recompute_cache="none")
+    monkeypatch.setattr(cache, "get_ops_config", lambda: config)
+    idx = torch.tensor([[0, 1], [1, 0], [0, 1]])
+
+    def block(x, probs, weight):
+        return ace.dispatch_to_ep_class_deepep_ace(Expert, 4, probs, idx, x.sin(), weight)
+
+    torch.manual_seed(23)
+    inputs = [tuple(torch.randn(*s) for s in ((3, 4), (3, 2), (4, 4))) for _ in range(2)]
+
+    def run(mode):
+        config.moe_deepep_recompute_cache = mode
+        buffer.calls = 0
+        xs = [tuple(t.clone().requires_grad_() for t in sample) for sample in inputs]
+        ys = [checkpoint(block, *x, use_reentrant=False, context_fn=cache.deepep_recompute_context_fn) for x in xs]
+        buffer.workspace.fill_(999)
+        for i in backward_order:
+            ys[i].square().sum().backward()
+        assert cache._CHECKPOINT_DISPATCH_CACHE.get() is None
+        assert not cache._IN_CHECKPOINT_RECOMPUTE.get()
+        return ys, [t.grad for sample in xs for t in sample], buffer.calls
+
+    baseline, baseline_grads, baseline_calls = run("none")
+    cached, cached_grads, cached_calls = run("compact")
+    assert baseline_calls == 4 and cached_calls == 2
+    for a, b in zip(baseline + baseline_grads, cached + cached_grads):
+        torch.testing.assert_close(a, b, rtol=0, atol=0)

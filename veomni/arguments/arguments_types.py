@@ -17,7 +17,7 @@ import os
 import sys
 from dataclasses import MISSING, dataclass, field, fields
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import ClassVar, Dict, List, Literal, Optional, Tuple
 
 from ..utils import logging
 from ..utils.env import get_env
@@ -1145,6 +1145,37 @@ class OpsImplementationConfig:
             "grouped GEMM or the combine."
         },
     )
+    _removed_config_keys: ClassVar[Dict[str, str]] = {
+        name: (
+            f"{name} was removed. Use model.ops_implementation.moe_deepep_recompute_cache "
+            "('none' or 'compact') and moe_deepep_cache_layer_stride instead."
+        )
+        for name in (
+            "moe_deepep_reuse_layout_on_recompute",
+            "moe_deepep_cache_dispatch_on_recompute",
+            "moe_deepep_reuse_dispatch_handle_on_recompute",
+        )
+    }
+    moe_deepep_recompute_cache: Literal["none", "compact"] = field(
+        default="none",
+        metadata={
+            "help": (
+                "DeepEP-ACE checkpoint cache policy: 'none' recomputes normally; 'compact' retains "
+                "the expert input to skip forward dispatch and compaction during recomputation. "
+                "Expert GEMMs and gradient communication still run. Requires non-reentrant checkpointing."
+            )
+        },
+    )
+    moe_deepep_cache_layer_stride: int = field(
+        default=2,
+        metadata={
+            "help": (
+                "Cache decoder layers whose zero-based index is divisible by this positive integer. "
+                "Used only with moe_deepep_recompute_cache='compact': 1 caches every layer, "
+                "2 caches layers 0, 2, 4, ... . Other layers retain normal checkpoint recomputation."
+            )
+        },
+    )
     skip_empty_modality_dummy: bool = field(
         default=True,
         metadata={
@@ -1275,6 +1306,12 @@ class OpsImplementationConfig:
             raise ValueError("moe_deepep_token_capacity must be positive.")
         if self.moe_shared_expert_overlap and self.moe_dispatcher != "deepep_ace":
             raise ValueError("moe_shared_expert_overlap requires moe_dispatcher='deepep_ace'.")
+        if self.moe_deepep_recompute_cache not in {"none", "compact"}:
+            raise ValueError("moe_deepep_recompute_cache must be 'none' or 'compact'.")
+        if type(self.moe_deepep_cache_layer_stride) is not int or self.moe_deepep_cache_layer_stride < 1:
+            raise ValueError("moe_deepep_cache_layer_stride must be a positive integer.")
+        if self.moe_deepep_recompute_cache != "none" and self.moe_dispatcher != "deepep_ace":
+            raise ValueError("moe_deepep_recompute_cache='compact' requires moe_dispatcher='deepep_ace'.")
         # On MUSA, use the locally installed FA3 interface when the upstream
         # GPU default (FA2) is still selected. This is an explicit accelerator
         # mapping, not an eager/fallback substitution; if FA3 is unavailable,
@@ -1706,6 +1743,12 @@ class VeOmniArguments:
     train: TrainingArguments = field(default_factory=TrainingArguments)
 
     def __post_init__(self):
+        if self.model.ops_implementation.moe_deepep_recompute_cache != "none":
+            checkpoint = self.train.gradient_checkpointing
+            if not checkpoint.enable or checkpoint.enable_reentrant:
+                raise ValueError("DeepEP compact caching requires enabled non-reentrant gradient checkpointing.")
+            if checkpoint.debug or self.train.torch_compile.enable:
+                raise ValueError("DeepEP compact caching does not support checkpoint debug mode or torch.compile.")
         if self.train.pad_to_length:
             if not self.train.dyn_bsz:
                 logger.warning_rank0(

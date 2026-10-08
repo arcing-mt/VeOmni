@@ -509,18 +509,18 @@ class _TECompactUnpermute(torch.autograd.Function):
         return grad_weighted, None, None, None
 
 
-def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts):
+def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan=None):
     """TE compaction: TE row ids plus one fused gather.
 
     Returns ``(permuted, probs, None, counts, row_id_map, num_local_experts)``, or
     ``None`` when this routing cannot take the TE path.
     """
-    make_row_id_map = _ace_te_impl()[0]
     num_tokens = recv_hidden.shape[0]
     # A multi-hot map holds each token's *set* of experts.  Padding slots go to an
     # extra column that is sliced away, so no two writes race for one cell.
     multi_hot = torch.zeros((num_tokens, num_local_experts + 1), dtype=torch.bool, device=recv_hidden.device)
-    multi_hot.scatter_(1, (recv_indices + 1).to(torch.int64), True)
+    scatter_indices = (recv_indices + 1).to(torch.int64)
+    multi_hot.scatter_(1, scatter_indices, True)
     multi_hot = multi_hot[:, 1:].contiguous()
     counts = multi_hot.sum(0, dtype=torch.long)
     # One device->host read carries the per-expert counts and the number of valid
@@ -540,10 +540,29 @@ def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts
         target = expert_counts.tolist() if isinstance(expert_counts, torch.Tensor) else list(expert_counts)
         if counts_host != target:
             return None
-    row_id_map, row_nt = make_row_id_map(multi_hot, num_tokens, num_local_experts)
+    built_plan = dict(
+        backend="te",
+        counts=counts,
+        multi_hot=multi_hot,
+        num_tokens=num_tokens,
+        width=num_local_experts,
+        num_out=num_out,
+        scatter_indices=scatter_indices,
+    )
+    if plan is not None:
+        plan.update(built_plan)
+    return _te_permute_with_plan(recv_hidden, recv_probs, built_plan)
+
+
+def _te_permute_with_plan(recv_hidden, recv_probs, plan):
+    num_tokens, num_local_experts = plan["num_tokens"], plan["width"]
+    # Two int64 row maps retain 16x the bytes of the bool routing map across
+    # every decoder checkpoint. Recreate them locally so their forward storage
+    # can be freed; cache only the compact routing map and validated counts.
+    row_id_map, row_nt = _ace_te_impl()[0](plan["multi_hot"], num_tokens, num_local_experts)
     # Routing weights in the same expert-major layout the permute kernel reads.
     weights = torch.zeros((num_tokens, num_local_experts + 1), dtype=torch.float32, device=recv_hidden.device)
-    weights.scatter_(1, (recv_indices + 1).to(torch.int64), recv_probs)
+    weights.scatter_(1, plan["scatter_indices"], recv_probs)
     weights = weights[:, 1:].contiguous()
     permuted, permuted_probs = _TECompactPermute.apply(
         recv_hidden,
@@ -552,12 +571,12 @@ def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts
         row_id_map,
         num_tokens,
         num_local_experts,
-        num_out,
+        plan["num_out"],
     )
-    return permuted, permuted_probs, None, counts, row_id_map, num_local_experts
+    return permuted, permuted_probs, None, plan["counts"], row_id_map, num_local_experts
 
 
-def _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts):
+def _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan=None):
     """Fallback compaction: ``nonzero`` + stable ``argsort`` + ``index_select``.
 
     Returns ``(permuted, probs, token_rows, counts, row_map, topk)`` with the
@@ -581,14 +600,22 @@ def _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_expe
                 "DeepEP expert counts do not match received routing slots: "
                 f"counts={sum(expert_counts)}, slots={num_out}"
             )
+    built_plan = dict(backend="torch", token_rows=token_rows, slots=slots, counts=counts, width=topk)
+    if plan is not None:
+        plan.update(built_plan)
+    return _torch_permute_with_plan(recv_hidden, recv_probs, built_plan)
+
+
+def _torch_permute_with_plan(recv_hidden, recv_probs, plan):
+    token_rows = plan["token_rows"]
     permuted = recv_hidden.index_select(0, token_rows)
-    probs = recv_probs.reshape(-1).index_select(0, slots)
+    probs = recv_probs.reshape(-1).index_select(0, plan["slots"])
     # ``token_rows`` is this layout's map: the un-permute scatters by it and
     # ``width`` is the top-k slot count.  The expert-major map is not needed.
-    return permuted, probs, token_rows, counts, None, topk
+    return permuted, probs, token_rows, plan["counts"], None, plan["width"]
 
 
-def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None):
+def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None, plan=None):
     """Move the received rows into the expert-major layout the grouped GEMM wants.
 
     Returns ``(permuted, probs, token_rows, counts, row_map, width)``.  ``width``
@@ -600,7 +627,7 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
     if expert_counts is not None and len(expert_counts) != num_local_experts:
         raise RuntimeError(f"DeepEP returned {len(expert_counts)} expert counts for {num_local_experts} local experts")
     if _ace_te_supported(recv_hidden, recv_probs, num_local_experts):
-        built = _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts)
+        built = _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan)
         if built is not None:
             return built
         if not _ACE_TE_FELL_BACK:
@@ -610,7 +637,7 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
             # and the rank has to be in the line to tell the ranks apart.
             rank = dist.get_rank() if dist.is_initialized() else -1
             logger.info(f"ACE compaction: routing is not a multi-hot map, using the PyTorch path (rank {rank})")
-    return _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts)
+    return _torch_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan)
 
 
 def _compact_unpermute(expert_outputs, probs, token_rows, recv_tokens, row_map=None, width=None):
@@ -661,33 +688,42 @@ def dispatch_to_ep_class_deepep_ace(
     overlap = _ACTIVE_SHARED_EXPERT.get()
     if overlap is not None:
         invocation.previous_event = _current_stream_event()
-    recv_hidden, recv_indices, recv_probs = _ACEDispatch.apply(
-        hidden_states,
-        selected_experts,
-        routing_weights.float(),
-        invocation,
-    )
-    # This is immediately after the host-side dispatch call returns.  It must
-    # stay outside the custom autograd Function: its forward executes with
-    # grad recording disabled, while the shared expert needs a normal graph for
-    # parameter and input gradients.
-    # The received payload is consumed by local compaction below.
-    invocation.wait_dispatch()
-    num_local_experts = num_experts // state.ep_group.size()
-    permuted, probs, token_rows, counts, row_map, width = _compact_permute(
-        recv_hidden,
-        recv_indices,
-        recv_probs,
-        num_local_experts,
-        invocation.recv_counts,
-    )
+    from .deepep_ace_checkpoint import _DispatchCompact, has_cached_dispatch
+
+    if has_cached_dispatch():
+        permuted, probs, token_rows, counts, row_map, width = _DispatchCompact.apply(
+            hidden_states, selected_experts, routing_weights.float(), invocation
+        )
+        recv_tokens = invocation.received_tokens
+    else:
+        recv_hidden, recv_indices, recv_probs = _ACEDispatch.apply(
+            hidden_states,
+            selected_experts,
+            routing_weights.float(),
+            invocation,
+        )
+        # This is immediately after the host-side dispatch call returns.  It must
+        # stay outside the custom autograd Function: its forward executes with
+        # grad recording disabled, while the shared expert needs a normal graph for
+        # parameter and input gradients.
+        # The received payload is consumed by local compaction below.
+        invocation.wait_dispatch()
+        num_local_experts = num_experts // state.ep_group.size()
+        permuted, probs, token_rows, counts, row_map, width = _compact_permute(
+            recv_hidden,
+            recv_indices,
+            recv_probs,
+            num_local_experts,
+            invocation.recv_counts,
+        )
+        recv_tokens = recv_hidden.shape[0]
     cumsum = counts.cumsum(0)
     expert_outputs = ep_class.apply(permuted, cumsum, *ep_class_args)
     restored = _compact_unpermute(
         expert_outputs,
         probs,
         token_rows,
-        recv_hidden.shape[0],
+        recv_tokens,
         row_map=row_map,
         width=width,
     )
