@@ -56,8 +56,8 @@ def test_te_validation_still_rejects_invalid_routing(device, invalid):
 
 
 def test_te_production_path_uses_deepep_host_counts_without_validation(monkeypatch):
-    indices = torch.tensor([[0, 0, -1, -1], [1, 2, -1, -1]])
-    host_counts = [2, 1, 1, 0]
+    indices = torch.tensor([[0, 1, -1, -1], [1, 2, -1, -1]])
+    host_counts = [1, 2, 1, 0]
     monkeypatch.setattr(ace, "_te_permute_with_plan", lambda _hidden, _probs, plan: plan)
     result = ace._te_compact_permute(
         torch.empty(2, 16, dtype=torch.bfloat16),

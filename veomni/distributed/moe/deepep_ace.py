@@ -559,18 +559,12 @@ def _te_compact_permute(
             target = expert_counts.tolist()
         else:
             target = list(expert_counts)
-    if target is not None and not validate_routing:
-        # DeepEP has already produced these counts from its host-side receive
-        # counters. Materialize the small authoritative vector on device and
-        # skip both the tall MUSA reduction and its device-to-host validation.
-        counts = torch.as_tensor(target, dtype=torch.long, device=recv_hidden.device)
-        num_out = sum(target)
-    else:
-        # ``multi_hot`` is row-major [tokens, experts]. The MUSA reduction is
-        # correct when each expert is a contiguous row, and this orientation is
-        # also the one used by the TE row-map builder.
-        counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
-        num_out = sum(target) if target is not None else int(counts.sum().item())
+    # ``multi_hot`` is row-major [tokens, experts]. The MUSA reduction is
+    # correct when each expert is a contiguous row, and this orientation is
+    # also the one used by the TE row-map builder. DeepEP's host counts still
+    # provide the authoritative output length without a CPU/GPU metadata copy.
+    counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
+    num_out = sum(target) if target is not None else int(counts.sum().item())
     if validate_routing:
         # Diagnostics/tests can retain the old contract checks. Native Qwen
         # top-k produces distinct indices; production uses DeepEP's host counts

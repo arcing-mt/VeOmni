@@ -88,8 +88,9 @@ count validation remains available through the explicit validation path; this
 requires no extra option.
 
 The production TE path now trusts DeepEP's host-side per-expert receive counts
-for `num_out` and the grouped-GEMM cumulative counts. It does not convert the
-GPU mask counts to Python on every MoE call. Full duplicate-slot and count
+for `num_out`, while the corrected contiguous GPU reduction supplies the
+grouped-GEMM cumulative counts. It does not convert the GPU mask counts to
+Python or copy the host counts back to the device on every MoE call. Full duplicate-slot and count
 validation remains available through the private `validate_routing=True` test
 and diagnostic path; native Qwen top-k produces distinct expert indices, and
 DeepEP has already generated the receive counts from the same dispatch. A
