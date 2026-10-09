@@ -142,21 +142,28 @@ class _ACEState:
         # per layer (~2 ms/step at Qwen3.5-35B-A3B's 40 forward invocations).
         if self._buffer is not None:
             return self._buffer
-        self._buffer = self._resolve_buffer(hidden_states)
+        buffer = self._resolve_buffer(hidden_states)
         share_fsdp_stream = os.environ.get("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "0").lower()
-        get_comm_stream = getattr(self._buffer, "get_comm_stream", None)
         if (
             share_fsdp_stream in {"1", "true", "yes", "on"}
-            and id(self._buffer) not in _FSDP_SHARED_STREAM_REGISTERED_BUFFERS
-            and get_comm_stream is not None
+            and id(buffer) not in _FSDP_SHARED_STREAM_REGISTERED_BUFFERS
         ):
+            get_comm_stream = getattr(buffer, "get_comm_stream", None)
+            if not callable(get_comm_stream):
+                raise RuntimeError(
+                    "VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM requires a DeepEP Buffer.get_comm_stream() API"
+                )
+            stream = get_comm_stream()
+            if stream is None:
+                raise RuntimeError("DeepEP Buffer.get_comm_stream() returned no communication stream")
             # The stream is exposed by the installed DeepEP wheel. Sharing it
             # serializes FSDP and DeepEP communication in one per-rank launch
             # order while both remain asynchronous with compute.
             from ..torch_parallelize import _set_musa_deepep_fsdp_shared_comm_stream
 
-            _set_musa_deepep_fsdp_shared_comm_stream(get_comm_stream())
-            _FSDP_SHARED_STREAM_REGISTERED_BUFFERS.add(id(self._buffer))
+            _set_musa_deepep_fsdp_shared_comm_stream(stream)
+            _FSDP_SHARED_STREAM_REGISTERED_BUFFERS.add(id(buffer))
+        self._buffer = buffer
         return self._buffer
 
     def _resolve_buffer(self, hidden_states: torch.Tensor):

@@ -190,6 +190,58 @@ def test_standard_deepep_constructs_buffer_without_ace_workspace(monkeypatch):
     assert buffer.workspace == (1, 0, 0, 0)
 
 
+@pytest.mark.parametrize("use_ace", [False, True])
+def test_deepep_shared_fsdp_stream_requires_stream_accessor(monkeypatch, use_ace):
+    buffer = object()
+    state = _ACEState(object(), num_experts=4, top_k=2, use_ace=use_ace)
+    monkeypatch.setattr(state, "_resolve_buffer", lambda _hidden_states: buffer)
+    monkeypatch.setenv("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "true")
+    monkeypatch.setattr(deepep_ace, "_FSDP_SHARED_STREAM_REGISTERED_BUFFERS", set())
+
+    for _ in range(2):
+        with pytest.raises(RuntimeError, match="get_comm_stream"):
+            state._get_buffer(torch.ones(3, 8))
+        assert state._buffer is None
+
+
+def test_deepep_shared_fsdp_stream_registers_each_buffer_once(monkeypatch):
+    from veomni.distributed import torch_parallelize
+
+    stream = object()
+    buffer = SimpleNamespace(get_comm_stream=lambda: stream)
+    registered = []
+    monkeypatch.setenv("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "true")
+    monkeypatch.setattr(deepep_ace, "_FSDP_SHARED_STREAM_REGISTERED_BUFFERS", set())
+    monkeypatch.setattr(torch_parallelize, "_set_musa_deepep_fsdp_shared_comm_stream", registered.append)
+
+    for _ in range(2):
+        state = _ACEState(object(), num_experts=4, top_k=2, use_ace=False)
+        monkeypatch.setattr(state, "_resolve_buffer", lambda _hidden_states: buffer)
+        assert state._get_buffer(torch.ones(3, 8)) is buffer
+        assert state._get_buffer(torch.ones(3, 8)) is buffer
+    assert registered == [stream]
+
+
+def test_deepep_shared_fsdp_stream_rejects_missing_stream(monkeypatch):
+    state = _ACEState(object(), num_experts=4, top_k=2, use_ace=False)
+    monkeypatch.setattr(state, "_resolve_buffer", lambda _hidden_states: SimpleNamespace(get_comm_stream=lambda: None))
+    monkeypatch.setenv("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "true")
+    monkeypatch.setattr(deepep_ace, "_FSDP_SHARED_STREAM_REGISTERED_BUFFERS", set())
+
+    with pytest.raises(RuntimeError, match="returned no communication stream"):
+        state._get_buffer(torch.ones(3, 8))
+    assert state._buffer is None
+
+
+def test_deepep_without_shared_fsdp_stream_accepts_legacy_buffer(monkeypatch):
+    buffer = object()
+    state = _ACEState(object(), num_experts=4, top_k=2, use_ace=False)
+    monkeypatch.setattr(state, "_resolve_buffer", lambda _hidden_states: buffer)
+    monkeypatch.setenv("VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM", "false")
+
+    assert state._get_buffer(torch.ones(3, 8)) is buffer
+
+
 def test_shared_expert_overlap_rejects_non_deepep_dispatcher():
     with pytest.raises(ValueError, match="requires a DeepEP dispatcher"):
         OpsImplementationConfig(moe_dispatcher="alltoall", moe_shared_expert_overlap=True)
@@ -268,6 +320,10 @@ def test_shared_expert_is_issued_between_dispatch_and_wait(monkeypatch):
     class FakeEvent:
         def current_stream_wait(self):
             pass
+
+    stream = object()
+    monkeypatch.setattr(torch, "musa", SimpleNamespace(current_stream=lambda: stream), raising=False)
+    monkeypatch.setattr(deepep_ace, "_current_stream_event", FakeEvent)
 
     class FakeGroup:
         def size(self):
