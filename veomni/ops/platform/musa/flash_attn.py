@@ -1,12 +1,14 @@
 """Make Transformers' FA3 availability check understand MUSA.
 
 The local MUSA FA3 wheel exposes the standard ``flash_attn_interface`` API,
-but Transformers' generic predicate currently requires ``torch.cuda``.  The
+but Transformers' generic predicate currently requires CUDA. The
 patch only changes availability/diagnostic gates; actual attention execution
 still goes through Transformers' FA3 wrapper and the installed MUSA wheel.
 """
 
 import importlib.util
+
+from ....utils.device import IS_CUDA_AVAILABLE
 
 
 _PATCHED = False
@@ -29,7 +31,7 @@ def apply_musa_flash_attn_patch() -> bool:
 
     def musa_aware_fa3_available() -> bool:
         return importlib.util.find_spec("flash_attn_interface") is not None and (
-            torch.cuda.is_available() or (hasattr(torch, "musa") and torch.musa.is_available())
+            IS_CUDA_AVAILABLE or (hasattr(torch, "musa") and torch.musa.is_available())
         )
 
     # Patch all module globals that Transformers captured with ``from ...

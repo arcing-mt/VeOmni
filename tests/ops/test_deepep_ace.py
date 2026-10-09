@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from veomni.arguments.arguments_types import OpsImplementationConfig
+from veomni.distributed.moe import deepep_ace
 from veomni.distributed.moe.deepep_ace import (
     _ACTIVE_SHARED_EXPERT,
     _ACEState,
@@ -43,6 +44,56 @@ def test_deepep_ace_compact_unpermute_backward_cpu():
     assert torch.equal(probs.grad, expert_outputs.detach().sum(dim=-1))
 
 
+@pytest.mark.skipif(not hasattr(torch, "musa") or not torch.musa.is_available(), reason="requires MUSA")
+def test_deepep_ace_musa_counting_sort_matches_stable_argsort():
+    from veomni.ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+    generator = torch.Generator().manual_seed(17)
+    num_tokens, top_k, num_experts, num_assignments = 257, 8, 32, 1500
+    flat_cpu = torch.full((num_tokens * top_k,), -1, dtype=torch.long)
+    valid_slots = torch.randperm(flat_cpu.numel(), generator=generator)[:num_assignments].sort().values
+    expert_ids = torch.randint(0, num_experts, (num_assignments,), generator=generator)
+    flat_cpu[valid_slots] = expert_ids
+
+    flat = flat_cpu.musa()
+    counts = torch.bincount(expert_ids, minlength=num_experts).musa()
+    actual_slots, actual_rows = musa_deepep_stable_slots(flat, counts, top_k, num_assignments)
+
+    reference_valid = torch.nonzero(flat >= 0, as_tuple=False).flatten()
+    reference_order = torch.argsort(flat.index_select(0, reference_valid), stable=True)
+    reference_slots = reference_valid.index_select(0, reference_order)
+    reference_rows = torch.div(reference_slots, top_k, rounding_mode="floor")
+
+    assert torch.equal(actual_slots, reference_slots)
+    assert torch.equal(actual_rows, reference_rows)
+
+
+@pytest.mark.skipif(not hasattr(torch, "musa") or not torch.musa.is_available(), reason="requires MUSA")
+def test_deepep_ace_musa_counting_sort_handles_empty_receive():
+    from veomni.ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+    flat = torch.empty(0, dtype=torch.long, device="musa")
+    counts = torch.zeros(32, dtype=torch.long, device="musa")
+    slots, rows = musa_deepep_stable_slots(flat, counts, top_k=8, num_assignments=0)
+
+    assert slots.shape == (0,)
+    assert rows.shape == (0,)
+
+
+@pytest.mark.parametrize(
+    ("actual", "expected"),
+    [
+        ([2, 1], [1, 2]),
+        ([0, 0], [1, 0]),
+    ],
+)
+def test_deepep_ace_counting_sort_rejects_mismatched_counts(actual, expected):
+    from veomni.ops.kernels.moe.musa_deepep_compact import _require_matching_counts
+
+    with pytest.raises(RuntimeError, match="expert counts do not match"):
+        _require_matching_counts(torch.tensor(actual), torch.tensor(expected))
+
+
 def test_deepep_ace_dispatch_uses_caller_previous_event(monkeypatch):
     previous_event = object()
     layout_event = object()
@@ -76,6 +127,72 @@ def test_deepep_ace_is_a_dispatcher_selection():
     assert config.moe_dispatcher == "deepep_ace"
     assert config.moe_deepep_num_sms == 20
     assert config.moe_deepep_token_capacity == 8192
+
+
+def test_standard_deepep_is_a_dispatcher_selection():
+    config = OpsImplementationConfig(moe_dispatcher="deepep", moe_shared_expert_overlap=True)
+    assert config.moe_dispatcher == "deepep"
+
+
+def test_standard_deepep_constructs_buffer_without_ace_workspace(monkeypatch):
+    class FakeGroup:
+        def size(self):
+            return 2
+
+    class FakeSizeHint:
+        def get_nvl_buffer_size_hint(self, *_args):
+            return 1024
+
+        def get_rdma_buffer_size_hint(self, *_args):
+            return 0
+
+    class FakeBuffer:
+        num_sms = None
+
+        @classmethod
+        def set_num_sms(cls, value):
+            cls.num_sms = value
+
+        @staticmethod
+        def get_dispatch_config(_group_size):
+            return FakeSizeHint()
+
+        @staticmethod
+        def get_combine_config(_group_size):
+            return FakeSizeHint()
+
+        def __init__(
+            self,
+            group,
+            nvl_bytes,
+            rdma_bytes,
+            use_ace=False,
+            num_ace_buffers=1,
+            token_num=0,
+            hidden_size=0,
+            num_topk=0,
+        ):
+            self.args = (group, nvl_bytes, rdma_bytes)
+            self.use_ace = use_ace
+            self.workspace = (num_ace_buffers, token_num, hidden_size, num_topk)
+
+    monkeypatch.setattr(deepep_ace, "_load_deepep", lambda: (FakeBuffer, object, object))
+    monkeypatch.setattr(
+        deepep_ace,
+        "get_ops_config",
+        lambda: SimpleNamespace(moe_deepep_num_sms=20, moe_deepep_token_capacity=8192),
+    )
+    state = _ACEState(FakeGroup(), num_experts=4, top_k=2, use_ace=False)
+    buffer = state._resolve_buffer(torch.ones(3, 8))
+
+    assert FakeBuffer.num_sms == 20
+    assert buffer.use_ace is False
+    assert buffer.workspace == (1, 0, 0, 0)
+
+
+def test_shared_expert_overlap_rejects_non_deepep_dispatcher():
+    with pytest.raises(ValueError, match="requires a DeepEP dispatcher"):
+        OpsImplementationConfig(moe_dispatcher="alltoall", moe_shared_expert_overlap=True)
 
 
 def test_deepep_ace_num_sms_must_be_even_and_positive():

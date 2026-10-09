@@ -96,7 +96,7 @@ def register_qwen3_5_moe_modeling(architecture: str):
                     install_vision=ops_config.rotary_pos_emb_vision_implementation == "musa",
                 )
             if ops_config is not None and (
-                getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
+                getattr(ops_config, "moe_dispatcher", "alltoall") in {"deepep", "deepep_ace"}
                 and getattr(ops_config, "moe_shared_expert_overlap", False)
             ):
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import (
@@ -141,7 +141,7 @@ def register_qwen3_5_moe_text_modeling(architecture: str):
 
                 install_qwen3_5_musa_rotary_patch(modeling_module)
             if ops_config is not None and (
-                getattr(ops_config, "moe_dispatcher", "alltoall") == "deepep_ace"
+                getattr(ops_config, "moe_dispatcher", "alltoall") in {"deepep", "deepep_ace"}
                 and getattr(ops_config, "moe_shared_expert_overlap", False)
             ):
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import (

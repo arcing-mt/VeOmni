@@ -1,8 +1,8 @@
-"""DeepEP-ACE token communication for the MUSA MoE dispatcher.
+"""DeepEP token communication for the MUSA MoE dispatcher.
 
 The dispatcher is deliberately separate from the expert compute backend. The
-normal ``alltoall`` path remains in :mod:`moe_layer`; this module is entered
-only when ``OpsImplementationConfig.moe_dispatcher`` is ``"deepep_ace"``.
+normal ``alltoall`` path remains in :mod:`moe_layer`; this module supports both
+standard DeepEP (``"deepep"``) and its MUSA ACE mode (``"deepep_ace"``).
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ def _load_deepep() -> tuple[Any, Any, Any]:
         from deep_ep import Buffer, EventOverlap
         from deep_ep_cpp import EventHandle
     except ImportError as exc:  # pragma: no cover - hardware image dependent.
-        raise RuntimeError("moe_dispatcher='deepep_ace' requires a DeepEP build with MUSA ACE support") from exc
+        raise RuntimeError("a DeepEP dispatcher requires the deep_ep Python package") from exc
     return Buffer, EventHandle, EventOverlap
 
 
@@ -49,16 +49,16 @@ def _current_stream_event():
     return EventOverlap(EventHandle())
 
 
-_BUFFER_CACHE: dict[tuple[int, int, int, int, int, int, int], Any] = {}
+_BUFFER_CACHE: dict[tuple[bool, int, int, int, int, int, int, int], Any] = {}
 _CAPACITY_CHECKED: set[tuple[int, int]] = set()
 _FSDP_SHARED_STREAM_REGISTERED_BUFFERS: set[int] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
 
 
 class _SharedExpertOverlap:
-    """Run the independent shared expert inside the ACE dispatch window.
+    """Run the independent shared expert inside the DeepEP dispatch window.
 
-    :meth:`_ACEState.dispatch` submits the ACE dispatch and then calls
+    :meth:`_ACEState.dispatch` submits the DeepEP dispatch and then calls
     :meth:`start`, so the shared expert is issued on the compute stream while
     the dispatch payload is still in flight; ``wait_dispatch`` only joins the
     payload afterwards.  That is the overlap ``moe_shared_expert_overlap``
@@ -112,7 +112,7 @@ class _SharedExpertOverlap:
 
 @contextmanager
 def shared_expert_overlap(shared_expert: torch.nn.Module, shared_gate: torch.nn.Module, hidden_states: torch.Tensor):
-    """Enable one ACE dispatch call to overlap the independent shared expert."""
+    """Enable one DeepEP dispatch call to overlap the independent shared expert."""
     state = _SharedExpertOverlap(shared_expert, shared_gate, hidden_states)
     token = _ACTIVE_SHARED_EXPERT.set(state)
     try:
@@ -124,10 +124,11 @@ def shared_expert_overlap(shared_expert: torch.nn.Module, shared_gate: torch.nn.
 class _ACEState:
     """Per-MoE-invocation handle state; the buffer itself is process cached."""
 
-    def __init__(self, group: dist.ProcessGroup, num_experts: int, top_k: int):
+    def __init__(self, group: dist.ProcessGroup, num_experts: int, top_k: int, *, use_ace: bool = True):
         self.group = group
         self.num_experts = num_experts
         self.top_k = top_k
+        self.use_ace = use_ace
         self.token_num = None
         self.handle = None
         self.dispatch_event = None
@@ -150,7 +151,7 @@ class _ACEState:
             and get_comm_stream is not None
         ):
             # The stream is exposed by the installed DeepEP wheel. Sharing it
-            # serializes FSDP and ACE communication in one per-rank launch
+            # serializes FSDP and DeepEP communication in one per-rank launch
             # order while both remain asynchronous with compute.
             from ..torch_parallelize import _set_musa_deepep_fsdp_shared_comm_stream
 
@@ -165,32 +166,31 @@ class _ACEState:
         hidden_bytes = hidden_size * max(element_size, 2)
         config = get_ops_config()
         num_sms = getattr(config, "moe_deepep_num_sms", 20) if config is not None else 20
-        # ACE allocates a fixed token workspace in its C++ runtime.  All EP
-        # ranks must use the same capacity, so it is an explicit config value
-        # rather than a per-rank auto-growth decision.
-        configured_capacity = getattr(config, "moe_deepep_token_capacity", 8192)
-        if self.group.size() > 8:
+        # ACE allocates a fixed token workspace in its C++ runtime. Standard
+        # DeepEP sizes receives dynamically and does not use this capacity.
+        configured_capacity = getattr(config, "moe_deepep_token_capacity", 8192) if self.use_ace else 0
+        if self.use_ace and self.group.size() > 8:
             raise RuntimeError("DeepEP-ACE supports at most eight EP ranks in one node")
         capacity_check_key = (id(self.group), int(configured_capacity))
-        if capacity_check_key not in _CAPACITY_CHECKED:
+        if self.use_ace and capacity_check_key not in _CAPACITY_CHECKED:
             capacities = [None] * self.group.size()
             dist.all_gather_object(capacities, int(configured_capacity), group=self.group)
             if any(capacity != int(configured_capacity) for capacity in capacities):
                 raise RuntimeError(f"all EP ranks must use the same moe_deepep_token_capacity: received {capacities}")
             _CAPACITY_CHECKED.add(capacity_check_key)
         requested_tokens = self.token_num or hidden_states.size(0)
-        if requested_tokens > configured_capacity:
+        if self.use_ace and requested_tokens > configured_capacity:
             raise RuntimeError(
                 "DeepEP-ACE input exceeds moe_deepep_token_capacity: "
                 f"tokens={requested_tokens}, capacity={configured_capacity}. "
                 "Increase the explicit capacity so every EP rank constructs the same workspace."
             )
-        requested_capacity = ((int(configured_capacity) + 1023) // 1024) * 1024
-        cache_prefix = (id(self.group), hidden_bytes, hidden_size, element_size, num_sms, self.top_k)
+        requested_capacity = ((int(configured_capacity) + 1023) // 1024) * 1024 if self.use_ace else 0
+        cache_prefix = (self.use_ace, id(self.group), hidden_bytes, hidden_size, element_size, num_sms, self.top_k)
         reusable = [
-            (key[6], buffer)
+            (key[7], buffer)
             for key, buffer in _BUFFER_CACHE.items()
-            if key[:6] == cache_prefix and key[6] >= requested_capacity
+            if key[:7] == cache_prefix and key[7] >= requested_capacity
         ]
         if reusable:
             return min(reusable, key=lambda item: item[0])[1]
@@ -206,24 +206,28 @@ class _ACEState:
             dispatch_config.get_rdma_buffer_size_hint(hidden_bytes, self.group.size()),
             combine_config.get_rdma_buffer_size_hint(hidden_bytes, self.group.size()),
         )
-        buffer_kwargs = {"use_ace": True, "num_ace_buffers": 1}
         buffer_parameters = inspect.signature(Buffer).parameters
-        if "token_num" in buffer_parameters:
-            buffer_kwargs.update(
-                token_num=requested_capacity,
-                hidden_size=hidden_states.size(1),
-                num_topk=self.top_k,
-            )
-        elif requested_capacity != 8192:
-            raise RuntimeError(
-                "the installed DeepEP wheel cannot configure moe_deepep_token_capacity; "
-                "use a wheel exposing Buffer(token_num=..., hidden_size=..., num_topk=...)"
-            )
+        buffer_kwargs = {"use_ace": self.use_ace} if "use_ace" in buffer_parameters else {}
+        if self.use_ace:
+            if "use_ace" not in buffer_parameters:
+                raise RuntimeError("the installed DeepEP wheel does not expose MUSA ACE support")
+            buffer_kwargs["num_ace_buffers"] = 1
+            if "token_num" in buffer_parameters:
+                buffer_kwargs.update(
+                    token_num=requested_capacity,
+                    hidden_size=hidden_states.size(1),
+                    num_topk=self.top_k,
+                )
+            elif requested_capacity != 8192:
+                raise RuntimeError(
+                    "the installed DeepEP wheel cannot configure moe_deepep_token_capacity; "
+                    "use a wheel exposing Buffer(token_num=..., hidden_size=..., num_topk=...)"
+                )
         # ``train_mode`` exists in the reference llm_pretrain_script wheel,
         # but not in the currently installed DeepEP wheel.  Pass it only when
         # the constructor advertises the parameter; ACE itself is selected by
         # ``use_ace`` in both layouts.
-        if "train_mode" in inspect.signature(Buffer).parameters:
+        if "train_mode" in buffer_parameters:
             buffer_kwargs["train_mode"] = True
         buffer = Buffer(self.group, nvl_bytes, rdma_bytes, **buffer_kwargs)
         _BUFFER_CACHE[(*cache_prefix, requested_capacity)] = buffer
@@ -284,13 +288,13 @@ class _ACEState:
 
     def wait_dispatch(self) -> None:
         if self.dispatch_event is None:
-            raise RuntimeError("DeepEP-ACE dispatch event is missing")
+            raise RuntimeError("DeepEP dispatch event is missing")
         self.dispatch_event.current_stream_wait()
         self.dispatch_event = None
 
     def combine(self, expert_outputs):
         if self.handle is None:
-            raise RuntimeError("DeepEP-ACE combine called without a dispatch handle")
+            raise RuntimeError("DeepEP combine called without a dispatch handle")
         combined, _, event = self._get_buffer(expert_outputs).combine(
             expert_outputs.contiguous(),
             self.handle,
@@ -303,7 +307,7 @@ class _ACEState:
 
     def reverse_dispatch(self, grad_output):
         if self.handle is None:
-            raise RuntimeError("DeepEP-ACE reverse dispatch called without a handle")
+            raise RuntimeError("DeepEP reverse dispatch called without a handle")
         grad_recv, _, _, _, _, event = self._get_buffer(grad_output).dispatch(
             grad_output.contiguous(),
             handle=self.handle,
@@ -316,7 +320,7 @@ class _ACEState:
 
     def reverse_combine(self, grad_recv_hidden, grad_recv_probs):
         if self.handle is None:
-            raise RuntimeError("DeepEP-ACE reverse combine called without a handle")
+            raise RuntimeError("DeepEP reverse combine called without a handle")
         grad_hidden, grad_probs, event = self._get_buffer(grad_recv_hidden).combine(
             grad_recv_hidden.contiguous(),
             self.handle,
@@ -358,8 +362,32 @@ class _ACECombine(torch.autograd.Function):
 
 def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None):
     if recv_indices is None or recv_probs is None:
-        raise RuntimeError("DeepEP-ACE did not return routing metadata")
+        raise RuntimeError("DeepEP did not return routing metadata")
     flat_indices = recv_indices.reshape(-1)
+    use_counting_sort = os.environ.get("VEOMNI_MUSA_DEEPEP_COUNTING_SORT", "0").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    if use_counting_sort and expert_counts is not None and flat_indices.device.type == "musa":
+        if len(expert_counts) != num_local_experts:
+            raise RuntimeError(
+                f"DeepEP returned {len(expert_counts)} expert counts for {num_local_experts} local experts"
+            )
+        counts = torch.as_tensor(expert_counts, device=recv_hidden.device, dtype=torch.long)
+        from ...ops.kernels.moe.musa_deepep_compact import musa_deepep_stable_slots
+
+        slots, token_rows = musa_deepep_stable_slots(
+            flat_indices,
+            counts,
+            recv_indices.shape[1],
+            sum(expert_counts),
+        )
+        permuted = recv_hidden.index_select(0, token_rows)
+        probs = recv_probs.reshape(-1).index_select(0, slots)
+        return permuted, probs, token_rows, counts
+
     valid_slots = torch.nonzero(flat_indices >= 0, as_tuple=False).flatten()
     experts = flat_indices.index_select(0, valid_slots).to(torch.long)
     order = torch.argsort(experts, stable=True)
@@ -397,7 +425,7 @@ def _compact_unpermute(expert_outputs, probs, token_rows, recv_tokens):
     return restored
 
 
-def dispatch_to_ep_class_deepep_ace(
+def dispatch_to_ep_class_deepep(
     ep_class: Callable[..., torch.Tensor],
     num_experts: int,
     routing_weights: torch.Tensor,
@@ -405,16 +433,19 @@ def dispatch_to_ep_class_deepep_ace(
     hidden_states: torch.Tensor,
     *ep_class_args: Any,
 ) -> torch.Tensor:
-    """Run ACE dispatch/combine while retaining the selected compute backend."""
+    """Run standard or ACE DeepEP while retaining the selected compute backend."""
     state = get_parallel_state()
+    config = get_ops_config()
+    dispatcher = getattr(config, "moe_dispatcher", "alltoall") if config is not None else "alltoall"
+    use_ace = dispatcher == "deepep_ace"
     if not state.ep_enabled or state.ep_group is None or state.ep_group.size() <= 1:
-        raise RuntimeError("moe_dispatcher='deepep_ace' requires expert parallelism")
+        raise RuntimeError(f"moe_dispatcher='{dispatcher}' requires expert parallelism")
     if ep_class not in _supported_ep_classes():
         raise NotImplementedError(
-            "moe_dispatcher='deepep_ace' currently supports the non-LoRA EP grouped-GEMM paths only"
+            f"moe_dispatcher='{dispatcher}' currently supports the non-LoRA EP grouped-GEMM paths only"
         )
 
-    invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1])
+    invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1], use_ace=use_ace)
     overlap = _ACTIVE_SHARED_EXPERT.get()
     if overlap is not None:
         invocation.previous_event = _current_stream_event()
@@ -447,3 +478,8 @@ def dispatch_to_ep_class_deepep_ace(
         # so `finish` is a plain read; the add is ordered after both branches.
         output = output + overlap.finish()
     return output
+
+
+def dispatch_to_ep_class_deepep_ace(*args: Any, **kwargs: Any) -> torch.Tensor:
+    """Backward-compatible entry point; dispatcher mode still comes from config."""
+    return dispatch_to_ep_class_deepep(*args, **kwargs)
