@@ -196,7 +196,9 @@ def install_qwen3_5_moe_deepep_recompute_patch(modeling_module: ModuleType, *, c
     The trainer installs the cache context. This wrapper supplies a stable MoE
     identity and a layer selection; it does not change expert computation.
     """
+    from ....distributed.moe.deepep_ace import route_validation_context
     from ....distributed.moe.deepep_ace_checkpoint import moe_dispatch_context
+    from ....utils.moe_router_replay import get_active_replay
 
     sparse_cls = getattr(modeling_module, "Qwen3_5MoeSparseMoeBlock", None)
     decoder_cls = getattr(modeling_module, "Qwen3_5MoeDecoderLayer", None)
@@ -226,7 +228,10 @@ def install_qwen3_5_moe_deepep_recompute_patch(modeling_module: ModuleType, *, c
 
     @wraps(original_forward)
     def sparse_moe_forward(self, *args, **kwargs):
-        with moe_dispatch_context(id(self), getattr(self, "_veomni_cache_payload", True)):
+        with (
+            moe_dispatch_context(id(self), getattr(self, "_veomni_cache_payload", True)),
+            route_validation_context(get_active_replay() is not None),
+        ):
             return original_forward(self, *args, **kwargs)
 
     sparse_moe_forward._veomni_deepep_cache_scope = True

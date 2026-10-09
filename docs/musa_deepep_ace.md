@@ -84,7 +84,20 @@ the multi-hot map. The tested torch_musa 2.9.1 runtime can undercount a tall
 `[tokens, experts]` map when reducing dimension 0 (for example `[32640, 32]`),
 incorrectly sending valid routing through the slower PyTorch fallback. The
 contiguous reduction preserves exact integer counts. Duplicate-slot and
-DeepEP-count mismatch checks remain enabled; this requires no extra option.
+count validation remains available through the explicit validation path; this
+requires no extra option.
+
+The production TE path now trusts DeepEP's host-side per-expert receive counts
+for `num_out` and the grouped-GEMM cumulative counts. It does not convert the
+GPU mask counts to Python on every MoE call. Full duplicate-slot and count
+validation remains available through the private `validate_routing=True` test
+and diagnostic path; native Qwen top-k produces distinct expert indices, and
+DeepEP has already generated the receive counts from the same dispatch. A
+custom router-replay implementation that can emit duplicate expert indices must
+use the validation path before enabling TE compaction. The Qwen3.5 runtime
+automatically enables that validation context while a router-replay manager is
+active, so replay pays the old protection cost without weakening the normal
+native-top-k path.
 
 ## Selective checkpoint caching
 

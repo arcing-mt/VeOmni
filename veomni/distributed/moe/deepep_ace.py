@@ -18,6 +18,7 @@ import torch.distributed as dist
 
 from ...ops.config.singleton import get_ops_config
 from ...utils import logging
+from ...utils.moe_router_replay import get_active_replay
 from ..parallel_state import get_parallel_state
 from .moe_layer import EPGroupGemm, EPMergedFc1GroupGemm
 
@@ -60,6 +61,20 @@ def _current_stream_event():
 _BUFFER_CACHE: dict[tuple[int, int, int, int, int, int, int], Any] = {}
 _CAPACITY_CHECKED: set[tuple[int, int]] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
+_ROUTING_VALIDATION = contextvars.ContextVar("veomni_routing_validation", default=False)
+
+
+@contextmanager
+def route_validation_context(enabled: bool):
+    token = _ROUTING_VALIDATION.set(enabled)
+    try:
+        yield
+    finally:
+        _ROUTING_VALIDATION.reset(token)
+
+
+def route_validation_enabled() -> bool:
+    return _ROUTING_VALIDATION.get() or get_active_replay() is not None
 
 
 class _SharedExpertOverlap:
@@ -509,7 +524,15 @@ class _TECompactUnpermute(torch.autograd.Function):
         return grad_weighted, None, None, None
 
 
-def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan=None):
+def _te_compact_permute(
+    recv_hidden,
+    recv_indices,
+    recv_probs,
+    num_local_experts,
+    expert_counts,
+    plan=None,
+    validate_routing=False,
+):
     """TE compaction: TE row ids plus one fused gather.
 
     Returns ``(permuted, probs, None, counts, row_id_map, num_local_experts)``, or
@@ -522,29 +545,39 @@ def _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts
     scatter_indices = (recv_indices + 1).to(torch.int64)
     multi_hot.scatter_(1, scatter_indices, True)
     multi_hot = multi_hot[:, 1:].contiguous()
-    if getattr(multi_hot, "is_musa", False):
-        # MUSA can undercount tall strided reductions (e.g. [32640, 32]),
-        # incorrectly rejecting valid routing. Reduce contiguous expert rows;
-        # the routing/count guards below still reject real mismatches.
-        counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
+    if expert_counts is None:
+        if not validate_routing:
+            return None
+        target = None
     else:
-        counts = multi_hot.sum(0, dtype=torch.long)
-    # One device->host read carries the per-expert counts and the number of valid
-    # slots, so both guards below reach the same decisions as the ``torch.equal``
-    # and ``num_out != slot_total`` pair they replace -- for integral counts, which
-    # is what DeepEP's host-side split is -- without the H2D copy and the second
-    # round-trip.  Keep them: ``num_out`` becomes TE's permute row count, and a
-    # mismatch that reaches the kernel would make it write past the rows the map
-    # fills.
-    host = torch.cat([counts, (recv_indices >= 0).sum().reshape(1)]).tolist()
-    counts_host, slot_total = host[:-1], host[-1]
-    num_out = sum(counts_host)
-    if num_out != slot_total:
-        return None
-    if expert_counts is not None:
-        # Host-resident by contract: DeepEP returns a ``list[int]`` here.
-        target = expert_counts.tolist() if isinstance(expert_counts, torch.Tensor) else list(expert_counts)
-        if counts_host != target:
+        # DeepEP returns this list from its host-side receive counters.  It is
+        # authoritative for the TE output length, so the normal training path
+        # can avoid synchronizing counts back to Python on every MoE call.
+        if isinstance(expert_counts, torch.Tensor):
+            if expert_counts.device.type != "cpu":
+                raise RuntimeError("DeepEP expert counts must be host-resident on the TE path")
+            target = expert_counts.tolist()
+        else:
+            target = list(expert_counts)
+    if target is not None and not validate_routing:
+        # DeepEP has already produced these counts from its host-side receive
+        # counters. Materialize the small authoritative vector on device and
+        # skip both the tall MUSA reduction and its device-to-host validation.
+        counts = torch.as_tensor(target, dtype=torch.long, device=recv_hidden.device)
+        num_out = sum(target)
+    else:
+        # ``multi_hot`` is row-major [tokens, experts]. The MUSA reduction is
+        # correct when each expert is a contiguous row, and this orientation is
+        # also the one used by the TE row-map builder.
+        counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
+        num_out = sum(target) if target is not None else int(counts.sum().item())
+    if validate_routing:
+        # Diagnostics/tests can retain the old contract checks. Native Qwen
+        # top-k produces distinct indices; production uses DeepEP's host counts
+        # directly and does not pay this D2H synchronization.
+        host_counts = counts.tolist()
+        slot_total = int((recv_indices >= 0).sum().item())
+        if num_out != slot_total or (target is not None and host_counts != target):
             return None
     built_plan = dict(
         backend="te",
@@ -621,7 +654,15 @@ def _torch_permute_with_plan(recv_hidden, recv_probs, plan):
     return permuted, probs, token_rows, plan["counts"], None, plan["width"]
 
 
-def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None, plan=None):
+def _compact_permute(
+    recv_hidden,
+    recv_indices,
+    recv_probs,
+    num_local_experts,
+    expert_counts=None,
+    plan=None,
+    validate_routing=None,
+):
     """Move the received rows into the expert-major layout the grouped GEMM wants.
 
     Returns ``(permuted, probs, token_rows, counts, row_map, width)``.  ``width``
@@ -630,10 +671,20 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
     """
     if recv_indices is None or recv_probs is None:
         raise RuntimeError("DeepEP-ACE did not return routing metadata")
+    if validate_routing is None:
+        validate_routing = route_validation_enabled()
     if expert_counts is not None and len(expert_counts) != num_local_experts:
         raise RuntimeError(f"DeepEP returned {len(expert_counts)} expert counts for {num_local_experts} local experts")
     if _ace_te_supported(recv_hidden, recv_probs, num_local_experts):
-        built = _te_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts, plan)
+        built = _te_compact_permute(
+            recv_hidden,
+            recv_indices,
+            recv_probs,
+            num_local_experts,
+            expert_counts,
+            plan,
+            validate_routing=validate_routing,
+        )
         if built is not None:
             return built
         if not _ACE_TE_FELL_BACK:
