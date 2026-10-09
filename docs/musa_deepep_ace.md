@@ -23,6 +23,13 @@ use the same value. The first validation should therefore compare
 forward/backward outputs on fixed input and inspect the dispatch, grouped-GEMM,
 and combine intervals in a multi-card MUSA trace.
 
+The reference Qwen3.5 launcher keeps FSDP2 overlap disabled. Explicitly setting
+`VEOMNI_MUSA_DEEPEP_FSDP_SHARED_COMM_STREAM=true` requires a DeepEP wheel with a
+callable `Buffer.get_comm_stream()` that returns its communication stream. The
+reference launcher's corresponding `FSDP_DEEPEP_SHARED_COMM_STREAM=true` option
+checks this API before training. Both DeepEP dispatchers reject a missing API
+or an empty stream instead of silently using separate streams.
+
 The current Qwen3.5 model also has a shared expert. Set
 `moe_shared_expert_overlap=true` to issue it inside the ACE dispatch window:
 the dispatcher submits the dispatch and *then* runs the shared expert, so the

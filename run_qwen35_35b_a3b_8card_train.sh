@@ -216,7 +216,7 @@ PY
 
 preflight_deepep() {
   [[ "${MOE_DISPATCHER}" != alltoall ]] || return 0
-  "${PYTHON_BIN}" - "${MOE_DISPATCHER}" <<'PY' || die "${MOE_DISPATCHER} requires a compatible DeepEP wheel."
+  "${PYTHON_BIN}" - "${MOE_DISPATCHER}" "${FSDP_DEEPEP_SHARED_COMM_STREAM}" <<'PY' || die "${MOE_DISPATCHER} requires a compatible DeepEP wheel."
 import importlib.metadata as metadata
 import inspect
 import sys
@@ -229,6 +229,8 @@ if sys.argv[1] == "deepep_ace":
     missing = required.difference(inspect.signature(Buffer).parameters)
     if missing:
         raise RuntimeError(f"DeepEP Buffer is missing ACE parameters: {sorted(missing)}")
+if sys.argv[2] == "true" and not callable(getattr(Buffer, "get_comm_stream", None)):
+    raise RuntimeError("FSDP_DEEPEP_SHARED_COMM_STREAM requires a DeepEP Buffer.get_comm_stream() API")
 print(f"DeepEP preflight: deep_ep={metadata.version('deep_ep')}, dispatcher={sys.argv[1]}")
 PY
 }

@@ -128,11 +128,13 @@ python -m pip install \
   ".[musa]"
 ```
 
-The MUSA dependencies carry Python 3.10 markers and are recorded in the uv lock
-because the project supports Python 3.10. Installation still uses pip inside the
-validated base image: pip sees its already-installed torch, torch_musa, Triton
-and optional `torch-kernels` packages and installs the remaining Python packages
-without exact-environment pruning.
+The Python 3.10 MUSA extra is declared in the project metadata for pip installs.
+The `[tool.uv].environments` setting restricts uv resolution to Python 3.11 and
+newer, so `uv.lock` does not contain the resolved Python 3.10 MUSA dependency
+graph. Install with pip inside the validated base image: pip sees its
+already-installed torch, torch_musa, Triton and optional `torch-kernels`
+packages and installs the remaining Python packages without exact-environment
+pruning.
 
 ## Transformers Version
 
