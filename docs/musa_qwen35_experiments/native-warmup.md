@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, ops] feat: archive native fallback first-step warmup
 
 Initialize the unchanged native counting-sort fallback using four isolated shapes 256/257/4096/4095. No model/data/RNG/optimizer/collective or added device sync. All work stays inside original measured step1. Two full50 runs had rank0 steps10–50 means of 3.008120/3.035647s did not prove stable gain. Historical initialization placement is preserved, not removed from total50 cost.
