@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [ops] fix: archive qualified TE Long-input routing counts
 
 Correct the qualified MUSA Bool column-sum error by using int64 input, only for N24577–28608 or28673–32704, E32/BF16H2048/FP32 top8/current frozen Torch builds. Preserve duplicate and expected expert-count checks. The 32808-combination integer sweep and ten actual cases match CPU integer gold. Correcting false rejection switches some old BF16 fallback calls to existing TE FP32 accumulation; it does not certify the old free trajectory bitwise.
