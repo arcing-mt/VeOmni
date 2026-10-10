@@ -32,6 +32,8 @@ from pathlib import Path
 
 # directory or file path must contain keyword ".cuda" or "cuda"
 CUDA_KEYWORD_CHECK_WHITELIST = [
+    # Native MUSA TE compaction restores CUDA aliases mutated by TE's compatibility import.
+    "veomni/ops/kernels/moe/musa_te_compaction.py",
     "veomni/utils/import_utils.py",
     "veomni/utils/device.py",
     "veomni/ops/kernels/moe/_kernels/utils/benchmark_utils.py",

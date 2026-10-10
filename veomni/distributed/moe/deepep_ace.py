@@ -242,8 +242,17 @@ class _ACEState:
 
     def dispatch(self, hidden_states, selected_experts, routing_weights, previous_event=None):
         self.token_num = hidden_states.size(0)
+        # Any layout/dtype conversion is a compute-stream producer of the
+        # payload. The communication ready event must cover those writes.
+        needs_copy = not hidden_states.is_contiguous() or routing_weights.dtype != torch.float32
+        if previous_event is not None and needs_copy:
+            # Preserve an external producer dependency before copying, then
+            # extend it through the new compute-stream writes.
+            previous_event.current_stream_wait()
+        hidden_states = hidden_states.contiguous()
+        routing_weights = routing_weights.float()
         buffer = self._get_buffer(hidden_states)
-        if previous_event is None:
+        if previous_event is None or needs_copy:
             previous_event = _current_stream_event()
         (
             tokens_per_rank,
@@ -266,9 +275,9 @@ class _ACEState:
             handle,
             dispatch_event,
         ) = buffer.dispatch(
-            hidden_states.contiguous(),
+            hidden_states,
             topk_idx=selected_experts,
-            topk_weights=routing_weights.float(),
+            topk_weights=routing_weights,
             num_tokens_per_rank=tokens_per_rank,
             num_tokens_per_rdma_rank=tokens_per_rdma_rank,
             is_token_in_rank=token_in_rank,
@@ -367,7 +376,7 @@ class _ACECombine(torch.autograd.Function):
         return ctx.state.reverse_dispatch(grad_output), None
 
 
-def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None):
+def _native_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None):
     if recv_indices is None or recv_probs is None:
         raise RuntimeError("DeepEP did not return routing metadata")
     flat_indices = recv_indices.reshape(-1)
@@ -419,7 +428,31 @@ def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, e
     return permuted, probs, token_rows, counts
 
 
+def _compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts=None):
+    if recv_indices is None or recv_probs is None:
+        raise RuntimeError("DeepEP did not return routing metadata")
+    if recv_hidden.device.type == "musa":
+        if os.environ.get("VEOMNI_MUSA_ACE_NATIVE_WARMUP", "0") == "1":
+            from ...ops.kernels.moe.musa_deepep_warmup import maybe_warm_native_fallback
+
+            maybe_warm_native_fallback(recv_hidden.device, _native_compact_permute)
+        if os.environ.get("VEOMNI_MUSA_ACE_TE", "0") == "1":
+            from ...ops.kernels.moe.musa_te_compaction import try_compact
+
+            result = try_compact(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts)
+            if result is not None:
+                return result
+    return _native_compact_permute(recv_hidden, recv_indices, recv_probs, num_local_experts, expert_counts)
+
+
 def _compact_unpermute(expert_outputs, probs, token_rows, recv_tokens):
+    if not isinstance(token_rows, torch.Tensor):
+        from ...ops.kernels.moe.musa_te_compaction import TECompactionMetadata, unpermute
+
+        if not isinstance(token_rows, TECompactionMetadata):
+            raise TypeError("Unknown ACE compaction metadata")
+        return unpermute(expert_outputs, probs, token_rows, recv_tokens)
+
     weighted = expert_outputs * probs.to(expert_outputs.dtype).unsqueeze(-1)
     restored = torch.zeros(
         (recv_tokens, expert_outputs.shape[-1]),
@@ -453,13 +486,17 @@ def dispatch_to_ep_class_deepep(
         )
 
     invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1], use_ace=use_ace)
+    # Capture only after payload preparation. In particular, the BF16 router
+    # probabilities need a FP32 cast before the ACE stream may read them.
+    hidden_states = hidden_states.contiguous()
+    routing_weights = routing_weights.float()
     overlap = _ACTIVE_SHARED_EXPERT.get()
     if overlap is not None:
         invocation.previous_event = _current_stream_event()
     recv_hidden, recv_indices, recv_probs = _ACEDispatch.apply(
         hidden_states,
         selected_experts,
-        routing_weights.float(),
+        routing_weights,
         invocation,
     )
     # This is immediately after the host-side dispatch call returns.  It must
