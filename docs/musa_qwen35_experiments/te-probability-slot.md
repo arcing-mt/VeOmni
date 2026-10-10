@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, ops] feat: archive qualified counts and slot-copy run
 
 Construct the TE N×32 probability table directly and gather N×8 slot gradients through the row mapping, retaining the original FP32 mask multiplication, cloned indices/record_stream, higher-order fallback and TE hidden accumulation. The default-off counts+slot composition passed 23cases/372 raw comparisons and controlled8×6/9504 comparisons. Ten actual complete micro medians improved0.05131–0.16049ms. Two original full50 runs had every-rank steps10–50 mean<3s; 8-rank mean averages2.992483196/2.992155593s, total50 about3.60s. Independent slot causal gain, full-Qwen free-trajectory equality, long training and resume remain unverified.
