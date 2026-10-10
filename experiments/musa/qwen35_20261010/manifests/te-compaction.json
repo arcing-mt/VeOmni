@@ -1,0 +1,21 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/te_compact_prototype.py",
+      "sha256": "7fdd07c124982745dd3ce311575a65108f2cf32e0b2d2c252ec8e7f0402417eb",
+      "source": "trace/qwen35_optimize_20261009/te_compact_prototype.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/install_te_compact.py",
+      "sha256": "b1e76606ee586a17264eab5ea6f91eb36a0d18cfa8de2084c30e50485cadc20e",
+      "source": "trace/qwen35_optimize_20261009/install_te_compact.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_compact_reference.py",
+      "sha256": "2240d82bcd30234d343691018df46522ff1d052f8877d52e874fca6dc7b0b231",
+      "source": "trace/qwen35_optimize_20261009/check_te_compact_reference.py"
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "source_path": "/opt/TransformerEngine",
+  "source_commit": "5065e9537d24173cc35e63b11a4d3cc2d1c06ca8",
+  "submodules": [
+    " 91b7532f3386768bba4f444ee7672b497f34da8a 3rdparty/cudnn-frontend (v0.5-44-g91b7532f)",
+    " f8d7d77c06936315286eb55f8de22cd23c188571 3rdparty/googletest (release-1.8.0-3335-gf8d7d77c)"
+  ],
+  "version": "2.0.0+5065e953",
+  "package_path": "/usr/local/lib/python3.10/dist-packages/transformer_engine/__init__.py",
+  "torch": "2.11.0.post2",
+  "torch_musa": "2.11.0.post2+395c00c",
+  "package_delta": {
+    "transformer-engine": {
+      "before": null,
+      "after": "@ file:///opt/TransformerEngine"
+    }
+  },
+  "native_moe_permute": true,
+  "native_moe_unpermute": true,
+  "worker_thread_exit_checks": 12,
+  "gemm_checks": [
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0007769315270707011
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0007684328011237085
+    },
+    {
+      "device": 0,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.000776534085161984
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.bfloat16",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float16",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "TN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "NN",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": false,
+      "layout": "NT",
+      "rms_rel": 0.0
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "TN",
+      "rms_rel": 0.0007769315270707011
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "NN",
+      "rms_rel": 0.0007684328011237085
+    },
+    {
+      "device": 1,
+      "dtype": "torch.float32",
+      "allow_tf32": true,
+      "layout": "NT",
+      "rms_rel": 0.000776534085161984
+    }
+  ],
+  "autocast_query_side_effect": {
+    "original_query": true,
+    "te_query": false
+  },
+  "default_device_side_effect": {
+    "before": "cpu",
+    "after": "musa:0"
+  },
+  "note": "TE source includes a local C/C++ muDNN ABI compatibility patch; no torch_musa change."
+}
