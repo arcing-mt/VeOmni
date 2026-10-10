@@ -812,6 +812,12 @@ def parallelize_model_fsdp2(
     # flattened 2D mesh instead of traversing the two mesh axes separately.
     model._persistent_extra_parallel_param_ids = {id(param) for param in persistent_extra_parallel_params}
 
+    if IS_MUSA_AVAILABLE and os.environ.get("VEOMNI_MUSA_FSDP_SHARD_PADDING", "0") == "1":
+        from .fsdp2.musa_collective_padding import configure_musa_collective_padding
+
+        configure_musa_collective_padding(model)
+        logger.info_rank0("Enabled per-model MUSA FSDP2 16-byte shard padding")
+
     # configure manual prefetching when needed
     enable_forward_prefetch = kwargs.pop("enable_forward_prefetch", True)
     enable_backward_prefetch = kwargs.pop("enable_backward_prefetch", True)
