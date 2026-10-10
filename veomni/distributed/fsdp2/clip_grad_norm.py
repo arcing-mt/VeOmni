@@ -158,11 +158,14 @@ def extra_parallel_fsdp2_clip_grad_norm(
         norm_type=norm_type,
         reduce_groups=_fsdp_grad_norm_reduce_groups(ps),
     )
-    logger.debug_rank0(f"non_extra_parallel total grad norm: {non_extra_parallel_total}")
+    logger.debug_rank0("non_extra_parallel total grad norm: %s", non_extra_parallel_total)
 
     for para in ps.extra_parallel_names:
         logger.debug_rank0(
-            f"{para}_params reduces groups: {extra_parallel_fsdp_group[para]=}, {extra_parallel_group[para]=}"
+            "%s_params reduces groups: extra_parallel_fsdp_group[para]=%r, extra_parallel_group[para]=%r",
+            para,
+            extra_parallel_fsdp_group[para],
+            extra_parallel_group[para],
         )
 
     # Compute and reduce ExtraParallel: first across para_fsdp (e.g. ep_fsdp, emb_fsdp), then across para (e.g. ep, emb)
@@ -181,7 +184,7 @@ def extra_parallel_fsdp2_clip_grad_norm(
                 ],
             )
             extra_parallel_total[para] = para_total
-            logger.debug_rank0(f"{para} total grad norm: {para_total}")
+            logger.debug_rank0("%s total grad norm: %s", para, para_total)
 
     # Replicated-across-Para subgroup (currently only Mode-2 shared LoRA on the
     # ``ep`` mesh): reduce ONLY across para_fsdp -- skipping the ``para`` (e.g.
@@ -201,7 +204,7 @@ def extra_parallel_fsdp2_clip_grad_norm(
                 ],
             )
             extra_parallel_replicated_total[para] = para_total
-            logger.debug_rank0(f"{para} replicated total grad norm: {para_total}")
+            logger.debug_rank0("%s replicated total grad norm: %s", para, para_total)
 
     # Persistent 2D ExtraParallel parameters are not managed by FSDP. Their
     # local DTensor shards are unique across both mesh axes, so reduce their
@@ -218,7 +221,7 @@ def extra_parallel_fsdp2_clip_grad_norm(
                 reduce_groups=[(f"{para}_flat", ps.extra_parallel_flat_group(para))],
             )
             persistent_extra_parallel_total[para] = para_total
-            logger.debug_rank0(f"{para} persistent 2D total grad norm: {para_total}")
+            logger.debug_rank0("%s persistent 2D total grad norm: %s", para, para_total)
 
     if math.isinf(norm_type):
         # ``torch.maximum`` is a 2-arg elementwise op, not variadic. Unpacking
@@ -354,9 +357,9 @@ def _fsdp2_reduce_group(
     else:
         p = float(norm_type)
         val = _local_pth_sum(params, p)
-        logger.debug_rank0(f"local total grad norm: {val}. ProcessGroups to sum {reduce_groups}")
+        logger.debug_rank0("local total grad norm: %s. ProcessGroups to sum %s", val, reduce_groups)
         for name, group in reduce_groups:
             if group is not None:
                 dist.all_reduce(val, op=dist.ReduceOp.SUM, group=group)
-                logger.debug_rank0(f"After Sum of group {name} total grad norm is {val}")
+                logger.debug_rank0("After Sum of group %s total grad norm is %s", name, val)
         return val
