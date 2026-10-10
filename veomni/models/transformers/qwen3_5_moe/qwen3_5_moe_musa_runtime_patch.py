@@ -22,6 +22,7 @@ stay untouched and the behaviour is added on the active MUSA model path only.
 from __future__ import annotations
 
 import inspect
+import os
 from functools import wraps
 from types import ModuleType
 
@@ -268,3 +269,22 @@ __all__ = [
     "install_qwen3_5_moe_dummy_forward_skip_patch",
     "install_qwen3_5_moe_vision_patch_embed_linear_patch",
 ]
+
+
+def install_qwen3_5_moe_training_compute_patches(modeling_module):
+    """Install explicitly selected, source-guarded MUSA compute adapters.
+
+    Flags are process-wide. Every forward also checks its flag so a disabled
+    selection keeps the original behavior after an earlier enabled build.
+    Unsupported source revisions fail before the candidate is installed.
+    """
+    if os.environ.get("VEOMNI_MUSA_VISION_EMBEDDING_CSR", "0") == "1":
+        from .musa_vision_embedding import install
+
+        install(modeling_module)
+        logger.info_rank0("Enabled guarded Qwen3.5-MoE MUSA vision embedding CSR")
+    if os.environ.get("VEOMNI_MUSA_QK_PREENTRY", "0") == "1":
+        from .musa_qk_preentry import install
+
+        install(modeling_module)
+        logger.info_rank0("Enabled guarded Qwen3.5-MoE MUSA q/k preentry normalization")
