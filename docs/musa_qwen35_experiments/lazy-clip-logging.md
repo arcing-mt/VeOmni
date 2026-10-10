@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [dist, logging] fix: defer gradient norm debug formatting
 
 Use lazy logger argument formatting instead of tensor f-strings, preserving reduction groups, norm and clipping math. This removes formatting work when debug logging is disabled. Full50 experiments did not establish an independent step-time gain; this PR makes no performance promise.
