@@ -1,0 +1,26 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/native_fallback_warmup.py",
+      "sha256": "eb84b8d6dc531dbfa84f1c8d2f8148e73b4eab95a1c9c973438910d268d34d1c",
+      "source": "trace/qwen35_optimize_20261009/native_fallback_warmup.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/native_fallback_warmup_entry.py",
+      "sha256": "d09f5af7fe01458bc0dab1c6d51ca29b9955826353560b2e3dc475f9d017a3d3",
+      "source": "trace/qwen35_optimize_20261009/native_fallback_warmup_entry.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_native_fallback_warmup.py",
+      "sha256": "9fb57b961fb58485f1a02720d412a97f52d9cf773d76e6ba9c2683f7d787cdb6",
+      "source": "trace/qwen35_optimize_20261009/check_native_fallback_warmup.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/run_qk_native_warmup_train.sh",
+      "sha256": "4e5ba837576c80495d0025d318b56236100cf87efe44637be32c7f9ce2542a7c",
+      "source": "trace/qwen35_optimize_20261009/run_qk_native_warmup_train.sh"
+    }
+  ]
+}
