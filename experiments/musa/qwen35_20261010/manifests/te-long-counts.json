@@ -1,0 +1,21 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/install_te_native_counts.py",
+      "sha256": "88a7ebc88d1d5a4927c37607a64588049bda796d9638c24ac302470be600d2af",
+      "source": "trace/qwen35_optimize_20261009/install_te_native_counts.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_native_count_sum_sweep.py",
+      "sha256": "42c3021c01bce4cd708e9ca9a244a85fc222780355a6140e7968ffc0f2fbd4e5",
+      "source": "trace/qwen35_optimize_20261009/check_te_native_count_sum_sweep.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_native_counts.py",
+      "sha256": "293d8abc240cdaba49092395480e6440c581378a9d82e3a5383a8d81415dd17f",
+      "source": "trace/qwen35_optimize_20261009/check_te_native_counts.py"
+    }
+  ]
+}
