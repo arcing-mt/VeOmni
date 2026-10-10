@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, ops] feat: archive opt-in supervised-token CE
 
 Select valid labels only after the original causal shift, and compute lm_head/chunk CE on the corresponding hidden rows. Preserve the original num_items_in_batch denominator and eager fallback for unsupported/SP/all-valid/all-ignored cases. The measured supervised fraction is about 40–40.82%. Full50 rank0 steps10–50 mean was 3.341135s against the contemporary ready-fix stage; chunk1024 is retained.
