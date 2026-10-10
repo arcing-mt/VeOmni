@@ -67,9 +67,11 @@ def register_qwen3_5_moe_modeling(architecture: str):
             from ....ops.config.singleton import get_ops_config
             from .qwen3_5_moe_musa_runtime_patch import (
                 install_qwen3_5_moe_dummy_forward_skip_patch,
+                install_qwen3_5_moe_training_compute_patches,
                 install_qwen3_5_moe_vision_patch_embed_linear_patch,
             )
 
+            install_qwen3_5_moe_training_compute_patches(modeling_module)
             ops_config = get_ops_config()
             if ops_config is not None:
                 # An image-only batch must not pay for a dummy video-slot vision-tower pass.
@@ -134,7 +136,9 @@ def register_qwen3_5_moe_text_modeling(architecture: str):
 
         if IS_MUSA_AVAILABLE:
             from ....ops.config.singleton import get_ops_config
+            from .qwen3_5_moe_musa_runtime_patch import install_qwen3_5_moe_training_compute_patches
 
+            install_qwen3_5_moe_training_compute_patches(modeling_module)
             ops_config = get_ops_config()
             if ops_config is not None and ops_config.rotary_pos_emb_implementation == "musa":
                 from ..qwen3_5.qwen3_5_musa_runtime_patch import install_qwen3_5_musa_rotary_patch

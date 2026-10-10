@@ -30,6 +30,7 @@ Causal-only: the function hard-codes a causal label shift, so it cannot back
 applied here so VLMs with SP enabled produce correct losses.
 """
 
+import os
 from typing import Any, Callable, Optional
 
 import torch
@@ -86,7 +87,7 @@ class ChunkLoss(torch.autograd.Function):
         return grad_input, grad_weight, None, None, None, None
 
 
-def chunk_loss_function(
+def _native_chunk_loss_function(
     hidden_states: torch.Tensor,
     weights: torch.Tensor,
     labels: torch.Tensor,
@@ -139,3 +140,13 @@ def chunk_loss_function(
         num_valid_tokens = (labels != ignore_index).sum()
         chunk_loss = reduce_sequence_parallel_loss(chunk_loss, num_valid_tokens)
     return chunk_loss, None
+
+
+def chunk_loss_function(*args, **kwargs):
+    """Use supervised-token compaction only on the explicit MUSA opt-in path."""
+    hidden = kwargs.get("hidden_states", args[0] if args else None)
+    if hidden is not None and hidden.device.type == "musa" and os.environ.get("VEOMNI_MUSA_SUPERVISED_CE", "0") == "1":
+        from .supervised_chunk_loss import compact_chunk_loss
+
+        return compact_chunk_loss(*args, **kwargs)
+    return _native_chunk_loss_function(*args, **kwargs)
