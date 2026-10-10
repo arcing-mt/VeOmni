@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, model] feat: archive guarded vision embedding CSR
 
 Keep native embedding forward; cache stable CSR index metadata for the fixed Qwen vision interpolation call-site and reproduce the target wheel FP32 partial accumulation order in backward. Guards cover the helper source hash, BF162304x1152, large eligible grids, hooks/DTensor/FSDP and cache lifetime. First metadata transfer/build is charged. Representative complete cached helper 1.977→1.662ms; two full50 runs had rank0 steps10–50 means of 3.036965/3.044491s did not isolate stable independent step gain.
