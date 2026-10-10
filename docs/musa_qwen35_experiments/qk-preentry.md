@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, ops] feat: archive qk repeat and norm preentry
 
 Fuse contiguous/repeat head layout into the unchanged native L2Norm expression and preserve native backward plus BF16 paired-head accumulation. Cold native configuration is retained. Complete helper S8155 measured 1.397/1.199/1.367ms before/candidate/after. Two full50 runs had rank0 steps10–50 means of 3.021742/3.037089s did not prove stable independent gain. Default real-GDN native out_proj weight-gradient repeat failed before candidate execution; deterministic component diagnostics passed. Final performance runs remained deterministic=false. This archive is not a general numerical certification.
