@@ -37,6 +37,12 @@ shared expert executes while the payload is in flight. It runs on the compute
 stream and therefore does not overlap the grouped GEMM or the combine, and it is
 not implicitly enabled by selecting this backend.
 
+The dispatcher prepares contiguous hidden states and FP32 routing probabilities
+before capturing the compute-stream ready event. This event must cover the
+payload writes as well as the routing layout. Lower-level calls with an external
+producer event wait on it before copying a payload, then extend the dependency
+through the copy; already prepared inputs reuse that event.
+
 Do not give the shared expert a stream of its own. Measured on Qwen3.5-35B-A3B
 (8x MTT S5000, EP8, FSDP2, `chunk_loss`), a dedicated high-priority side stream
 cost ~0.6 s/step relative to `moe_shared_expert_overlap=false` and *lowered* the

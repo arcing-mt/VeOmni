@@ -121,6 +121,99 @@ def test_deepep_ace_dispatch_uses_caller_previous_event(monkeypatch):
     assert received is hidden_states
 
 
+def test_deepep_ace_dispatch_extends_external_event_through_payload_copies(monkeypatch):
+    order = []
+    contiguous, as_float = torch.Tensor.contiguous, torch.Tensor.float
+
+    def prepare_hidden(tensor, *args, **kwargs):
+        order.append("contiguous")
+        return contiguous(tensor, *args, **kwargs)
+
+    def prepare_probs(tensor, *args, **kwargs):
+        order.append("float")
+        return as_float(tensor, *args, **kwargs)
+
+    class PreviousEvent:
+        def current_stream_wait(self):
+            order.append("wait_external")
+
+    ready_event, layout_event = object(), object()
+
+    def capture_ready():
+        order.append("capture_ready")
+        assert order == ["wait_external", "contiguous", "float", "capture_ready"]
+        return ready_event
+
+    class FakeBuffer:
+        def get_dispatch_layout(self, *args, **kwargs):
+            assert kwargs["previous_event"] is ready_event
+            return None, None, None, None, layout_event
+
+        def dispatch(self, hidden_states, **kwargs):
+            assert hidden_states.is_contiguous()
+            assert kwargs["topk_weights"].dtype == torch.float32
+            assert kwargs["previous_event"] is layout_event
+            return hidden_states, kwargs["topk_idx"], kwargs["topk_weights"], [1], object(), object()
+
+    state = _ACEState(SimpleNamespace(size=lambda: 2), num_experts=2, top_k=1)
+    hidden = torch.ones(2, 3).t()
+    indices = torch.zeros(3, 1, dtype=torch.long)
+    probs = torch.ones(3, 1, dtype=torch.bfloat16)
+    monkeypatch.setattr(torch.Tensor, "contiguous", prepare_hidden)
+    monkeypatch.setattr(torch.Tensor, "float", prepare_probs)
+    monkeypatch.setattr(state, "_get_buffer", lambda _hidden: FakeBuffer())
+    monkeypatch.setattr(deepep_ace, "_current_stream_event", capture_ready)
+    state.dispatch(hidden, indices, probs, previous_event=PreviousEvent())
+
+
+def test_deepep_overlap_captures_ready_after_payload_preparation(monkeypatch):
+    order = []
+    contiguous, as_float = torch.Tensor.contiguous, torch.Tensor.float
+
+    def prepare_hidden(tensor, *args, **kwargs):
+        order.append("contiguous")
+        return contiguous(tensor, *args, **kwargs)
+
+    def prepare_probs(tensor, *args, **kwargs):
+        order.append("float")
+        return as_float(tensor, *args, **kwargs)
+
+    ready_event = object()
+
+    def capture_ready():
+        order.append("capture_ready")
+        assert order == ["contiguous", "float", "capture_ready"]
+        return ready_event
+
+    class StopAfterDispatch(RuntimeError):
+        pass
+
+    def inspect_dispatch(hidden, indices, probs, state):
+        assert hidden.is_contiguous()
+        assert probs.dtype == torch.float32
+        assert state.previous_event is ready_event
+        raise StopAfterDispatch
+
+    group = SimpleNamespace(size=lambda: 2)
+    ep_class = object()
+    monkeypatch.setattr(deepep_ace, "get_parallel_state", lambda: SimpleNamespace(ep_enabled=True, ep_group=group))
+    monkeypatch.setattr(deepep_ace, "get_ops_config", lambda: SimpleNamespace(moe_dispatcher="deepep_ace"))
+    monkeypatch.setattr(deepep_ace, "_supported_ep_classes", lambda: (ep_class,))
+    monkeypatch.setattr(deepep_ace, "_ACTIVE_SHARED_EXPERT", SimpleNamespace(get=lambda: object()))
+    monkeypatch.setattr(deepep_ace, "_current_stream_event", capture_ready)
+    monkeypatch.setattr(deepep_ace._ACEDispatch, "apply", inspect_dispatch)
+    monkeypatch.setattr(torch.Tensor, "contiguous", prepare_hidden)
+    monkeypatch.setattr(torch.Tensor, "float", prepare_probs)
+    with pytest.raises(StopAfterDispatch):
+        deepep_ace.dispatch_to_ep_class_deepep(
+            ep_class,
+            2,
+            torch.ones(3, 1, dtype=torch.bfloat16),
+            torch.zeros(3, 1, dtype=torch.long),
+            torch.ones(2, 3).t(),
+        )
+
+
 def test_deepep_ace_is_a_dispatcher_selection():
     config = OpsImplementationConfig(moe_dispatcher="deepep_ace")
     assert config.moe_implementation == "fused_triton"
