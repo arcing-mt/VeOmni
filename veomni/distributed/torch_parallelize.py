@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import os
 import types
 from functools import partial
 from typing import List, Optional, Tuple
@@ -664,6 +665,15 @@ def parallelize_model_fsdp2(
     # above pass `reshard_after_forward` explicitly).
     root_fsdp_kwargs = {k: v for k, v in fsdp_kwargs.items() if k != "reshard_after_forward"}
     fully_shard(model, **root_fsdp_kwargs)
+
+    # Optional MUSA collective alignment must be installed after all FSDP2
+    # modules exist and before the first forward. It is model-local and
+    # default-off; incompatible vendor overlap modes fail closed.
+    if IS_MUSA_AVAILABLE and os.environ.get("VEOMNI_MUSA_FSDP_SHARD_PADDING", "0") == "1":
+        from .fsdp2.musa_collective_padding import configure_musa_collective_padding
+
+        configure_musa_collective_padding(model)
+        logger.info_rank0("Enabled per-model MUSA FSDP2 16-byte shard padding")
 
     # configure manual prefetching when needed
     need_manual_prefetch = (
