@@ -1,0 +1,57 @@
+{
+  "results": [
+    {
+      "checkpoint": false,
+      "step": 0,
+      "loss": 0.3336728513240814,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    },
+    {
+      "checkpoint": false,
+      "step": 1,
+      "loss": 0.3318905532360077,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    },
+    {
+      "checkpoint": false,
+      "step": 2,
+      "loss": 0.31597408652305603,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    },
+    {
+      "checkpoint": true,
+      "step": 0,
+      "loss": 0.3022565245628357,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    },
+    {
+      "checkpoint": true,
+      "step": 1,
+      "loss": 0.3104917109012604,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    },
+    {
+      "checkpoint": true,
+      "step": 2,
+      "loss": 0.29989391565322876,
+      "gradients_bitwise": true,
+      "parameters_bitwise": true
+    }
+  ],
+  "stats": {
+    "calls": {
+      "all_gather": 12,
+      "reduce_scatter": 6
+    },
+    "shapes": {
+      "AG:1904938->1904944:torch.bfloat16": 12,
+      "RS:1904938->1904940:torch.float32": 6
+    },
+    "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/install_mccl_padding.py",
+      "sha256": "a94fbd38c699669c6f432630f8a1c1f8265a741007bb6a112bdd890d726b690a",
+      "source": "trace/qwen35_optimize_20261009/install_mccl_padding.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_mccl_padding.py",
+      "sha256": "3a046d3da0f7439e78d3736fa8463e1de47dce364090ebdf6947aefaf6932920",
+      "source": "trace/qwen35_optimize_20261009/check_mccl_padding.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_fsdp_padding_updates.py",
+      "sha256": "79a5c91ad1a004dd2c171e84564b43c478d8bfe3c218ce98878fdce12f6725a5",
+      "source": "trace/qwen35_optimize_20261009/check_fsdp_padding_updates.py"
+    }
+  ]
+}
