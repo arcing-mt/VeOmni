@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, dist] feat: archive guarded MCCL shard alignment
 
 Pad eligible large contiguous BF16/FP32 shards to a 16-byte per-rank stride, use the original collective/dtype/op, then restore the logical layout. Copy/pack/wait/copy-back are measured. Scope: current Default FSDP2 comm, MUSA, 8 ranks, qualified streams. 48 operator cases/rank and controlled FSDP/AdamW updates passed. The TE+CE stage was 3.323586s and padding stage 3.071911s; this is directional full-step evidence, not a universal MCCL speed claim.
