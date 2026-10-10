@@ -5,6 +5,8 @@
 # Direct execution uses the best configuration validated on the 30 environment:
 # DeepEP ACE + shared-expert overlap, FSDP2 overlap off, 32 MCCL channels,
 # Vision Linear patch embed, foreach grad norm, and the tuned MUSA FLA backend.
+# The qualified compute, ACE/TE, and shard-padding paths are enabled by default.
+# Set an individual VEOMNI_MUSA_* performance flag to 0 to disable that path.
 #
 #   bash run_qwen35_35b_a3b_8card_train.sh
 #
@@ -66,14 +68,13 @@ set_defaults() {
     export LD_LIBRARY_PATH="/usr/local/mtshmem/lib:${LD_LIBRARY_PATH:-}"
   fi
 
-  # Validated MCCL defaults. Native AVG remains available for explicit A/B,
-  # but two 50-step runs showed no repeatable gain over SUM + scale.
+  # Match the latest combined validation; set native AVG to 0 for SUM + scale.
   export MCCL_CTA_POLICY="${MCCL_CTA_POLICY:-2}"
   export MCCL_PROTOS="${MCCL_PROTOS:-2}"
   export MCCL_ALGOS="${MCCL_ALGOS:-1}"
   export MCCL_MAX_NCHANNELS="${MCCL_MAX_NCHANNELS:-32}"
   export MCCL_MIN_NCHANNELS="${MCCL_MIN_NCHANNELS:-32}"
-  export VEOMNI_MCCL_NATIVE_AVG="${VEOMNI_MCCL_NATIVE_AVG:-0}"
+  export VEOMNI_MCCL_NATIVE_AVG="${VEOMNI_MCCL_NATIVE_AVG:-1}"
   export VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM="${VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM:-1}"
 
   # MoE and FSDP. The direct-run production path is ACE with FSDP overlap off.
@@ -88,6 +89,17 @@ set_defaults() {
   FSDP_DEEPEP_SHARED_COMM_STREAM="${FSDP_DEEPEP_SHARED_COMM_STREAM:-false}"
   TORCH_MUSA_FSDP2_COMM_TYPE="${TORCH_MUSA_FSDP2_COMM_TYPE:-0}"
   TORCH_MUSA_FSDP2_OVERLAP_LEVEL="${TORCH_MUSA_FSDP2_OVERLAP_LEVEL:-0}"
+
+  # Qualified Qwen3.5 performance paths from the compute, MoE, and FSDP PRs.
+  # Explicit 0 overrides are preserved; kernel modules keep their own fallbacks.
+  export VEOMNI_MUSA_SUPERVISED_CE="${VEOMNI_MUSA_SUPERVISED_CE:-1}"
+  export VEOMNI_MUSA_VISION_EMBEDDING_CSR="${VEOMNI_MUSA_VISION_EMBEDDING_CSR:-1}"
+  export VEOMNI_MUSA_QK_PREENTRY="${VEOMNI_MUSA_QK_PREENTRY:-1}"
+  export VEOMNI_MUSA_ACE_TE="${VEOMNI_MUSA_ACE_TE:-1}"
+  export VEOMNI_MUSA_ACE_TE_LONG_COUNTS="${VEOMNI_MUSA_ACE_TE_LONG_COUNTS:-1}"
+  export VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY="${VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY:-1}"
+  export VEOMNI_MUSA_ACE_NATIVE_WARMUP="${VEOMNI_MUSA_ACE_NATIVE_WARMUP:-1}"
+  export VEOMNI_MUSA_FSDP_SHARD_PADDING="${VEOMNI_MUSA_FSDP_SHARD_PADDING:-1}"
 
   # Model kernels and input pipeline.
   ATTN_IMPLEMENTATION="${ATTN_IMPLEMENTATION:-flash_attention_3}"
@@ -145,6 +157,13 @@ validate_config() {
     normalize_bool "${name}"
   done
 
+  for name in VEOMNI_MUSA_SUPERVISED_CE VEOMNI_MUSA_VISION_EMBEDDING_CSR \
+    VEOMNI_MUSA_QK_PREENTRY VEOMNI_MUSA_ACE_TE VEOMNI_MUSA_ACE_TE_LONG_COUNTS \
+    VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY VEOMNI_MUSA_ACE_NATIVE_WARMUP \
+    VEOMNI_MUSA_FSDP_SHARD_PADDING; do
+    require_choice "${name}" 0 1
+  done
+
   require_choice MOE_DISPATCHER alltoall deepep deepep_ace
   require_choice VISION_PATCH_EMBED_IMPLEMENTATION conv3d linear
   require_choice CHUNK_GATED_DELTA_RULE_IMPLEMENTATION fla musa musa_tilelang
@@ -179,6 +198,16 @@ validate_config() {
 }
 
 validate_deepep_fsdp_combination() {
+  if [[ "${MOE_DISPATCHER}" == deepep_ace && "${VEOMNI_MUSA_ACE_NATIVE_WARMUP}" == 1 ]]; then
+    [[ "${VEOMNI_MUSA_DEEPEP_COUNTING_SORT}" == true ]] || \
+      die "VEOMNI_MUSA_ACE_NATIVE_WARMUP requires counting sort; set VEOMNI_MUSA_ACE_NATIVE_WARMUP=0 when disabling it."
+  fi
+
+  if [[ "${VEOMNI_MUSA_FSDP_SHARD_PADDING}" == 1 ]]; then
+    [[ "${TORCH_MUSA_FSDP2_COMM_TYPE}" == 0 && "${TORCH_MUSA_FSDP2_OVERLAP_LEVEL}" == 0 ]] || \
+      die "VEOMNI_MUSA_FSDP_SHARD_PADDING requires COMM_TYPE=0 and OVERLAP_LEVEL=0; set it to 0 for other modes."
+  fi
+
   if [[ "${MOE_SHARED_EXPERT_OVERLAP}" == true && "${MOE_DISPATCHER}" == alltoall ]]; then
     die "MOE_SHARED_EXPERT_OVERLAP requires a DeepEP dispatcher."
   fi
@@ -314,6 +343,9 @@ Kernels and pipeline
   gated_rms_norm=${RMS_NORM_GATED_IMPLEMENTATION}, causal_conv1d=${CAUSAL_CONV1D_IMPLEMENTATION}
   vision_patch_embed=${VISION_PATCH_EMBED_IMPLEMENTATION}, skip_empty_dummy=${SKIP_EMPTY_MODALITY_DUMMY}
   foreach_grad_norm=${VEOMNI_MUSA_FSDP2_FOREACH_GRAD_NORM}, native_mccl_avg=${VEOMNI_MCCL_NATIVE_AVG}
+  supervised_ce=${VEOMNI_MUSA_SUPERVISED_CE}, vision_embedding_csr=${VEOMNI_MUSA_VISION_EMBEDDING_CSR}, qk_preentry=${VEOMNI_MUSA_QK_PREENTRY}
+  ace_te=${VEOMNI_MUSA_ACE_TE}, te_long_counts=${VEOMNI_MUSA_ACE_TE_LONG_COUNTS}, te_slot_probability=${VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY}
+  ace_native_warmup=${VEOMNI_MUSA_ACE_NATIVE_WARMUP}, fsdp_shard_padding=${VEOMNI_MUSA_FSDP_SHARD_PADDING}
   background_prefetch=${DATALOADER_USE_BACKGROUND_PREFETCHER}, sync_each_step=${SYNC_EACH_TRAIN_STEP}
 
 Output
