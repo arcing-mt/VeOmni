@@ -165,3 +165,71 @@ control any active code, including the compact-dispatch and layer-stride
 switches. Remove them and set the two arguments above. Retired experiment
 artifacts under `traces/` retain their original names for reproducibility.
 The unrelated `VEOMNI_ACE_TE` kernel-fallback override is unchanged.
+
+### Direct writes into registered combine windows
+
+Set `model.ops_implementation.moe_deepep_combine_direct_write: true` to enable
+the direct-window producer in the normal ACE dispatcher. The config default is
+`false`; the local `run_qwen35_35b_a3b_8card_train.sh` explicitly enables it:
+
+```bash
+# Direct-window path, 1 step per epoch x 20 epochs.
+bash run_qwen35_35b_a3b_8card_train.sh
+```
+
+The local launcher does not forward trailing arguments. To run its baseline
+producer/combine path, change its existing
+`--model.ops_implementation.moe_deepep_combine_direct_write true` argument to
+`false`, keeping the other settings unchanged.
+
+For entrypoints invoked through `train.sh`, pass these training arguments
+directly (use `false` to disable direct writes):
+
+```bash
+--model.ops_implementation.moe_dispatcher deepep_ace \
+--model.ops_implementation.moe_deepep_combine_direct_write true
+```
+
+```yaml
+model:
+  ops_implementation:
+    moe_dispatcher: deepep_ace
+    moe_deepep_combine_direct_write: true
+```
+
+The resolved argument is logged and saved in `veomni_cli.yaml`. It must agree
+on every EP rank and remain fixed for the lifetime of the training process.
+Enabling it with another dispatcher is rejected before training. No experimental
+entrypoint or patched DeepEP/MCCL library is needed.
+
+The experimental `VEOMNI_ACE_COMBINE_DIRECT_WRITE` and
+`VEOMNI_ACE_COMBINE_STAGING` environment variables no longer control active
+code. Remove both from launch commands. Staging was a separate experiment
+that first copied ordinary producer outputs into a registered window;
+`VEOMNI_ACE_COMBINE_STAGING=0` merely selected its default disabled state.
+That copy-based branch has been removed. Direct writes do not depend on it.
+
+The enabled path uses **two** registered DeepEP windows and requires MUSA BF16,
+native TransformerEngine compaction, and `Buffer.get_ace_combine_buffer`.
+Unsupported payloads or routing layouts raise an error instead of silently
+falling back. All-to-all dispatchers are unaffected. TE unpermute writes the
+weighted expert sums directly into the leased window; backward TE unpermute and
+the routing-gradient gather also write there. GEMM, routing probabilities and
+the FP32 accumulation order are preserved. This removes producer-to-window
+staging copies; it does not remove CE peer transfers or all model copies.
+
+The fixed two-slot pool waits for the prior completion event before each write
+and retains the lease through submission. Checkpoint early-stop releases a
+producer event without adding a collective. Empty receivers retain a non-null
+view of the selected slot. Window contents are not saved activations, and
+module-level lease objects release their references on exit, including when
+Python cyclic GC is disabled. The existing compact checkpoint cache and layer
+stride remain supported.
+
+The validated experimental implementation completed 1 step x 20 runs at
+3.039--3.054 s/step versus a 3.052 s/step baseline (steps 11--20, rank maximum).
+Matched rank-0 traces showed SendRecv kernels decreasing from 360 to zero over
+three profiled steps. These measurements do **not** establish an end-to-end
+speedup. Small fixed-input output/gradient parity passed; full-model training
+loss/gradient trajectories are not bit-identical, and long-run convergence was
+not validated. The second registered window increases workspace allocation.

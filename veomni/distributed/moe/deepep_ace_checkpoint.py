@@ -185,6 +185,20 @@ class _DispatchCompact(torch.autograd.Function):
 
         if ctx.backend == "te":
             row_nt, row_map, scatter = ctx.saved_tensors
+            if getattr(ctx.state, "combine_direct_write", False):
+                from .deepep_ace_direct import reverse_compact
+
+                grad_hidden, grad_router = reverse_compact(
+                    ctx.state,
+                    grad_compact,
+                    grad_probabilities,
+                    row_nt,
+                    row_map,
+                    scatter,
+                    ctx.received_tokens,
+                    ctx.width,
+                )
+                return grad_hidden, None, grad_router, None
             _, _, unpermute, dtype = ace._ace_te_impl()
             empty = torch.empty(0, device="cpu")
             grad_received = unpermute(

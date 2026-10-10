@@ -1,4 +1,4 @@
-"""CLI/YAML contracts for selective DeepEP checkpoint caching."""
+"""CLI/YAML contracts for DeepEP checkpoint caching and combine producers."""
 
 import argparse
 from dataclasses import dataclass, field
@@ -135,3 +135,43 @@ def test_incompatible_checkpoint_configuration_rejected(checkpoint, compile_enab
     )
     with pytest.raises(ValueError, match="DeepEP compact caching"):
         args.__post_init__()
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_direct_write_cli_overrides_yaml_and_round_trips(enabled):
+    data = {
+        "model": {
+            "ops_implementation": {
+                "moe_dispatcher": "deepep_ace",
+                "moe_deepep_combine_direct_write": not enabled,
+            }
+        }
+    }
+    flag = "--model.ops_implementation.moe_deepep_combine_direct_write"
+    args = _parser().parse_args([flag, str(not enabled).lower(), flag, str(enabled).lower()])
+    overrides = {key.removeprefix("model.ops_implementation."): value for key, value in vars(args).items()}
+    _deep_update(data, {"model": {"ops_implementation": overrides}})
+    config = _instantiate_recursive(_Root, data).model.ops_implementation
+    assert config.moe_deepep_combine_direct_write is enabled
+    from dataclasses import asdict
+
+    restored = _instantiate_recursive(OpsImplementationConfig, yaml.safe_load(yaml.safe_dump(asdict(config))))
+    assert restored.moe_deepep_combine_direct_write is enabled
+
+
+def test_direct_write_default_and_dispatcher_requirement():
+    assert not OpsImplementationConfig().moe_deepep_combine_direct_write
+    with pytest.raises(ValueError, match="requires moe_dispatcher='deepep_ace'"):
+        OpsImplementationConfig(moe_deepep_combine_direct_write=True)
+
+
+@pytest.mark.parametrize("value", [0, 1, "true", "false", None])
+def test_direct_write_invalid_yaml_boolean(value):
+    with pytest.raises(ValueError, match="must be a boolean"):
+        _instantiate_recursive(
+            OpsImplementationConfig,
+            {
+                "moe_dispatcher": "deepep_ace",
+                "moe_deepep_combine_direct_write": value,
+            },
+        )

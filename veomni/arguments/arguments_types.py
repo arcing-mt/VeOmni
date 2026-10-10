@@ -1136,6 +1136,14 @@ class OpsImplementationConfig:
             "workspace. Increase this explicitly for larger microbatches."
         },
     )
+    moe_deepep_combine_direct_write: bool = field(
+        default=False,
+        metadata={
+            "help": "Write TE unpermute activations and routing gradients directly into two registered "
+            "DeepEP combine windows to enable MCCL CE without staging copies. Requires "
+            "moe_dispatcher='deepep_ace', MUSA BF16 and native TransformerEngine compaction."
+        },
+    )
     moe_shared_expert_overlap: bool = field(
         default=False,
         metadata={
@@ -1304,6 +1312,10 @@ class OpsImplementationConfig:
             raise ValueError("moe_deepep_num_sms must be a positive even integer.")
         if self.moe_deepep_token_capacity <= 0:
             raise ValueError("moe_deepep_token_capacity must be positive.")
+        if type(self.moe_deepep_combine_direct_write) is not bool:
+            raise ValueError("moe_deepep_combine_direct_write must be a boolean.")
+        if self.moe_deepep_combine_direct_write and self.moe_dispatcher != "deepep_ace":
+            raise ValueError("moe_deepep_combine_direct_write requires moe_dispatcher='deepep_ace'.")
         if self.moe_shared_expert_overlap and self.moe_dispatcher != "deepep_ace":
             raise ValueError("moe_shared_expert_overlap requires moe_dispatcher='deepep_ace'.")
         if self.moe_deepep_recompute_cache not in {"none", "compact"}:

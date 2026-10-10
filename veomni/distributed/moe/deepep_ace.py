@@ -58,10 +58,15 @@ def _current_stream_event():
     return EventOverlap(EventHandle())
 
 
-_BUFFER_CACHE: dict[tuple[int, int, int, int, int, int, int], Any] = {}
-_CAPACITY_CHECKED: set[tuple[int, int]] = set()
+_BUFFER_CACHE: dict[tuple[int, ...], Any] = {}
+_CAPACITY_CHECKED: set[tuple[int, int, bool]] = set()
 _ACTIVE_SHARED_EXPERT = contextvars.ContextVar("veomni_active_shared_expert", default=None)
 _ROUTING_VALIDATION = contextvars.ContextVar("veomni_routing_validation", default=False)
+
+
+def combine_direct_write_enabled() -> bool:
+    """Read the registered-window producer policy from the resolved ops config."""
+    return getattr(get_ops_config(), "moe_deepep_combine_direct_write", False)
 
 
 @contextmanager
@@ -155,6 +160,7 @@ class _ACEState:
         self.dispatch_event = None
         self.recv_counts = None
         self._buffer = None
+        self.combine_direct_write = combine_direct_write_enabled()
 
     def _get_buffer(self, hidden_states: torch.Tensor):
         # One state serves one MoE layer invocation, which resolves the same
@@ -179,12 +185,20 @@ class _ACEState:
         configured_capacity = getattr(config, "moe_deepep_token_capacity", 8192)
         if self.group.size() > 8:
             raise RuntimeError("DeepEP-ACE supports at most eight EP ranks in one node")
-        capacity_check_key = (id(self.group), int(configured_capacity))
+        capacity_check_key = (
+            id(self.group),
+            int(configured_capacity),
+            self.combine_direct_write,
+        )
         if capacity_check_key not in _CAPACITY_CHECKED:
             capacities = [None] * self.group.size()
-            dist.all_gather_object(capacities, int(configured_capacity), group=self.group)
-            if any(capacity != int(configured_capacity) for capacity in capacities):
-                raise RuntimeError(f"all EP ranks must use the same moe_deepep_token_capacity: received {capacities}")
+            settings = (int(configured_capacity), self.combine_direct_write)
+            dist.all_gather_object(capacities, settings, group=self.group)
+            if any(capacity != settings for capacity in capacities):
+                raise RuntimeError(
+                    "all EP ranks must use the same moe_deepep_token_capacity and "
+                    f"moe_deepep_combine_direct_write: received {capacities}"
+                )
             _CAPACITY_CHECKED.add(capacity_check_key)
         requested_tokens = self.token_num or hidden_states.size(0)
         if requested_tokens > configured_capacity:
@@ -194,11 +208,12 @@ class _ACEState:
                 "Increase the explicit capacity so every EP rank constructs the same workspace."
             )
         requested_capacity = ((int(configured_capacity) + 1023) // 1024) * 1024
+        num_ace_buffers = 2 if self.combine_direct_write else 1
         cache_prefix = (id(self.group), hidden_bytes, hidden_size, element_size, num_sms, self.top_k)
         reusable = [
             (key[6], buffer)
             for key, buffer in _BUFFER_CACHE.items()
-            if key[:6] == cache_prefix and key[6] >= requested_capacity
+            if key[:6] == cache_prefix and key[6] >= requested_capacity and key[7] == num_ace_buffers
         ]
         if reusable:
             return min(reusable, key=lambda item: item[0])[1]
@@ -214,7 +229,7 @@ class _ACEState:
             dispatch_config.get_rdma_buffer_size_hint(hidden_bytes, self.group.size()),
             combine_config.get_rdma_buffer_size_hint(hidden_bytes, self.group.size()),
         )
-        buffer_kwargs = {"use_ace": True, "num_ace_buffers": 1}
+        buffer_kwargs = {"use_ace": True, "num_ace_buffers": num_ace_buffers}
         buffer_parameters = inspect.signature(Buffer).parameters
         if "token_num" in buffer_parameters:
             buffer_kwargs.update(
@@ -234,7 +249,14 @@ class _ACEState:
         if "train_mode" in inspect.signature(Buffer).parameters:
             buffer_kwargs["train_mode"] = True
         buffer = Buffer(self.group, nvl_bytes, rdma_bytes, **buffer_kwargs)
-        _BUFFER_CACHE[(*cache_prefix, requested_capacity)] = buffer
+        buffer._veomni_combine_shape = (requested_capacity, hidden_size, self.top_k)
+        if self.combine_direct_write:
+            if not callable(getattr(buffer, "get_ace_combine_buffer", None)):
+                raise RuntimeError("ACE registered-window combine requires Buffer.get_ace_combine_buffer")
+            logger.info_rank0(
+                "ACE combine direct write enabled: TE producers, two registered windows, no staging copy"
+            )
+        _BUFFER_CACHE[(*cache_prefix, requested_capacity, num_ace_buffers)] = buffer
         return buffer
 
     def dispatch(self, hidden_states, selected_experts, routing_weights, previous_event=None):
@@ -734,6 +756,11 @@ def dispatch_to_ep_class_deepep_ace(
         raise NotImplementedError(
             "moe_dispatcher='deepep_ace' currently supports the non-LoRA EP grouped-GEMM paths only"
         )
+
+    if combine_direct_write_enabled():
+        from .deepep_ace_direct import dispatch_direct
+
+        return dispatch_direct(ep_class, num_experts, routing_weights, selected_experts, hidden_states, *ep_class_args)
 
     invocation = _ACEState(state.ep_group, num_experts, selected_experts.shape[-1])
     overlap = _ACTIVE_SHARED_EXPERT.get()

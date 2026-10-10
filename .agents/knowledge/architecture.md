@@ -18,6 +18,7 @@ veomni/
 │   ├── async_offload.py    Async activation offload (SwapTensor, OffloadManager, async_save_on_cpu)
 │   ├── fsdp2/          FSDP2 (composable fully_shard), gradient clipping
 │   ├── moe/            MoE expert parallelism: token routing, all-to-all, EPGroupGemm
+│   │   └── deepep_ace_direct.py  Optional MUSA TE producers into two registered combine windows
 │   └── sequence_parallel/  Ulysses SP: all-to-all head/seq exchange, async variants
 ├── models/             Model loading and patching
 │   ├── auto.py         High-level API: build_foundation_model, build_tokenizer, build_processor
