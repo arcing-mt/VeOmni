@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # [perf, ops] feat: archive native TE compaction experiment
 
 Replace the paired local permute/unpermute layout using native TE, preserving true duplicate/count/layout rejection and original fallback. The loader snapshots and restores pre-import Torch APIs. BF16 atomic fallback versus fixed FP32 TE accumulation is a changed floating-point path: no old-fallback full-Qwen bitwise claim. TE-only 3.412696s did not prove independent stable gain. Requires the separately published TE compatibility branch; no TE C++ source is vendored here.
