@@ -1,0 +1,81 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/te_slot_probability.py",
+      "sha256": "78fe144b7894ae2c9d78efab1eec67e4616b6a9b76a8e01bb20762358334c1c1",
+      "source": "trace/qwen35_optimize_20261009/te_slot_probability.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/install_te_slot_probability.py",
+      "sha256": "e234f061d68d7dcd07fdabdf1c90f1ea74e5ef48bb8d1e33714b8c7e88f09b4d",
+      "source": "trace/qwen35_optimize_20261009/install_te_slot_probability.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/install_te_counts_slot.py",
+      "sha256": "608bbdc6b76cdc9794b4a119d5d204e696b998610e76cff97c0fec9ace67a421",
+      "source": "trace/qwen35_optimize_20261009/install_te_counts_slot.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/te_counts_slot_train_entry.py",
+      "sha256": "f0fe16fa21c0cf6e085132302bf0463b2c7b205219305640eb174fff6848aa5d",
+      "source": "trace/qwen35_optimize_20261009/te_counts_slot_train_entry.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_counts_slot.py",
+      "sha256": "943b03d37eb284906d2b1fcdd6fd2474ab3817631230465d4fc7ea275942684d",
+      "source": "trace/qwen35_optimize_20261009/check_te_counts_slot.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_slot_probability.py",
+      "sha256": "5c97f3d74a5131cffec425672fb0a02a58bf78160cc90b5322214c15b26ddc0d",
+      "source": "trace/qwen35_optimize_20261009/check_te_slot_probability.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/benchmark_te_counts_slot_actual.py",
+      "sha256": "c976a09f4674cfb1427b48c3b9f46c12a21de8f553c6cf37c79f5e1c93449de8",
+      "source": "trace/qwen35_optimize_20261009/benchmark_te_counts_slot_actual.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_te_counts_slot_fsdp_updates.py",
+      "sha256": "5bb5308e42f6c19b6cde4faca4a77dfd6456fca4e4277fb5fa98e377e2fa55e4",
+      "source": "trace/qwen35_optimize_20261009/check_te_counts_slot_fsdp_updates.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/instrumented_train_vlm.py",
+      "sha256": "7c0eee14fde96c4eeb4fc4263be095328e6cfdb271fdb2f2f11256ad78481f8e",
+      "source": "trace/qwen35_optimize_20261009/instrumented_train_vlm.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/metadata_cache.py",
+      "sha256": "1947d15f9afa74a84d183b84aa2be0cddd61350e968cb82a5fc70422841ee9cf",
+      "source": "trace/qwen35_optimize_20261009/metadata_cache.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/run_experiment.sh",
+      "sha256": "5710db5192404879a3c089f41d8403f5393bc09e62ecdc19e7bb71702b36d34a",
+      "source": "trace/qwen35_optimize_20261009/run_experiment.sh"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/python_with_timing.sh",
+      "sha256": "a6ee238914532694c76e3880393db8062d8c425d05cf3eb71c24a85c34372377",
+      "source": "trace/qwen35_optimize_20261009/python_with_timing.sh"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/run_qk_te_counts_slot_train.sh",
+      "sha256": "d95f9b89532a0ccd5056231473794ade76b35b2e0e11a2a0ef95d7c735f5666c",
+      "source": "trace/qwen35_optimize_20261009/run_qk_te_counts_slot_train.sh"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/te_counts_slot_train_expected_sha256.json",
+      "sha256": "1566dd62efe0066edb7ba92192320ce23fd3c73d8785778550166ae9afe52126",
+      "source": "trace/qwen35_optimize_20261009/te_counts_slot_train_expected_sha256.json"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/te_counts_slot_train_qualification_sha256.json",
+      "sha256": "ecbecfc60917613ba64f849f2efccbca82ebed4b55dce7b332fd9c8d04422975",
+      "source": "trace/qwen35_optimize_20261009/te_counts_slot_train_qualification_sha256.json"
+    }
+  ]
+}

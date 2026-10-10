@@ -1,0 +1,4372 @@
+{
+  "status": "passed_operator_gates",
+  "cases": [
+    {
+      "label": "synthetic_24576",
+      "tokens": 24576,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016691538080033557
+    },
+    {
+      "label": "synthetic_24577",
+      "tokens": 24577,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016645616900509896
+    },
+    {
+      "label": "synthetic_27988",
+      "tokens": 27988,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.001672062985343334
+    },
+    {
+      "label": "synthetic_28608",
+      "tokens": 28608,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016746856323250556
+    },
+    {
+      "label": "synthetic_28609",
+      "tokens": 28609,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016727097371217875
+    },
+    {
+      "label": "synthetic_28671",
+      "tokens": 28671,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016660768537058166
+    },
+    {
+      "label": "synthetic_28672",
+      "tokens": 28672,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.001663072354186206
+    },
+    {
+      "label": "synthetic_28673",
+      "tokens": 28673,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016694685623052693
+    },
+    {
+      "label": "synthetic_32680",
+      "tokens": 32680,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016688001523150065
+    },
+    {
+      "label": "synthetic_32704",
+      "tokens": 32704,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016728933918778465
+    },
+    {
+      "label": "synthetic_32705",
+      "tokens": 32705,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016699303508049222
+    },
+    {
+      "label": "synthetic_32767",
+      "tokens": 32767,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016691035045716758
+    },
+    {
+      "label": "synthetic_32768",
+      "tokens": 32768,
+      "counter_delta": {
+        "original_Bool_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0016701684473716862
+    },
+    {
+      "label": "actual_r0_at_or_above28672",
+      "tokens": 32344,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0017068664994415307
+    },
+    {
+      "label": "actual_r1_at_or_above28672",
+      "tokens": 30651,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0011962743361699404
+    },
+    {
+      "label": "actual_r1_below28672",
+      "tokens": 28149,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0009931134785694353
+    },
+    {
+      "label": "actual_r2_at_or_above28672",
+      "tokens": 32019,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0015159198722344092
+    },
+    {
+      "label": "actual_r3_at_or_above28672",
+      "tokens": 31542,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0010053590666436235
+    },
+    {
+      "label": "actual_r3_below28672",
+      "tokens": 27988,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0011556809025414286
+    },
+    {
+      "label": "actual_r4_at_or_above28672",
+      "tokens": 32426,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0013442718639321343
+    },
+    {
+      "label": "actual_r5_at_or_above28672",
+      "tokens": 32315,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0008416168852668708
+    },
+    {
+      "label": "actual_r7_at_or_above28672",
+      "tokens": 32585,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0010426477695816582
+    },
+    {
+      "label": "actual_r7_below28672",
+      "tokens": 28285,
+      "counter_delta": {
+        "Long_input_column_sum": 1
+      },
+      "slot_counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "DX_raw_FP64_RMS_128_rows": 0.0012330231308337364
+    }
+  ],
+  "comparisons": [
+    {
+      "stage": "synthetic_24576",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        148032,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        148032,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        148032
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        148032
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        24576
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        24576
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        24576,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        24576,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        24576,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        24576,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24576",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        24576,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        148038,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        148038,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        148038
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        148038
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        24577
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        24577
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        24577,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        24577,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        24577,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        24577,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_24577",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        24577,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        168582,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        168582,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        168582
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        168582
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        27988
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        27988
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_27988",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        172319,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        172319,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        172319
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        172319
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28608
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28608
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28608,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28608,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28608,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28608,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28608",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28608,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        172325,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        172325,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        172325
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        172325
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28609
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28609
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28609,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28609,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28609,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28609,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28609",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28609,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        172697,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        172697,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        172697
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        172697
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28671
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28671
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28671,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28671,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28671,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28671,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28671",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28671,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        172703,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        172703,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        172703
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        172703
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28672
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28672
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28672,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28672,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28672,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28672,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28672,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        172710,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        172710,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        172710
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        172710
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28673
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28673
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28673,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28673,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28673,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28673,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_28673",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28673,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        196844,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        196844,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        196844
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        196844
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32680
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32680
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32680,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32680,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32680",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32680,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        196991,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        196991,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        196991
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        196991
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32704
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32704
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32704,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32704,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32704,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32704,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32704",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32704,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        196998,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        196998,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        196998
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        196998
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32705
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32705
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32705,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32705,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32705,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32705,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32705",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32705,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        197368,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        197368,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        197368
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        197368
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32767
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32767
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32767,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32767,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32767,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32767,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32767",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32767,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        197375,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        197375,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        197375
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        197375
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32768
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32768
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32768,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32768,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32768,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32768,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "synthetic_32768",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32768,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        44228,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        44228,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        44228
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        44228
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32344
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32344
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32344,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32344,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32344,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32344,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r0_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32344,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        43943,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        43943,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        43943
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        43943
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        30651
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        30651
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        30651,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        30651,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        30651,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        30651,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        30651,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        34665,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        34665,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        34665
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        34665
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28149
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28149
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28149,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28149,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28149,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28149,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r1_below28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28149,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        47042,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        47042,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        47042
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        47042
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32019
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32019
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32019,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32019,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32019,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32019,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r2_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32019,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        48949,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        48949,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        48949
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        48949
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        31542
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        31542
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        31542,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        31542,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        31542,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        31542,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        31542,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        38667,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        38667,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        38667
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        38667
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        27988
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        27988
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r3_below28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        41981,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        41981,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        41981
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        41981
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32426
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32426
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32426,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32426,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32426,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32426,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r4_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32426,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        45683,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        45683,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        45683
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        45683
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32315
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32315
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32315,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32315,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32315,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32315,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r5_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32315,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        43887,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        43887,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        43887
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        43887
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        32585
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        32585
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        32585,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        32585,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        32585,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        32585,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_at_or_above28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        32585,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "FW_hidden_intended_native_repeat",
+      "shape": [
+        37963,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "FW_hidden_candidate_vs_intended_TE",
+      "shape": [
+        37963,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "FW_probability_intended_native_repeat",
+      "shape": [
+        37963
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "FW_probability_candidate_vs_intended_TE",
+      "shape": [
+        37963
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "counts_intended_native_repeat",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "counts_candidate_vs_intended_TE",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "map_intended_native_repeat",
+      "shape": [
+        32,
+        28285
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "map_candidate_vs_intended_TE",
+      "shape": [
+        32,
+        28285
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DX_intended_native_repeat",
+      "shape": [
+        28285,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DX_candidate_vs_intended_TE",
+      "shape": [
+        28285,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DP_intended_native_repeat",
+      "shape": [
+        28285,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DP_candidate_vs_intended_TE",
+      "shape": [
+        28285,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "counts_vs_CPU",
+      "shape": [
+        32
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DX_CPU_FP64_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "actual_r7_below28672",
+      "label": "DP_CPU_scatter",
+      "shape": [
+        28285,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_FW_intended_native_repeat",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_FW_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DX_intended_native_repeat",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DX_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DP_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DP_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_FW_CPU_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DX_CPU_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_27988",
+      "label": "weighted_DP_CPU_rounded",
+      "shape": [
+        128,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_FW_intended_native_repeat",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_FW_candidate_vs_intended_TE",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DX_intended_native_repeat",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DX_candidate_vs_intended_TE",
+      "shape": [
+        32680,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DP_intended_native_repeat",
+      "shape": [
+        32680,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DP_candidate_vs_intended_TE",
+      "shape": [
+        32680,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_FW_CPU_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DX_CPU_rounded",
+      "shape": [
+        128,
+        2048
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "weighted_merge_checkpoint_32680",
+      "label": "weighted_DP_CPU_rounded",
+      "shape": [
+        128,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "special_strided_gradient_metadata_reuse",
+      "label": "special_strided_gradient_metadata_reuse_0_intended_native_repeat",
+      "shape": [
+        168582
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "special_strided_gradient_metadata_reuse",
+      "label": "special_strided_gradient_metadata_reuse_0_candidate_vs_intended_TE",
+      "shape": [
+        168582
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "special_strided_gradient_metadata_reuse",
+      "label": "special_strided_gradient_metadata_reuse_1_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "special_strided_gradient_metadata_reuse",
+      "label": "special_strided_gradient_metadata_reuse_1_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "probability_higher_order",
+      "label": "probability_higher_order_0_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "probability_higher_order",
+      "label": "probability_higher_order_0_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "probability_higher_order",
+      "label": "probability_higher_order_1_intended_native_repeat",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "probability_higher_order",
+      "label": "probability_higher_order_1_candidate_vs_intended_TE",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    },
+    {
+      "stage": "probability_higher_order",
+      "label": "higher_order_CPU_oracle",
+      "shape": [
+        27988,
+        8
+      ],
+      "shape_dtype_equal": true,
+      "raw_equal": true,
+      "mismatches": 0
+    }
+  ],
+  "benchmarks": [],
+  "source_sha256": {
+    "check_te_counts_slot.py": "943b03d37eb284906d2b1fcdd6fd2474ab3817631230465d4fc7ea275942684d",
+    "install_te_counts_slot.py": "608bbdc6b76cdc9794b4a119d5d204e696b998610e76cff97c0fec9ace67a421",
+    "install_te_native_counts.py": "88a7ebc88d1d5a4927c37607a64588049bda796d9638c24ac302470be600d2af",
+    "te_slot_probability.py": "78fe144b7894ae2c9d78efab1eec67e4616b6a9b76a8e01bb20762358334c1c1",
+    "te_compact_prototype.py": "7fdd07c124982745dd3ce311575a65108f2cf32e0b2d2c252ec8e7f0402417eb",
+    "install_te_compact.py": "b1e76606ee586a17264eab5ea6f91eb36a0d18cfa8de2084c30e50485cadc20e"
+  },
+  "torch": "2.11.0.post2",
+  "torch_musa": "2.11.0.post2+395c00c",
+  "deterministic_algorithms": false,
+  "scope": "Default-mode GPU0 composed operator numeric gate only. Intended TE control has authoritative CPU integer counts; broken original None is not numeric control. No timing is measured here. No FSDP/model certification.",
+  "raw_FP64_relative_RMS_threshold": 0.01,
+  "native_counting_sort_env": "1",
+  "native_fallback_source_sha256": {
+    "/data/share/liang.geng/fsdp_overlap_test/VeOmni/veomni/distributed/moe/deepep_ace.py": "4f04a236be3c02524e1101cac162753d1992e45e3dd58c1b4a8afe90cf8d50dd",
+    "/data/share/liang.geng/fsdp_overlap_test/VeOmni/veomni/ops/kernels/moe/musa_deepep_compact.py": "70404a846b1eba10172b714a38c0505bab7b20fd7e536bb1908767dea05f9410"
+  },
+  "default_off_checked": true,
+  "numeric_control": "Original TE floating kernels/class/weights/maps/weighted merge, authoritative CPU counts copied to GPU; not broken original fallback.",
+  "actual_file_sha256": {
+    "te_native_counts_rank0.json": "2b14f44c8474096774aa73a1cd62fe74b7a2228086fa763a67f3091d01512d88",
+    "te_native_counts_rank0_at_or_above28672_indices.npy": "2f44cdd1f2555dc31d065e02eecd44fd51d64f01f84a0bcc78d75ef51aac3f8b",
+    "te_native_counts_rank1.json": "a49d66b70fb037e328045036028fb2f82fbf40d89018a746464a1129f25e88cb",
+    "te_native_counts_rank1_at_or_above28672_indices.npy": "8f474fe58c124899c97edd3906cf07f98a964c42520a12c050d8df3d8360fbba",
+    "te_native_counts_rank1_below28672_indices.npy": "fe432e8e041695e47addd947ef858ed2b05b6d1cbc9af803fdcd50c73217b8e2",
+    "te_native_counts_rank2.json": "67103c86462e6d72a931aba0310a8c03f87f9d382fac821be4280318f74cdd29",
+    "te_native_counts_rank2_at_or_above28672_indices.npy": "cbfa491c0c000aa4d4f4e5b1994f944e5ebc2a9a616480287893eeeb5812a568",
+    "te_native_counts_rank3.json": "eec865360ed3dbfa991965e92bfdbb7fb28a347894245d151700ad9d9d63c27f",
+    "te_native_counts_rank3_at_or_above28672_indices.npy": "357417830a562d60cd068d84ba04c657ef9412e706b1ce722c1f2ad0985b2f3a",
+    "te_native_counts_rank3_below28672_indices.npy": "e48e86a29e76a062867a3abf741c570e6e70765cc2f157806bf1ff2aec2c844d",
+    "te_native_counts_rank4.json": "f244300c9ecbd1fce9ebf389480f19838b048d5775276c469cb8ed8ce6495f37",
+    "te_native_counts_rank4_at_or_above28672_indices.npy": "9d003ea18262bbd31866ba17049fa91c555b5400410cc6238968565250e7a39b",
+    "te_native_counts_rank5.json": "4f7ae3ef26d4649e38fef17d2b31b72ed1a56e5433beb171a8782bd8642b8f86",
+    "te_native_counts_rank5_at_or_above28672_indices.npy": "66e80829b8c4acc9e3df3c08ac7a19196da28e6af2374f97493966d81f1031b0",
+    "te_native_counts_rank6.json": "bb9b5f283e8082e3e96b12d05c594c801dd51a217a882d1e5109bca2fda9eef3",
+    "te_native_counts_rank7.json": "eaff19e6656c9b4067a2eed09bc1e2740a60dde0dfb5a5370886f04b1c316ef8",
+    "te_native_counts_rank7_at_or_above28672_indices.npy": "dcb8b427ff9903226ede388153589a7ee36c80a8c66e501d5e3b5229492747d9",
+    "te_native_counts_rank7_below28672_indices.npy": "853ec8d0b52ef598d06d26d06f143efab2a65caa8448609a50f76aaef527f53b"
+  },
+  "stage": "completed",
+  "weighted_checkpoint_cases": [
+    {
+      "tokens": 27988,
+      "raw_FP64_RMS_128_rows": {
+        "FW": 0.0016691502114188023,
+        "DX": 0.0016630074114795574,
+        "DP": 0.0
+      },
+      "nonreentrant_default_checkpoint_rawbits": true
+    },
+    {
+      "tokens": 32680,
+      "raw_FP64_RMS_128_rows": {
+        "FW": 0.0016881069458132385,
+        "DX": 0.0016848204349336536,
+        "DP": 0.0
+      },
+      "nonreentrant_default_checkpoint_rawbits": true
+    }
+  ],
+  "edge_cases": [
+    {
+      "kind": "special_strided_gradient_metadata_reuse",
+      "tokens": 27988,
+      "rawbits_exact": true,
+      "slot_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "scope": "Special gradients compare raw bits to native; nonfinite FP64 RMS is undefined."
+    },
+    {
+      "kind": "probability_higher_order",
+      "tokens": 27988,
+      "rawbits_exact": true,
+      "slot_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1,
+        "higher_order_native_probability": 1
+      },
+      "scope": "Special gradients compare raw bits to native; nonfinite FP64 RMS is undefined."
+    }
+  ],
+  "validation": [
+    {
+      "kind": "duplicate",
+      "preserved": true
+    },
+    {
+      "kind": "expert_mismatch",
+      "preserved": true
+    }
+  ],
+  "outer_zero_assignments_original_fallback": true,
+  "trial_stats": {
+    "installed": true,
+    "counts": {
+      "installed": true,
+      "counters": {
+        "original_Bool_column_sum": 7,
+        "Long_input_column_sum": 24
+      },
+      "default_enabled": false,
+      "scope": "Integer counts only, N24577..28608 or 28673..32704/E32/BF16H2048/current Torch/MUSA. Correcting false rejection changes some Torch BF16 atomic fallback calls to existing TE fixed FP32 accumulation; no old-fallback bitwise claim."
+    },
+    "slot": {
+      "fused_weights": 29,
+      "direct_slot_gradient": 27,
+      "higher_order_native_probability": 1
+    },
+    "scope": "Experimental composition, default off. Existing counts and slot guards remain; corrected count decisions can change old fallback to intended TE math. No combined operator/FSDP/full-training qualification implied."
+  }
+}

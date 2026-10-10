@@ -1,0 +1,137 @@
+{
+  "status": "passed_fixed_window_repeated_performance",
+  "window": [
+    10,
+    50
+  ],
+  "samples_per_rank": 41,
+  "runs": [
+    {
+      "name": "qk_te_counts_slot_baseline",
+      "audit_sha256": "2cd4b1192d6ccabf2a7c1242081aeb522dadc641a7878a22fee7e1e3757e93f9",
+      "eight_rank_steady_mean": 2.992483196253,
+      "rank0_steady_mean": 2.99249430421989,
+      "all_rank_mean_range": [
+        2.9924700891459928,
+        2.9924967016101243
+      ],
+      "all50_range": [
+        3.594651562360232,
+        3.597883527660306
+      ],
+      "step1_range": [
+        33.19825183699868,
+        33.363204191002296
+      ],
+      "steady_max": 3.06722330100456,
+      "over3_counts": [
+        14,
+        13,
+        13,
+        13,
+        13,
+        13,
+        13,
+        13
+      ],
+      "Long_counts": [
+        54,
+        214,
+        248,
+        260,
+        58,
+        84,
+        0,
+        120
+      ],
+      "exit_code": 0,
+      "under3_all_ranks": true,
+      "rounded_grad_norm_above10": [
+        {
+          "step": 1,
+          "loss": 1.33,
+          "foundation_loss": 1.33,
+          "grad_norm": 28.17
+        },
+        {
+          "step": 2,
+          "loss": 0.99,
+          "foundation_loss": 0.99,
+          "grad_norm": 24.84
+        },
+        {
+          "step": 5,
+          "loss": 0.88,
+          "foundation_loss": 0.88,
+          "grad_norm": 38.51
+        }
+      ],
+      "peak_allocated_GiB": 72.03711414337158,
+      "peak_reserved_GiB": 75.708984375
+    },
+    {
+      "name": "qk_te_counts_slot_repeat_baseline",
+      "audit_sha256": "1ab220a879f4b95a0a6ac091b1f3d1184ec884d36147bc2b2d435fe7494c8703",
+      "eight_rank_steady_mean": 2.99215559296925,
+      "rank0_steady_mean": 2.992146321242993,
+      "all_rank_mean_range": [
+        2.992144657583572,
+        2.992169536733233
+      ],
+      "all50_range": [
+        3.5989022789581213,
+        3.600737404937972
+      ],
+      "step1_range": [
+        33.380508840986295,
+        33.47366011700069
+      ],
+      "steady_max": 3.0448252009955468,
+      "over3_counts": [
+        13,
+        14,
+        13,
+        13,
+        13,
+        13,
+        13,
+        13
+      ],
+      "Long_counts": [
+        36,
+        192,
+        210,
+        244,
+        88,
+        84,
+        0,
+        122
+      ],
+      "exit_code": 0,
+      "under3_all_ranks": true,
+      "rounded_grad_norm_above10": [
+        {
+          "step": 1,
+          "loss": 1.33,
+          "foundation_loss": 1.33,
+          "grad_norm": 28.18
+        },
+        {
+          "step": 16,
+          "loss": 0.85,
+          "foundation_loss": 0.85,
+          "grad_norm": 26.4
+        },
+        {
+          "step": 29,
+          "loss": 0.84,
+          "foundation_loss": 0.84,
+          "grad_norm": 11.93
+        }
+      ],
+      "peak_allocated_GiB": 72.0416145324707,
+      "peak_reserved_GiB": 75.708984375
+    }
+  ],
+  "scope": "Complete original50 updates, performance mean under3 repeated; not every step/all50 mean/long-run/full-Qwen numerical/default adoption certification."
+}

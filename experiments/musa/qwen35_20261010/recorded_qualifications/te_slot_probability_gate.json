@@ -1,0 +1,297 @@
+{
+  "status": "passed_operator_gates",
+  "cases": [
+    {
+      "tokens": 17,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.0016657445735548918,
+        "dx_relative_rms_original": 0.0016657445735548918,
+        "raw_threshold_fixed_before_GPU": 0.01,
+        "dp_relative_rms_candidate": 0.0
+      },
+      "CPU_FP64_smallcase": true
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.001669397330982296,
+        "dx_relative_rms_original": 0.001669397330982296,
+        "raw_threshold_fixed_before_GPU": 0.01,
+        "dp_relative_rms_candidate": 0.0
+      },
+      "CPU_FP64_smallcase": true
+    },
+    {
+      "tokens": 2048,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 8192,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 32768,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 40960,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 41047,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": true,
+      "strided_gradient": true,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.0016711208027739336,
+        "dx_relative_rms_original": 0.0016711208027739336,
+        "raw_threshold_fixed_before_GPU": 0.01,
+        "dp_relative_rms_candidate": 0.0
+      },
+      "CPU_FP64_smallcase": true
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": true,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": null,
+      "CPU_FP64_smallcase": false
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": true,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.0016674866361083614,
+        "dx_relative_rms_original": 0.0016674866361083614,
+        "raw_threshold_fixed_before_GPU": 0.01,
+        "dp_relative_rms_candidate": 0.0
+      },
+      "CPU_FP64_smallcase": true
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 2048,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": true,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "fused_weights": 1,
+        "direct_slot_gradient": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.00167066147666112,
+        "dx_relative_rms_original": 0.00167066147666112,
+        "raw_threshold_fixed_before_GPU": 0.01
+      },
+      "CPU_FP64_smallcase": true
+    },
+    {
+      "tokens": 257,
+      "experts": 32,
+      "hidden_width": 128,
+      "mutate_metadata": false,
+      "strided_gradient": false,
+      "probability_only": false,
+      "special_probabilities": false,
+      "special_gradients": false,
+      "original_candidate_original_FW_DX_DP_bitwise": true,
+      "counter_delta": {
+        "native_weights": 1
+      },
+      "raw_FP64_metrics": {
+        "dx_relative_rms_candidate": 0.0016689976454791016,
+        "dx_relative_rms_original": 0.0016689976454791016,
+        "raw_threshold_fixed_before_GPU": 0.01,
+        "dp_relative_rms_candidate": 0.0
+      },
+      "CPU_FP64_smallcase": true
+    }
+  ],
+  "duplicate_rejection_unchanged": true,
+  "source_sha256": {
+    "check_te_slot_probability.py": "5c97f3d74a5131cffec425672fb0a02a58bf78160cc90b5322214c15b26ddc0d",
+    "te_slot_probability.py": "78fe144b7894ae2c9d78efab1eec67e4616b6a9b76a8e01bb20762358334c1c1",
+    "install_te_slot_probability.py": "e234f061d68d7dcd07fdabdf1c90f1ea74e5ef48bb8d1e33714b8c7e88f09b4d",
+    "te_compact_prototype.py": "7fdd07c124982745dd3ce311575a65108f2cf32e0b2d2c252ec8e7f0402417eb",
+    "install_te_compact.py": "b1e76606ee586a17264eab5ea6f91eb36a0d18cfa8de2084c30e50485cadc20e"
+  },
+  "native_rejected_shapes": [
+    {
+      "tokens": 32680,
+      "original_candidate_original_rejection_exact": true,
+      "reasons": [
+        "duplicate_expert_slots",
+        "duplicate_expert_slots",
+        "duplicate_expert_slots"
+      ],
+      "candidate_kernel_not_executed": true,
+      "scope": "Existing native bool-column sum failure retained. This shape is not a probability kernel numerical pass."
+    },
+    {
+      "tokens": 32681,
+      "original_candidate_original_rejection_exact": true,
+      "reasons": [
+        "duplicate_expert_slots",
+        "duplicate_expert_slots",
+        "duplicate_expert_slots"
+      ],
+      "candidate_kernel_not_executed": true,
+      "scope": "Existing native bool-column sum failure retained. This shape is not a probability kernel numerical pass."
+    }
+  ],
+  "checkpoint": {
+    "nonreentrant_default_metadata": true,
+    "FW_DX_DP_exact": true,
+    "counter_delta": {
+      "fused_weights": 2,
+      "direct_slot_gradient": 1
+    }
+  },
+  "pending_input": {
+    "producer_ready_pending_before_candidate": true,
+    "explicit_consumer_event_dependency": true,
+    "dropped_new_input_refs_and_reuse_stress": true,
+    "exact": true,
+    "scope": "Isolated new FW probability/index reads. Original native hidden input and maps remain alive; not a proof for every native extension or backward branch."
+  },
+  "probability_higher_order_exact": true,
+  "no_grad_exact": true,
+  "counters": {
+    "installed": true,
+    "counters": {
+      "fused_weights": 16,
+      "direct_slot_gradient": 13,
+      "native_weights": 1,
+      "higher_order_native_probability": 1
+    },
+    "scope": "Probability copy-only fusion; original counts/duplicate fallback and all TE hidden/merge native arithmetic unchanged. Original BF16 probability weighting unchanged. No new GPU failure fallback."
+  },
+  "scope": "Pure compactor gates only; no FSDP/Adam/fullmodel/performance acceptance. Original native hidden permutation/adjoint retained. NaN copy payloads, metadata reuse and probability-only/strided gradients included. Numerical thresholds not relaxed."
+}

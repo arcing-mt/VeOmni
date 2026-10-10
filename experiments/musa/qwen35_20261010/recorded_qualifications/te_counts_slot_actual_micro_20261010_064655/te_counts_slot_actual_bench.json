@@ -1,0 +1,706 @@
+{
+  "status": "completed_actual_routing_micro",
+  "cases": [
+    {
+      "source": "te_native_counts_rank0_at_or_above28672_indices.npy",
+      "tokens": 32344,
+      "assignments": 44228,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.609571125,
+            4.571208625,
+            4.5817045
+          ],
+          "median_ms": 4.5817045,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1144258560,
+          "peak_reserved_bytes": 1178599424
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.5734645,
+            4.51159975,
+            4.478838625
+          ],
+          "median_ms": 4.51159975,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1144258560,
+          "peak_reserved_bytes": 1180696576
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.5821145,
+            4.584951625,
+            4.573708125
+          ],
+          "median_ms": 4.5821145,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1144258560,
+          "peak_reserved_bytes": 1180696576
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank1_at_or_above28672_indices.npy",
+      "tokens": 30651,
+      "assignments": 43943,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.500069875,
+            4.50699425,
+            4.497833375
+          ],
+          "median_ms": 4.500069875,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1119025152,
+          "peak_reserved_bytes": 1180696576
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.448758,
+            4.5228695,
+            4.44233875
+          ],
+          "median_ms": 4.448758,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1119025152,
+          "peak_reserved_bytes": 1180696576
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.556411,
+            4.50919075,
+            4.50296075
+          ],
+          "median_ms": 4.50919075,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1119025152,
+          "peak_reserved_bytes": 1180696576
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank1_below28672_indices.npy",
+      "tokens": 28149,
+      "assignments": 34665,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.050188125,
+            4.025735875,
+            4.028682625
+          ],
+          "median_ms": 4.028682625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 932902912,
+          "peak_reserved_bytes": 1180696576
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            3.89120025,
+            3.88355775,
+            3.862704375
+          ],
+          "median_ms": 3.88355775,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 932902912,
+          "peak_reserved_bytes": 1180696576
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.018394625,
+            4.036109375,
+            4.008906875
+          ],
+          "median_ms": 4.018394625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 932902912,
+          "peak_reserved_bytes": 1180696576
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank2_at_or_above28672_indices.npy",
+      "tokens": 32019,
+      "assignments": 47042,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.730407875,
+            4.738792875,
+            4.70391775
+          ],
+          "median_ms": 4.730407875,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1187386368,
+          "peak_reserved_bytes": 1952448512
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.6100855,
+            4.585896125,
+            4.61233975
+          ],
+          "median_ms": 4.6100855,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1187386368,
+          "peak_reserved_bytes": 1952448512
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.727975125,
+            4.72068425,
+            4.764121
+          ],
+          "median_ms": 4.727975125,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1187386368,
+          "peak_reserved_bytes": 1952448512
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank3_at_or_above28672_indices.npy",
+      "tokens": 31542,
+      "assignments": 48949,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.80963625,
+            4.7614805,
+            4.761363
+          ],
+          "median_ms": 4.7614805,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1215072256,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.650939625,
+            4.660569875,
+            4.6732135
+          ],
+          "median_ms": 4.660569875,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1215072256,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.768364625,
+            4.731466,
+            4.751404375
+          ],
+          "median_ms": 4.751404375,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1215072256,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank3_below28672_indices.npy",
+      "tokens": 27988,
+      "assignments": 38667,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.2219135,
+            4.23044825,
+            4.230899875
+          ],
+          "median_ms": 4.23044825,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 996401152,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.07192675,
+            4.069507625,
+            4.064488625
+          ],
+          "median_ms": 4.069507625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 996401152,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.21729225,
+            4.218111625,
+            4.223659125
+          ],
+          "median_ms": 4.218111625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 996401152,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank4_at_or_above28672_indices.npy",
+      "tokens": 32426,
+      "assignments": 41981,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.550201625,
+            4.525265125,
+            4.522847
+          ],
+          "median_ms": 4.525265125,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1108444672,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.360931125,
+            4.3717975,
+            4.364779125
+          ],
+          "median_ms": 4.364779125,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1108444672,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.532365875,
+            4.5320545,
+            4.575261
+          ],
+          "median_ms": 4.532365875,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1108444672,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank5_at_or_above28672_indices.npy",
+      "tokens": 32315,
+      "assignments": 45683,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.662287125,
+            4.704778875,
+            4.63256425
+          ],
+          "median_ms": 4.662287125,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1167746048,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.522147375,
+            4.533808375,
+            4.525586375
+          ],
+          "median_ms": 4.525586375,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1167746048,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.62326175,
+            4.635978,
+            4.620721
+          ],
+          "median_ms": 4.62326175,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1167746048,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank7_at_or_above28672_indices.npy",
+      "tokens": 32585,
+      "assignments": 43887,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.530066,
+            4.54530875,
+            4.530627625
+          ],
+          "median_ms": 4.530627625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1143888384,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.419207375,
+            4.423728625,
+            4.4296385
+          ],
+          "median_ms": 4.423728625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 1143888384,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.5789255,
+            4.564945,
+            4.54025375
+          ],
+          "median_ms": 4.564945,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 1143888384,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    },
+    {
+      "source": "te_native_counts_rank7_below28672_indices.npy",
+      "tokens": 28285,
+      "assignments": 37963,
+      "measurements": [
+        {
+          "variant": "counts_only_before",
+          "wall_ms": [
+            4.15529125,
+            4.13865675,
+            4.199336625
+          ],
+          "median_ms": 4.15529125,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 988712960,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "candidate",
+          "wall_ms": [
+            4.0227285,
+            4.014996625,
+            4.0231765
+          ],
+          "median_ms": 4.0227285,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {
+            "fused_weights": 48,
+            "direct_slot_gradient": 24
+          },
+          "peak_allocated_bytes": 988712960,
+          "peak_reserved_bytes": 2757754880
+        },
+        {
+          "variant": "counts_only_after",
+          "wall_ms": [
+            4.13503175,
+            4.167407375,
+            4.166873625
+          ],
+          "median_ms": 4.166873625,
+          "observed_dispatch_paths": {
+            "TE": 48,
+            "native_fallback": 0
+          },
+          "count_trial_delta": {
+            "Long_input_column_sum": 48
+          },
+          "slot_trial_delta": {},
+          "peak_allocated_bytes": 988712960,
+          "peak_reserved_bytes": 2757754880
+        }
+      ]
+    }
+  ],
+  "gate_sha256": "07152f14605d5fe9bf8b1ee8d96bd79d3617bce964a38d1b9557a1660aa782ab",
+  "source_sha256": {
+    "check_te_counts_slot.py": "943b03d37eb284906d2b1fcdd6fd2474ab3817631230465d4fc7ea275942684d",
+    "install_te_counts_slot.py": "608bbdc6b76cdc9794b4a119d5d204e696b998610e76cff97c0fec9ace67a421",
+    "install_te_native_counts.py": "88a7ebc88d1d5a4927c37607a64588049bda796d9638c24ac302470be600d2af",
+    "te_slot_probability.py": "78fe144b7894ae2c9d78efab1eec67e4616b6a9b76a8e01bb20762358334c1c1",
+    "te_compact_prototype.py": "7fdd07c124982745dd3ce311575a65108f2cf32e0b2d2c252ec8e7f0402417eb",
+    "install_te_compact.py": "b1e76606ee586a17264eab5ea6f91eb36a0d18cfa8de2084c30e50485cadc20e",
+    "benchmark_te_counts_slot_actual.py": "c976a09f4674cfb1427b48c3b9f46c12a21de8f553c6cf37c79f5e1c93449de8"
+  },
+  "scope": "Actual observed routing IDs only; synthetic hidden/probability/dy. Complete permute plus BF16 probability cast/product plus correct paired weighted merge. Counts-only control before/after. Two FW/one BW inclusive wall; no real expert MLP/ACE/FSDP or train gain claim.",
+  "native_counting_sort": 1,
+  "deterministic_algorithms": false,
+  "timing_control": "Qualified counts-only original TE before/after; slot-copy composition is the sole new variable.",
+  "stage": "completed",
+  "trial_stats": {
+    "installed": true,
+    "counts": {
+      "installed": true,
+      "counters": {
+        "Long_input_column_sum": 1620
+      },
+      "default_enabled": false,
+      "scope": "Integer counts only, N24577..28608 or 28673..32704/E32/BF16H2048/current Torch/MUSA. Correcting false rejection changes some Torch BF16 atomic fallback calls to existing TE fixed FP32 accumulation; no old-fallback bitwise claim."
+    },
+    "slot": {
+      "fused_weights": 540,
+      "direct_slot_gradient": 270
+    },
+    "scope": "Experimental composition, default off. Existing counts and slot guards remain; corrected count decisions can change old fallback to intended TE math. No combined operator/FSDP/full-training qualification implied."
+  }
+}

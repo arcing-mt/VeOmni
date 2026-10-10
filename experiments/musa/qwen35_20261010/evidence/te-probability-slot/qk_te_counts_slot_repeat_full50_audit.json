@@ -1,0 +1,418 @@
+{
+  "status": "passed_execution_audit",
+  "exit_code": 0,
+  "scope": "Complete original train_step, all 50 updates retained; fixed steps10-50 inclusive. Performance execution audit, not full-model paired numerical certification.",
+  "window": [
+    10,
+    50
+  ],
+  "samples_per_rank": 41,
+  "operator_gate_sha256": "07152f14605d5fe9bf8b1ee8d96bd79d3617bce964a38d1b9557a1660aa782ab",
+  "entry_sha256": "f0fe16fa21c0cf6e085132302bf0463b2c7b205219305640eb174fff6848aa5d",
+  "source_sha256": {
+    "check_te_counts_slot.py": "943b03d37eb284906d2b1fcdd6fd2474ab3817631230465d4fc7ea275942684d",
+    "install_te_counts_slot.py": "608bbdc6b76cdc9794b4a119d5d204e696b998610e76cff97c0fec9ace67a421",
+    "install_te_native_counts.py": "88a7ebc88d1d5a4927c37607a64588049bda796d9638c24ac302470be600d2af",
+    "te_slot_probability.py": "78fe144b7894ae2c9d78efab1eec67e4616b6a9b76a8e01bb20762358334c1c1",
+    "te_compact_prototype.py": "7fdd07c124982745dd3ce311575a65108f2cf32e0b2d2c252ec8e7f0402417eb",
+    "install_te_compact.py": "b1e76606ee586a17264eab5ea6f91eb36a0d18cfa8de2084c30e50485cadc20e"
+  },
+  "fsdp_report_sha256": {
+    "0": "65ccb79e039171a2e978e3e2906b3ee3f72b6721d9ee7fb61178b8b8717ca8bd",
+    "1": "6b036f8906ef72f522bc75dd9c74f96e5443e0d5e258b72b6299477dc627b2b4",
+    "2": "9ab32bbb4793fb318f90f2a6e27c6d4a05461c201fecb7290ba5c3f1d1fefab2",
+    "3": "af759b4e8b4a862d49d63b4df4bcf41a6acebfbf00d2c6d43c37b713b3c877df",
+    "4": "109551a55b6f2d07e243377df58ebbfa90c5ff4fea4ce6dd2d77a629bd3b2bc3",
+    "5": "c4305591a0e1b0bdf3da120e06c5c5621f195cbd964a9b30c69ecb9361a45fc6",
+    "6": "7d154d23f8809872bed0c54b52ae9f6520614a0d313f1fdebc0742e42e80ba62",
+    "7": "8511762a90a70f852ae0c44e024a059e37cfb97e0b126a43f1ce9a40896504c0"
+  },
+  "ranks": {
+    "0": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992146321242993,
+      "median": 2.992331984991324,
+      "min": 2.9534524560003774,
+      "max": 3.043873832008103,
+      "step1_seconds": 33.387592746992595,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3964,
+        "Long_input_column_sum": 36
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1756.243554,
+      "memory": {
+        "peak_allocated_bytes": 77141594624,
+        "peak_reserved_bytes": 80954261504,
+        "allocated_bytes": 52667672576,
+        "reserved_bytes": 53599010816,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "1": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992144657583572,
+      "median": 2.9912295620015357,
+      "min": 2.953874917991925,
+      "max": 3.0440800479991594,
+      "step1_seconds": 33.38306372999796,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3808,
+        "Long_input_column_sum": 192
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1698.637061,
+      "memory": {
+        "peak_allocated_bytes": 77084490240,
+        "peak_reserved_bytes": 81291902976,
+        "allocated_bytes": 52666854912,
+        "reserved_bytes": 53427044352,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "2": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992164195143964,
+      "median": 2.991497512004571,
+      "min": 2.953960731989355,
+      "max": 3.0441980100004002,
+      "step1_seconds": 33.47366011700069,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3790,
+        "Long_input_column_sum": 210
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1727.238059,
+      "memory": {
+        "peak_allocated_bytes": 77259705344,
+        "peak_reserved_bytes": 81273028608,
+        "allocated_bytes": 52666875392,
+        "reserved_bytes": 53533999104,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "3": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992152552145232,
+      "median": 2.9914179690094898,
+      "min": 2.953810117993271,
+      "max": 3.0441374729998643,
+      "step1_seconds": 33.44753812398994,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3756,
+        "Long_input_column_sum": 244
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1703.417896,
+      "memory": {
+        "peak_allocated_bytes": 77249655808,
+        "peak_reserved_bytes": 81289805824,
+        "allocated_bytes": 52667031552,
+        "reserved_bytes": 53429141504,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "4": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992169536733233,
+      "median": 2.991554423002526,
+      "min": 2.954096622997895,
+      "max": 3.044273252002313,
+      "step1_seconds": 33.43721946699952,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3912,
+        "Long_input_column_sum": 88
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1711.56809,
+      "memory": {
+        "peak_allocated_bytes": 77354094592,
+        "peak_reserved_bytes": 81287708672,
+        "allocated_bytes": 52666848256,
+        "reserved_bytes": 53385101312,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "5": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992162278196036,
+      "median": 2.991572241007816,
+      "min": 2.9540215940069174,
+      "max": 3.044248999998672,
+      "step1_seconds": 33.45476909300487,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3916,
+        "Long_input_column_sum": 84
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1709.981629,
+      "memory": {
+        "peak_allocated_bytes": 77298633216,
+        "peak_reserved_bytes": 81287708672,
+        "allocated_bytes": 52667043328,
+        "reserved_bytes": 53450113024,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "6": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.9921568744644103,
+      "median": 2.9915104120009346,
+      "min": 2.9540912759985076,
+      "max": 3.044075824000174,
+      "step1_seconds": 33.44439379101095,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 4000
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1706.26525,
+      "memory": {
+        "peak_allocated_bytes": 77185962496,
+        "peak_reserved_bytes": 81289805824,
+        "allocated_bytes": 52667019264,
+        "reserved_bytes": 53468987392,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    },
+    "7": {
+      "steps": 50,
+      "steady_steps": 41,
+      "mean": 2.992148328244561,
+      "median": 2.992735168998479,
+      "min": 2.95412638700509,
+      "max": 3.0448252009955468,
+      "step1_seconds": 33.380508840986295,
+      "outliers_above_3_25": [],
+      "counts_trial_counters": {
+        "original_Bool_column_sum": 3878,
+        "Long_input_column_sum": 122
+      },
+      "slot_copy_counters": {
+        "fused_weights": 4000,
+        "direct_slot_gradient": 2000
+      },
+      "te_calls": 4000,
+      "te_fallbacks": 0,
+      "qk": {
+        "adapter": {
+          "installed": 1,
+          "eligible_forward": 3000,
+          "preentry_fast": 3000
+        },
+        "prototype": {
+          "fallback": 1,
+          "native_config_fallback": 1,
+          "fused_forward": 5999,
+          "FW_BT32_W4_S2": 5999,
+          "fused_backward": 2999
+        },
+        "runtime_deterministic_algorithms": false,
+        "status": "passed"
+      },
+      "native_warmup_cpu_ms_charged_step1": 1692.922657,
+      "memory": {
+        "peak_allocated_bytes": 77342173696,
+        "peak_reserved_bytes": 81273028608,
+        "allocated_bytes": 52667139072,
+        "reserved_bytes": 53492056064,
+        "scope": "PyTorch allocator counters after training; external allocations excluded"
+      }
+    }
+  },
+  "error_pattern_hits": [],
+  "rounded_log_scope": "Tqdm rounded free-trajectory observations; not paired numerical proof.",
+  "rounded_final": {
+    "step": 50,
+    "loss": 0.82,
+    "foundation_loss": 0.82,
+    "grad_norm": 5.08
+  },
+  "rounded_grad_norm_above10": [
+    {
+      "step": 1,
+      "loss": 1.33,
+      "foundation_loss": 1.33,
+      "grad_norm": 28.18
+    },
+    {
+      "step": 16,
+      "loss": 0.85,
+      "foundation_loss": 0.85,
+      "grad_norm": 26.4
+    },
+    {
+      "step": 29,
+      "loss": 0.84,
+      "foundation_loss": 0.84,
+      "grad_norm": 11.93
+    }
+  ],
+  "max_peak_allocated_GiB": 72.0416145324707,
+  "max_peak_reserved_GiB": 75.708984375,
+  "all_rank_mean_range": [
+    2.992144657583572,
+    2.992169536733233
+  ],
+  "under3_all_ranks": true
+}

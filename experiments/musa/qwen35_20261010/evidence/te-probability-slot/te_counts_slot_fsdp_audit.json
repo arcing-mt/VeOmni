@@ -1,0 +1,43 @@
+{
+  "status": "passed_controlled_fsdp_audit",
+  "exit": 0,
+  "all_ranks": 8,
+  "cases_each": 6,
+  "raw_bit_comparisons": 9504,
+  "all_raw_numeric_equal": true,
+  "rms_and_maxabs_all_zero": true,
+  "source16_and_runtime4_immutable": true,
+  "rank_report_sha256": {
+    "0": "65ccb79e039171a2e978e3e2906b3ee3f72b6721d9ee7fb61178b8b8717ca8bd",
+    "1": "6b036f8906ef72f522bc75dd9c74f96e5443e0d5e258b72b6299477dc627b2b4",
+    "2": "9ab32bbb4793fb318f90f2a6e27c6d4a05461c201fecb7290ba5c3f1d1fefab2",
+    "3": "af759b4e8b4a862d49d63b4df4bcf41a6acebfbf00d2c6d43c37b713b3c877df",
+    "4": "109551a55b6f2d07e243377df58ebbfa90c5ff4fea4ce6dd2d77a629bd3b2bc3",
+    "5": "c4305591a0e1b0bdf3da120e06c5c5621f195cbd964a9b30c69ecb9361a45fc6",
+    "6": "7d154d23f8809872bed0c54b52ae9f6520614a0d313f1fdebc0742e42e80ba62",
+    "7": "8511762a90a70f852ae0c44e024a059e37cfb97e0b126a43f1ce9a40896504c0"
+  },
+  "launch_environment": {
+    "VEOMNI_MCCL_NATIVE_AVG": "1",
+    "TORCH_MUSA_FSDP2_OVERLAP_LEVEL": "0",
+    "TORCH_MUSA_FSDP2_COMM_TYPE": "0",
+    "VEOMNI_MUSA_DEEPEP_COUNTING_SORT": "1",
+    "TE_COMPACT": "1",
+    "TE_NATIVE_LONG_COUNTS": "1",
+    "TE_SLOT_PROBABILITY": "1",
+    "TE_COUNTS_SLOT_COMBINED": "1",
+    "TE_NATIVE_COUNTS_OBSERVE": "0",
+    "TE_MERGE_CHECKS": "0",
+    "MCCL_CTA_POLICY": "2",
+    "MCCL_MIN_NCHANNELS": "32",
+    "MCCL_MAX_NCHANNELS": "32",
+    "MCCL_PROTOS": "2",
+    "MCCL_ALGOS": "1",
+    "MCCL_BUFFSIZE": null,
+    "MCCL_PROTO": null,
+    "MCCL_ALGO": null,
+    "MCCL_MIN_P2P_NCHANNELS": null,
+    "MCCL_MAX_P2P_NCHANNELS": null
+  },
+  "scope": "Controlled same-master FSDP8/EP8 CPUcounts intendedTE vs composition; native clip/dual fused Adam, CPfalse/true, original strict bits. No ACE/real expertMLP/fullQwen/free-history certification."
+}

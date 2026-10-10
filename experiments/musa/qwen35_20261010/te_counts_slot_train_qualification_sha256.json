@@ -1,0 +1,66 @@
+{
+  "native_count_sum_report.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_native_sum_sweep_20261010_055717/native_count_sum_report.json",
+    "sha256": "f15f86a76b03b581f47961cf29ad49185a70567bbf41a4b11952c88374cbf062"
+  },
+  "te_slot_probability_gate.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_slot_probability_gate.json",
+    "sha256": "ef2f49e4e8c5c75e47145c441383c2b2c2126faf68e303a619f9a9f77f770eb6"
+  },
+  "te_counts_slot_gate.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_gate_20261010_064351/te_counts_slot_gate.json",
+    "sha256": "07152f14605d5fe9bf8b1ee8d96bd79d3617bce964a38d1b9557a1660aa782ab"
+  },
+  "te_counts_slot_actual_bench.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_actual_micro_20261010_064655/te_counts_slot_actual_bench.json",
+    "sha256": "859a934f602821a32049967418152c84808cdab1434908a7abf03dedef38b2cb"
+  },
+  "te_counts_slot_fsdp_updates_rank0.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank0.json",
+    "sha256": "65ccb79e039171a2e978e3e2906b3ee3f72b6721d9ee7fb61178b8b8717ca8bd"
+  },
+  "te_counts_slot_fsdp_updates_rank1.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank1.json",
+    "sha256": "6b036f8906ef72f522bc75dd9c74f96e5443e0d5e258b72b6299477dc627b2b4"
+  },
+  "te_counts_slot_fsdp_updates_rank2.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank2.json",
+    "sha256": "9ab32bbb4793fb318f90f2a6e27c6d4a05461c201fecb7290ba5c3f1d1fefab2"
+  },
+  "te_counts_slot_fsdp_updates_rank3.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank3.json",
+    "sha256": "af759b4e8b4a862d49d63b4df4bcf41a6acebfbf00d2c6d43c37b713b3c877df"
+  },
+  "te_counts_slot_fsdp_updates_rank4.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank4.json",
+    "sha256": "109551a55b6f2d07e243377df58ebbfa90c5ff4fea4ce6dd2d77a629bd3b2bc3"
+  },
+  "te_counts_slot_fsdp_updates_rank5.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank5.json",
+    "sha256": "c4305591a0e1b0bdf3da120e06c5c5621f195cbd964a9b30c69ecb9361a45fc6"
+  },
+  "te_counts_slot_fsdp_updates_rank6.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank6.json",
+    "sha256": "7d154d23f8809872bed0c54b52ae9f6520614a0d313f1fdebc0742e42e80ba62"
+  },
+  "te_counts_slot_fsdp_updates_rank7.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/te_counts_slot_fsdp_updates_rank7.json",
+    "sha256": "8511762a90a70f852ae0c44e024a059e37cfb97e0b126a43f1ce9a40896504c0"
+  },
+  "fsdp_runtime_source_sha256.json": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/runtime_source_sha256.json",
+    "sha256": "874cc8a21b2bdae6c9c35821d18c4ee746cf3f0d3b365e8a898ade9c67f816e0"
+  },
+  "operator_exit_code.txt": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_gate_20261010_064351/exit_code.txt",
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "actual_micro_exit_code.txt": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_actual_micro_20261010_064655/exit_code.txt",
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "fsdp_exit_code.txt": {
+    "path": "/data/share/liang.geng/fsdp_overlap_test/experiments/qwen35_optimize_20261009/te_counts_slot_fsdp_20261010_064911/exit_code.txt",
+    "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  }
+}

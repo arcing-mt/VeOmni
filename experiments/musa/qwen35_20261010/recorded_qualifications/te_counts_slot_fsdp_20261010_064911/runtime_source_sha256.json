@@ -1,0 +1,6 @@
+{
+  "veomni/distributed/fsdp2/clip_grad_norm.py": "216cbc419af803e748fe31e7ebbdc13afbd6ff88fc0d3c4d43ef6c494fa6c59a",
+  "veomni/ops/platform/musa/mccl_premul_sum.py": "164d9f4a0616f2f8031f63f3ea51f95938ba60c2007633ab4a6e22adfeb5b766",
+  "veomni/models/model_runtime.py": "42eee28f1010fba51b5796360e446d0107c5238f2d1f8b57c4708d2785c7b51c",
+  "veomni/optim/optimizer.py": "702ca4ed60c6b86c6011200f1190dadc206c55f9bc706f85ab816b83fe3e6e38"
+}
