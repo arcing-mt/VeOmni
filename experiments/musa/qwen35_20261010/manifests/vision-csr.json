@@ -1,0 +1,28 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/vision_embedding_csr.py",
+      "sha256": "62ae563d1e518584ecb991cea0555a0023d84ec245539664d333c149add0d21f",
+      "source": "trace/qwen35_optimize_20261009/vision_embedding_csr.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/install_vision_embedding_csr.py",
+      "sha256": "646eec55e17881c59a4ad8090310301f2ddc5a9a2e937ca48801201b3dd9b82c",
+      "source": "trace/qwen35_optimize_20261009/install_vision_embedding_csr.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_vision_embedding_csr_lifetime.py",
+      "sha256": "8e7693eb39fdce0e0715ad43d294f0b9769fc4d4005c66815f50a4e0ec961688",
+      "source": "trace/qwen35_optimize_20261009/check_vision_embedding_csr_lifetime.py"
+    }
+  ],
+  "evidence_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/evidence/vision-csr/vision_embedding_lifetime_gate.json",
+      "source": "trace/qwen35_optimize_20261009/vision_embedding_lifetime_gate.json",
+      "sha256": "1ae13c17f82dda358e84efb226498e025e6b3f0401ce5d04b05fa13d76a3c90a"
+    }
+  ]
+}

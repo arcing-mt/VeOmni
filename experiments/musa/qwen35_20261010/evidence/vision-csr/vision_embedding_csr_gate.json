@@ -1,0 +1,749 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "grid": [
+        1,
+        26,
+        40
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011710246313864413
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011710246313864413
+      },
+      "native_before": {
+        "median_ms": 1.7560609994689003,
+        "samples_ms": [
+          1.8114839986083098,
+          1.7569970004842617,
+          1.750160001392942,
+          1.7915119969984517,
+          1.8281810007465538,
+          1.7523490023449995,
+          1.7506139993201941,
+          1.7226130003109574,
+          1.7551249984535389,
+          1.7742349991749506
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.5034709995234152,
+        "samples_ms": [
+          1.5186040000116918,
+          1.5431419997185003,
+          1.5047810011310503,
+          1.495371001510648,
+          1.5021609979157802,
+          1.4706459987792186,
+          1.5253180026775226,
+          1.5080030025274027,
+          1.4804499987803865,
+          1.4917619992047548
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.75757799843268,
+        "samples_ms": [
+          1.7778939982235897,
+          1.7451569983677473,
+          1.7391250003129244,
+          1.7395709983247798,
+          1.7379849996359553,
+          1.7699989984976128,
+          6.91381700016791,
+          1.7998980001721065,
+          1.7424359975848347,
+          1.8111019999196287
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 1,
+          "calls": 14,
+          "cache_hits": 13
+        },
+        "layouts": {
+          "(26, 40, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 1,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        30,
+        40
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011981112560261243
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011981112560261243
+      },
+      "native_before": {
+        "median_ms": 1.9772969990299316,
+        "samples_ms": [
+          1.9290199998067692,
+          2.033311997365672,
+          1.9774419997702353,
+          1.977151998289628,
+          1.9934190022468101,
+          1.9620740022219252,
+          1.9815489977190737,
+          1.9954220006184187,
+          1.970778001123108,
+          1.9427369988989085
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6620784972474212,
+        "samples_ms": [
+          1.6640019966871478,
+          1.6793190006865188,
+          1.643393999984255,
+          1.6564540019317064,
+          1.6820399978314526,
+          1.672836999205174,
+          1.6463499996461906,
+          1.6601549978076946,
+          1.6463149986520875,
+          1.67416200201842
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.9857909992424538,
+        "samples_ms": [
+          1.9956690011895262,
+          2.012178003496956,
+          1.9498319998092484,
+          2.009176998399198,
+          1.9656350013974588,
+          1.916215001983801,
+          1.9883659988408908,
+          2.002929999434855,
+          1.9534800012479536,
+          1.9832159996440168
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 2,
+          "calls": 28,
+          "cache_hits": 26
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 2,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        40,
+        26
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011712525424493266
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0011712525424493266
+      },
+      "native_before": {
+        "median_ms": 1.992686999074067,
+        "samples_ms": [
+          2.0151559983787593,
+          1.9918369980587158,
+          1.9778549976763315,
+          2.03689000045415,
+          2.089288002025569,
+          2.012452998314984,
+          1.9935370000894181,
+          1.9447239974397235,
+          1.941036000062013,
+          1.9584840010793414
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6320810009347042,
+        "samples_ms": [
+          1.6651120022288524,
+          1.6068820004875306,
+          1.6466259985463694,
+          1.6198439989238977,
+          1.659983998251846,
+          1.6288860024360474,
+          1.6004750032152515,
+          1.635275999433361,
+          1.6515770003024954,
+          1.6161659987119492
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.9752765001612715,
+        "samples_ms": [
+          1.972760001081042,
+          1.977792999241501,
+          1.9180159979441669,
+          2.0006960003229324,
+          1.9366289998288266,
+          1.955676001671236,
+          1.951019003172405,
+          1.998196999920765,
+          1.98873800036381,
+          2.0093439998163376
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 3,
+          "calls": 42,
+          "cache_hits": 39
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14,
+          "(40, 26, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 3,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        40,
+        40
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0014378274156427108
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.0009765625,
+        "rms_relative": 0.0014378274156427108
+      },
+      "native_before": {
+        "median_ms": 2.0037209997099126,
+        "samples_ms": [
+          2.0249790031812154,
+          2.0208629975968506,
+          1.9925790002162103,
+          2.00928800040856,
+          2.0033170003443956,
+          2.0220370024617296,
+          2.0041249990754295,
+          1.9810440026049037,
+          1.9884110006387345,
+          1.9460240000626072
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6601220013399143,
+        "samples_ms": [
+          1.680642002611421,
+          1.6629739984637126,
+          1.7066879991034511,
+          1.649385998462094,
+          1.658871002291562,
+          1.633711999602383,
+          1.6902649986150209,
+          1.6613730003882665,
+          1.6538909985683858,
+          1.6316379987983964
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.9674310005939333,
+        "samples_ms": [
+          1.9570440017560031,
+          1.9894020006177016,
+          1.9539559980330523,
+          1.9650949980132282,
+          1.9733570006792434,
+          1.9785909971687943,
+          1.965368999663042,
+          1.9694930015248246,
+          1.99216400142177,
+          1.9613360018411186
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 4,
+          "calls": 56,
+          "cache_hits": 52
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14,
+          "(40, 26, 48)": 14,
+          "(40, 40, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 4,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        32,
+        32
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.00048828125,
+        "rms_relative": 0.0007422715552592843
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.00048828125,
+        "rms_relative": 0.0007422715552592843
+      },
+      "native_before": {
+        "median_ms": 1.9841380017169286,
+        "samples_ms": [
+          2.0045419987582136,
+          1.9815170016954653,
+          2.0155269994575065,
+          2.0271190005587414,
+          2.0101360023545567,
+          1.9226090007578023,
+          1.9867590017383918,
+          1.9812559985439293,
+          1.957814001798397,
+          1.9537010011845268
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6762625018600374,
+        "samples_ms": [
+          1.6859220013429876,
+          1.699298998573795,
+          1.6554610010643955,
+          1.6762160012149252,
+          1.6692419994797092,
+          1.6314959975716192,
+          1.6763090025051497,
+          1.6542859993933234,
+          1.7253109981538728,
+          1.688847998593701
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.9788100016739918,
+        "samples_ms": [
+          2.028622999205254,
+          1.980273002118338,
+          1.99827100004768,
+          2.014507001149468,
+          1.9773470012296457,
+          1.9472089988994412,
+          1.926664001075551,
+          1.957168999069836,
+          1.9944319974456448,
+          1.9225260002713185
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 5,
+          "calls": 70,
+          "cache_hits": 65
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14,
+          "(40, 26, 48)": 14,
+          "(40, 40, 48)": 14,
+          "(32, 32, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 5,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        24,
+        40
+      ],
+      "eligible_csr": true,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.000946044921875,
+        "rms_relative": 0.0011700020529205846
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.000946044921875,
+        "rms_relative": 0.0011700020529205846
+      },
+      "native_before": {
+        "median_ms": 1.992053499634494,
+        "samples_ms": [
+          2.0015629997942597,
+          1.9752570005948655,
+          1.9905570006812923,
+          2.0278739975765347,
+          1.9961889993282966,
+          1.9571930024540052,
+          1.938022000103956,
+          1.9935499985876959,
+          2.0127120005781762,
+          1.9605890011007432
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6589824990660418,
+        "samples_ms": [
+          1.661205998971127,
+          1.6359039982489776,
+          1.6571899977861904,
+          1.7313869975623675,
+          1.6685919981682673,
+          1.6607750003458932,
+          1.7430230000172742,
+          1.6488540022692177,
+          1.6376099993067328,
+          1.636611999856541
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.9871309978043428,
+        "samples_ms": [
+          1.99530299869366,
+          1.9789589969150256,
+          2.03254799998831,
+          2.017939001234481,
+          2.0130150005570613,
+          2.013743000134127,
+          1.978294996661134,
+          1.9762819974857848,
+          1.9618700025603175,
+          1.9477999994705897
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 6,
+          "calls": 84,
+          "cache_hits": 78
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14,
+          "(40, 26, 48)": 14,
+          "(40, 40, 48)": 14,
+          "(32, 32, 48)": 14,
+          "(24, 40, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 6,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    },
+    {
+      "grid": [
+        1,
+        32,
+        24
+      ],
+      "eligible_csr": false,
+      "candidate_vs_native": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_repeat": [
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        },
+        {
+          "exact": true,
+          "max_abs": 0.0,
+          "rms_relative": 0.0
+        }
+      ],
+      "native_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.00048828125,
+        "rms_relative": 0.0005381375588363056
+      },
+      "candidate_raw_fp64": {
+        "exact": false,
+        "max_abs": 0.00048828125,
+        "rms_relative": 0.0005381375588363056
+      },
+      "scope": "Native fallback; no CSR BW claim.",
+      "native_before": {
+        "median_ms": 1.6041649996623164,
+        "samples_ms": [
+          1.6010079998522997,
+          1.6183910011022817,
+          1.6073219994723331,
+          1.5733019972685724,
+          1.5542769979219884,
+          1.6275329980999231,
+          1.592343000083929,
+          1.6078339976957068,
+          1.600301002326887,
+          1.6146679990924895
+        ]
+      },
+      "candidate_cached": {
+        "median_ms": 1.6214375009440118,
+        "samples_ms": [
+          1.5799039974808693,
+          1.6311319996020757,
+          1.6432289994554594,
+          1.559852000355022,
+          1.6221840014623012,
+          1.61358499826747,
+          1.6618370027572382,
+          1.5803999995114282,
+          1.6206910004257225,
+          1.6640530011500232
+        ]
+      },
+      "native_after": {
+        "median_ms": 1.6095459995995043,
+        "samples_ms": [
+          1.6238530006376095,
+          1.6271439999400172,
+          1.5945790000841953,
+          1.6044879994296934,
+          1.5934410002955701,
+          1.58975699741859,
+          1.6146039997693151,
+          1.5867229994910304,
+          4.506870001932839,
+          1.7653999966569245
+        ]
+      },
+      "stats": {
+        "counters": {
+          "cache_misses": 6,
+          "calls": 84,
+          "cache_hits": 78,
+          "fallbacks": 14
+        },
+        "layouts": {
+          "(26, 40, 48)": 14,
+          "(30, 40, 48)": 14,
+          "(40, 26, 48)": 14,
+          "(40, 40, 48)": 14,
+          "(32, 32, 48)": 14,
+          "(24, 40, 48)": 14
+        },
+        "cached_modules": 1,
+        "cached_grids": 6,
+        "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+      }
+    }
+  ],
+  "stats": {
+    "counters": {
+      "cache_misses": 6,
+      "calls": 84,
+      "cache_hits": 78,
+      "fallbacks": 14
+    },
+    "layouts": {
+      "(26, 40, 48)": 14,
+      "(30, 40, 48)": 14,
+      "(40, 26, 48)": 14,
+      "(40, 40, 48)": 14,
+      "(32, 32, 48)": 14,
+      "(24, 40, 48)": 14
+    },
+    "cached_modules": 1,
+    "cached_grids": 6,
+    "scope": "Fixed original interpolation indices only; native FW, large BF16 CSR BW; first-cache download cost included."
+  },
+  "scope": "Original helper only, same BF16 weight/upstream; no FSDP/FA/checkpoint/Adam/full trajectory claim.",
+  "threshold": "Eligible: FW/DW bitwise same plus raw FP64 DW RMS<1%; no threshold relaxation.",
+  "timing": "Complete helper FW/BW/sync; cached timing excludes one-time index download; fullstep must include all misses."
+}

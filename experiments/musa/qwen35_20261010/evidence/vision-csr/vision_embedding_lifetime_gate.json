@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "scope": "Two non-default FW streams, cross-stream same-key hit, LRU limit1 eviction while first autograd context live, per-call native FW/DW bitwise; no claim that pending event query or random arbitrary multi-stream gradient accumulation was tested.",
+  "cases": [
+    [
+      1,
+      26,
+      40
+    ],
+    [
+      1,
+      40,
+      26
+    ],
+    [
+      2,
+      40,
+      26
+    ]
+  ],
+  "stats": {
+    "counters": {
+      "cache_misses": 2,
+      "calls": 3,
+      "evictions": 1,
+      "cache_hits": 1
+    },
+    "layouts": {
+      "(26, 40, 48)": 1,
+      "(40, 26, 48)": 2
+    },
+    "cached_modules": 1,
+    "cached_grids": 1,
+    "cache_limit_per_module": 128,
+    "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+  }
+}
