@@ -1,0 +1,36 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/qk_repeat_l2norm.py",
+      "sha256": "9f47223ddbdbf14d1c28cb7ac8130d4455ec43a4af72fe0c80b227f58757bba1",
+      "source": "trace/qwen35_optimize_20261009/qk_repeat_l2norm.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/qk_repeat_l2norm_kernel.py",
+      "sha256": "5a342c976da65e800b512ca2cd9d3d57e2cfd2091405625909d655e781dc4b65",
+      "source": "trace/qwen35_optimize_20261009/qk_repeat_l2norm_kernel.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/install_qk_preentry.py",
+      "sha256": "135a2a7bd3eee6f387514f710f64c20a2e1adf1c0bca2f83c7209a0559861f7a",
+      "source": "trace/qwen35_optimize_20261009/install_qk_preentry.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_qk_repeat_l2norm.py",
+      "sha256": "9de4a78b18ed2ed05b1e38f5e9b56616c2ae5aaecf7822138de85040b8208241",
+      "source": "trace/qwen35_optimize_20261009/check_qk_repeat_l2norm.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_qk_repeat_l2norm_fsdp_updates.py",
+      "sha256": "b31822c6701937abfd3ea89dc9dbfcb80f56e80b62b12603cd5c6b442a41b982",
+      "source": "trace/qwen35_optimize_20261009/check_qk_repeat_l2norm_fsdp_updates.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_qk_preentry_gdn.py",
+      "sha256": "3db77ec124b797415b296315d8bef73c48f0249fe07014fbe00dbd6b7e1cdad9",
+      "source": "trace/qwen35_optimize_20261009/check_qk_preentry_gdn.py"
+    }
+  ]
+}

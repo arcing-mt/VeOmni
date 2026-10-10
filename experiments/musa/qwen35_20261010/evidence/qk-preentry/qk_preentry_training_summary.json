@@ -1,0 +1,655 @@
+{
+  "0": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217417245368736,
+    "median": 3.013302309998835,
+    "min": 2.978563466000196,
+    "max": 3.451993793998554,
+    "te_compact_stats": {
+      "calls": 4000,
+      "fallbacks": 0,
+      "fallback_reasons": {},
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 404082,
+      "supervised_tokens": 163203,
+      "fraction": 0.40388584495226215
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 30,
+        "calls": 726,
+        "cache_hits": 696,
+        "fallbacks": 107
+      },
+      "layouts": {
+        "(26, 40, 48)": 193,
+        "(30, 40, 48)": 219,
+        "(32, 40, 48)": 22,
+        "(22, 40, 48)": 25,
+        "(40, 28, 48)": 6,
+        "(40, 26, 48)": 68,
+        "(34, 40, 48)": 5,
+        "(40, 40, 48)": 10,
+        "(26, 38, 48)": 3,
+        "(32, 32, 48)": 3,
+        "(28, 40, 48)": 34,
+        "(24, 40, 48)": 13,
+        "(38, 40, 48)": 5,
+        "(40, 30, 48)": 68,
+        "(40, 34, 48)": 3,
+        "(40, 32, 48)": 4,
+        "(32, 30, 48)": 2,
+        "(40, 36, 48)": 3,
+        "(38, 38, 48)": 16,
+        "(36, 40, 48)": 5,
+        "(40, 24, 48)": 4,
+        "(40, 38, 48)": 1,
+        "(26, 32, 48)": 1,
+        "(32, 26, 48)": 1,
+        "(20, 40, 48)": 6,
+        "(24, 38, 48)": 2,
+        "(40, 22, 48)": 1,
+        "(28, 32, 48)": 1,
+        "(38, 22, 48)": 1,
+        "(32, 28, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 30,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77137542656,
+      "peak_reserved_bytes": 80996204544,
+      "allocated_bytes": 52667672576,
+      "reserved_bytes": 53410267136,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "1": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217352746572366,
+    "median": 3.0133588340031565,
+    "min": 2.9789321110001765,
+    "max": 3.4532623929990223,
+    "te_compact_stats": {
+      "calls": 3828,
+      "fallbacks": 172,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 172
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 403261,
+      "supervised_tokens": 164166,
+      "fraction": 0.407096148648146
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 27,
+        "calls": 713,
+        "fallbacks": 121,
+        "cache_hits": 686
+      },
+      "layouts": {
+        "(26, 40, 48)": 224,
+        "(30, 40, 48)": 183,
+        "(40, 26, 48)": 59,
+        "(40, 30, 48)": 77,
+        "(26, 32, 48)": 2,
+        "(24, 40, 48)": 13,
+        "(28, 40, 48)": 25,
+        "(38, 38, 48)": 24,
+        "(20, 40, 48)": 6,
+        "(40, 22, 48)": 3,
+        "(34, 40, 48)": 6,
+        "(22, 40, 48)": 21,
+        "(32, 32, 48)": 5,
+        "(28, 38, 48)": 4,
+        "(32, 40, 48)": 14,
+        "(40, 24, 48)": 3,
+        "(30, 32, 48)": 1,
+        "(40, 40, 48)": 17,
+        "(36, 40, 48)": 2,
+        "(40, 28, 48)": 8,
+        "(28, 32, 48)": 1,
+        "(40, 32, 48)": 8,
+        "(32, 28, 48)": 2,
+        "(24, 38, 48)": 1,
+        "(40, 36, 48)": 2,
+        "(40, 34, 48)": 1,
+        "(38, 40, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 27,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77082744832,
+      "peak_reserved_bytes": 81247862784,
+      "allocated_bytes": 52666854912,
+      "reserved_bytes": 53510930432,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "2": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217485999505365,
+    "median": 3.013237860999652,
+    "min": 2.9785529039945686,
+    "max": 3.4524189440053306,
+    "te_compact_stats": {
+      "calls": 3860,
+      "fallbacks": 140,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 140
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 403481,
+      "supervised_tokens": 164017,
+      "fraction": 0.4065048911844672
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 27,
+        "calls": 712,
+        "fallbacks": 118,
+        "cache_hits": 685
+      },
+      "layouts": {
+        "(30, 40, 48)": 210,
+        "(28, 40, 48)": 20,
+        "(40, 26, 48)": 69,
+        "(26, 40, 48)": 211,
+        "(40, 28, 48)": 14,
+        "(38, 38, 48)": 17,
+        "(40, 30, 48)": 67,
+        "(36, 40, 48)": 3,
+        "(24, 40, 48)": 9,
+        "(32, 32, 48)": 4,
+        "(22, 40, 48)": 23,
+        "(40, 22, 48)": 3,
+        "(38, 40, 48)": 6,
+        "(40, 40, 48)": 15,
+        "(20, 40, 48)": 2,
+        "(34, 40, 48)": 5,
+        "(40, 32, 48)": 7,
+        "(32, 40, 48)": 8,
+        "(40, 34, 48)": 5,
+        "(30, 32, 48)": 2,
+        "(28, 38, 48)": 2,
+        "(40, 38, 48)": 5,
+        "(36, 24, 48)": 1,
+        "(36, 32, 48)": 1,
+        "(38, 28, 48)": 1,
+        "(32, 30, 48)": 1,
+        "(40, 24, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 27,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77268247040,
+      "peak_reserved_bytes": 81287708672,
+      "allocated_bytes": 52666875392,
+      "reserved_bytes": 53366226944,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "3": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.021739537707706,
+    "median": 3.013631773996167,
+    "min": 2.978862506999576,
+    "max": 3.4522289489977993,
+    "te_compact_stats": {
+      "calls": 3804,
+      "fallbacks": 196,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 196
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 405546,
+      "supervised_tokens": 164686,
+      "fraction": 0.4060846365147234
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 30,
+        "calls": 719,
+        "cache_hits": 689,
+        "fallbacks": 118
+      },
+      "layouts": {
+        "(26, 40, 48)": 206,
+        "(40, 40, 48)": 13,
+        "(30, 40, 48)": 211,
+        "(40, 30, 48)": 84,
+        "(36, 40, 48)": 2,
+        "(22, 40, 48)": 19,
+        "(40, 26, 48)": 66,
+        "(24, 40, 48)": 11,
+        "(28, 40, 48)": 28,
+        "(32, 40, 48)": 12,
+        "(40, 20, 48)": 1,
+        "(32, 30, 48)": 2,
+        "(40, 24, 48)": 3,
+        "(38, 38, 48)": 15,
+        "(40, 28, 48)": 10,
+        "(40, 36, 48)": 3,
+        "(40, 32, 48)": 6,
+        "(38, 40, 48)": 3,
+        "(32, 32, 48)": 4,
+        "(20, 40, 48)": 2,
+        "(40, 38, 48)": 2,
+        "(26, 32, 48)": 1,
+        "(24, 38, 48)": 2,
+        "(40, 34, 48)": 3,
+        "(38, 28, 48)": 1,
+        "(40, 22, 48)": 1,
+        "(28, 32, 48)": 1,
+        "(34, 40, 48)": 5,
+        "(30, 32, 48)": 1,
+        "(22, 36, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 30,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77249497600,
+      "peak_reserved_bytes": 81289805824,
+      "allocated_bytes": 52667031552,
+      "reserved_bytes": 53533999104,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "4": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217281382681063,
+    "median": 3.01313617300184,
+    "min": 2.9788775280030677,
+    "max": 3.455160042998614,
+    "te_compact_stats": {
+      "calls": 3982,
+      "fallbacks": 18,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 18
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 403309,
+      "supervised_tokens": 161329,
+      "fraction": 0.4000133892375325
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 26,
+        "calls": 728,
+        "cache_hits": 702,
+        "fallbacks": 101
+      },
+      "layouts": {
+        "(26, 40, 48)": 222,
+        "(28, 40, 48)": 34,
+        "(40, 26, 48)": 58,
+        "(30, 40, 48)": 204,
+        "(40, 40, 48)": 19,
+        "(40, 30, 48)": 82,
+        "(32, 26, 48)": 2,
+        "(40, 28, 48)": 12,
+        "(40, 32, 48)": 10,
+        "(24, 40, 48)": 14,
+        "(38, 38, 48)": 13,
+        "(22, 40, 48)": 11,
+        "(32, 40, 48)": 18,
+        "(38, 40, 48)": 1,
+        "(34, 40, 48)": 1,
+        "(40, 36, 48)": 2,
+        "(40, 38, 48)": 3,
+        "(40, 34, 48)": 5,
+        "(36, 40, 48)": 5,
+        "(32, 32, 48)": 2,
+        "(30, 32, 48)": 1,
+        "(36, 36, 48)": 2,
+        "(30, 38, 48)": 1,
+        "(20, 40, 48)": 1,
+        "(24, 38, 48)": 2,
+        "(28, 38, 48)": 3
+      },
+      "cached_modules": 1,
+      "cached_grids": 26,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77352689152,
+      "peak_reserved_bytes": 81249959936,
+      "allocated_bytes": 52666848256,
+      "reserved_bytes": 53489958912,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "5": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217343667307697,
+    "median": 3.013564499000495,
+    "min": 2.9780317449985887,
+    "max": 3.452109511999879,
+    "te_compact_stats": {
+      "calls": 3930,
+      "fallbacks": 70,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 70
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 404606,
+      "supervised_tokens": 163402,
+      "fraction": 0.4038546141184263
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 30,
+        "calls": 722,
+        "fallbacks": 120,
+        "cache_hits": 692
+      },
+      "layouts": {
+        "(30, 40, 48)": 201,
+        "(40, 26, 48)": 68,
+        "(40, 30, 48)": 60,
+        "(26, 40, 48)": 242,
+        "(34, 40, 48)": 3,
+        "(32, 40, 48)": 13,
+        "(24, 40, 48)": 14,
+        "(32, 32, 48)": 4,
+        "(38, 38, 48)": 13,
+        "(26, 32, 48)": 2,
+        "(40, 40, 48)": 18,
+        "(22, 40, 48)": 23,
+        "(40, 22, 48)": 3,
+        "(40, 24, 48)": 3,
+        "(28, 40, 48)": 17,
+        "(40, 28, 48)": 5,
+        "(40, 38, 48)": 5,
+        "(36, 26, 48)": 1,
+        "(40, 20, 48)": 1,
+        "(28, 38, 48)": 2,
+        "(38, 40, 48)": 4,
+        "(40, 36, 48)": 1,
+        "(36, 38, 48)": 1,
+        "(40, 32, 48)": 7,
+        "(36, 40, 48)": 5,
+        "(40, 34, 48)": 1,
+        "(24, 38, 48)": 1,
+        "(26, 36, 48)": 1,
+        "(20, 40, 48)": 2,
+        "(30, 32, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 30,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77298155520,
+      "peak_reserved_bytes": 81266737152,
+      "allocated_bytes": 52667043328,
+      "reserved_bytes": 53575942144,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "6": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.0217383090735317,
+    "median": 3.0133615619997727,
+    "min": 2.9788543559989193,
+    "max": 3.452622718003113,
+    "te_compact_stats": {
+      "calls": 4000,
+      "fallbacks": 0,
+      "fallback_reasons": {},
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 404025,
+      "supervised_tokens": 163174,
+      "fraction": 0.40387104758368914
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 30,
+        "calls": 705,
+        "fallbacks": 134,
+        "cache_hits": 675
+      },
+      "layouts": {
+        "(38, 40, 48)": 3,
+        "(26, 40, 48)": 199,
+        "(40, 38, 48)": 3,
+        "(36, 40, 48)": 5,
+        "(40, 30, 48)": 63,
+        "(24, 40, 48)": 13,
+        "(38, 38, 48)": 19,
+        "(30, 40, 48)": 210,
+        "(32, 26, 48)": 4,
+        "(40, 26, 48)": 59,
+        "(40, 28, 48)": 10,
+        "(28, 40, 48)": 29,
+        "(40, 40, 48)": 13,
+        "(32, 32, 48)": 3,
+        "(22, 40, 48)": 19,
+        "(32, 30, 48)": 2,
+        "(34, 40, 48)": 6,
+        "(40, 22, 48)": 3,
+        "(28, 32, 48)": 2,
+        "(32, 40, 48)": 17,
+        "(28, 38, 48)": 1,
+        "(40, 24, 48)": 3,
+        "(20, 40, 48)": 4,
+        "(40, 32, 48)": 6,
+        "(24, 38, 48)": 2,
+        "(26, 32, 48)": 2,
+        "(40, 20, 48)": 1,
+        "(26, 36, 48)": 1,
+        "(40, 34, 48)": 2,
+        "(40, 36, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 30,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77187558400,
+      "peak_reserved_bytes": 81312874496,
+      "allocated_bytes": 52667019264,
+      "reserved_bytes": 53552873472,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  },
+  "7": {
+    "steps": 50,
+    "steady_steps": 41,
+    "scope": "complete VLMTrainer.train_step; no added device synchronization",
+    "mean": 3.02179736846319,
+    "median": 3.0126527980028186,
+    "min": 2.9808141349931248,
+    "max": 3.4527634719997877,
+    "te_compact_stats": {
+      "calls": 3870,
+      "fallbacks": 130,
+      "fallback_reasons": {
+        "duplicate_expert_slots": 130
+      },
+      "merged_checks": false,
+      "note": "TE native compaction; all map/check costs included; FP32 fixed accumulation; global Torch APIs restored."
+    },
+    "supervised_ce_stats": {
+      "calls": 50,
+      "fallbacks": 0,
+      "total_shifted_tokens": 403174,
+      "supervised_tokens": 164594,
+      "fraction": 0.4082455713910123
+    },
+    "mccl_padding_stats": {
+      "calls": {
+        "all_gather": 2700,
+        "reduce_scatter": 1350
+      },
+      "note": "16-byte shard padding; original dtype/op; copies and waits included; only default FSDP2 comm."
+    },
+    "vision_embedding_stats": {
+      "counters": {
+        "cache_misses": 33,
+        "calls": 717,
+        "cache_hits": 684,
+        "fallbacks": 120
+      },
+      "layouts": {
+        "(26, 40, 48)": 213,
+        "(30, 40, 48)": 197,
+        "(26, 36, 48)": 1,
+        "(28, 40, 48)": 30,
+        "(40, 30, 48)": 67,
+        "(40, 26, 48)": 70,
+        "(32, 28, 48)": 4,
+        "(36, 40, 48)": 2,
+        "(40, 24, 48)": 3,
+        "(40, 40, 48)": 17,
+        "(40, 28, 48)": 12,
+        "(34, 40, 48)": 5,
+        "(38, 38, 48)": 17,
+        "(22, 40, 48)": 23,
+        "(24, 40, 48)": 9,
+        "(32, 40, 48)": 8,
+        "(20, 40, 48)": 5,
+        "(40, 38, 48)": 1,
+        "(40, 32, 48)": 7,
+        "(26, 32, 48)": 2,
+        "(40, 22, 48)": 6,
+        "(40, 36, 48)": 2,
+        "(26, 38, 48)": 1,
+        "(40, 20, 48)": 3,
+        "(32, 32, 48)": 1,
+        "(40, 34, 48)": 1,
+        "(28, 32, 48)": 4,
+        "(38, 26, 48)": 1,
+        "(24, 38, 48)": 1,
+        "(38, 24, 48)": 1,
+        "(24, 36, 48)": 1,
+        "(32, 30, 48)": 1,
+        "(30, 32, 48)": 1
+      },
+      "cached_modules": 1,
+      "cached_grids": 33,
+      "cache_limit_per_module": 128,
+      "scope": "Fixed original interpolation indices only; native F.embedding FW, large BF16 CSR BW; hooks/DTensor/child FSDP fall back; first-cache download cost included."
+    },
+    "memory_stats": {
+      "peak_allocated_bytes": 77337395712,
+      "peak_reserved_bytes": 81289805824,
+      "allocated_bytes": 52667139072,
+      "reserved_bytes": 53513027584,
+      "scope": "PyTorch allocator counters after training; external allocations excluded"
+    }
+  }
+}

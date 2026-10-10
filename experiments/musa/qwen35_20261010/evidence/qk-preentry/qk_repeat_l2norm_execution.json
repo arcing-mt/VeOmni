@@ -1,0 +1,112 @@
+{
+  "proposal_id": "gdn-preentry-copy",
+  "action_id": "repeat-l2norm-operator-gate",
+  "status": "operator_passed_exit0_full_helper_gain_not_training_gain",
+  "remote_cwd": "/data/share/liang.geng/fsdp_overlap_test/VeOmni",
+  "container": "gl_veomni_test_rebuild_20261009",
+  "command": "MUSA_VISIBLE_DEVICES=0 PYTHONPATH=$PWD:$trial bash $trial/with_cache.sh python -u $trial/check_qk_repeat_l2norm.py",
+  "independent_review": "safe: read-only native actual-config reuse implementation and final operator logs/statistics verified; prototype changed from fixed configuration, kernel unchanged; FW/DX/rstd exact and full helper signal only. FP64 oracle onlyseq196.",
+  "source_sha256": {
+    "qk_repeat_l2norm.py": "9f47223ddbdbf14d1c28cb7ac8130d4455ec43a4af72fe0c80b227f58757bba1",
+    "qk_repeat_l2norm_kernel.py": "5a342c976da65e800b512ca2cd9d3d57e2cfd2091405625909d655e781dc4b65",
+    "check_qk_repeat_l2norm.py": "9de4a78b18ed2ed05b1e38f5e9b56616c2ae5aaecf7822138de85040b8208241"
+  },
+  "native_source_sha256": "5160cc4ff716c9975c655b81fd0e1bae700501dff3b4d6b045680a93185a1e99",
+  "criteria": "FW/DX/rstd/nativeRepeat exact; rawFP64 RMS<1%; source/version unchanged; pending producer bothpaths; unsupported nativeexact; complete FW+BW+scatter+alloc/sync original before/candidate/after",
+  "scope": "Read-only reuse original actual native autotuner config, kernel original expression body/address change only, native32head BW+BF16pair sum. Cold config complete native fallback. Same original exact/RMS1% gate; no model/FSDP/full50.",
+  "first_attempt_archive": "qk_repeat_l2norm_gate.initial_singleton_guard/",
+  "native_cache_source_sha256": "a64b09ffd3f51aed547ad72559dee94cb9aeafd2a5f02c6c8e60a6e020147a9c",
+  "numeric_failure_archive": "qk_repeat_l2norm_gate.rstd_config_failure/",
+  "exitcode": 0,
+  "result": {
+    "status": "operator_passed_exit0_full_helper_gain_not_training_gain",
+    "timings": [
+      {
+        "seq": 196,
+        "median_ms": {
+          "native_before": 0.9521325009700377,
+          "candidate": 0.6634189994656481,
+          "native_after": 0.9616630013624672
+        },
+        "mean_ms": {
+          "native_before": 0.96734931184983,
+          "candidate": 0.6642589996772585,
+          "native_after": 0.9677162506704917
+        },
+        "extra_peak_bytes": {
+          "native_before": 9633792,
+          "candidate": 9633792,
+          "native_after": 9633792
+        }
+      },
+      {
+        "seq": 2048,
+        "median_ms": {
+          "native_before": 0.963448499533115,
+          "candidate": 0.6749505009793211,
+          "native_after": 0.9498814979451708
+        },
+        "mean_ms": {
+          "native_before": 0.9851415620687476,
+          "candidate": 0.6736388131685089,
+          "native_after": 0.9523679996163992
+        },
+        "extra_peak_bytes": {
+          "native_before": 100663296,
+          "candidate": 100663296,
+          "native_after": 100663296
+        }
+      },
+      {
+        "seq": 8155,
+        "median_ms": {
+          "native_before": 1.397199997882126,
+          "candidate": 1.1990980019618291,
+          "native_after": 1.3667405000887811
+        },
+        "mean_ms": {
+          "native_before": 1.4059380614526162,
+          "candidate": 1.200771561343572,
+          "native_after": 1.3722889998462051
+        },
+        "extra_peak_bytes": {
+          "native_before": 402198528,
+          "candidate": 402198528,
+          "native_after": 402198528
+        }
+      },
+      {
+        "seq": 8192,
+        "median_ms": {
+          "native_before": 1.397308999003144,
+          "candidate": 1.2100755011488218,
+          "native_after": 1.3905799969506916
+        },
+        "mean_ms": {
+          "native_before": 1.41462574902107,
+          "candidate": 1.2099227492399223,
+          "native_after": 1.4270155620579317
+        },
+        "extra_peak_bytes": {
+          "native_before": 402653184,
+          "candidate": 402653184,
+          "native_after": 402653184
+        }
+      }
+    ],
+    "native_exact_checks": "FW/DX/rstd/nativeRepeat all exact for target seq17/196/2048/8155/8192 plus seq196 zero/nearzero; seq1 original fallback only",
+    "pending_streams": "native/candidate pending producer True and all exact",
+    "raw_FP64_max_RMS": 0.0024596890753880952,
+    "stats": {
+      "fallback": 8,
+      "native_config_fallback": 1,
+      "fused_forward": 170,
+      "FW_BT8_W8_S2": 90,
+      "fused_backward": 170,
+      "FW_BT32_W4_S2": 80
+    },
+    "scope": "Isolated q/k preentry helper; original actual cached FW config/native BW. Cold config uses complete native fallback. Exact operator only; no model/OpSlot/FSDP/FA/free-trajectory certification or full-step gain.",
+    "decision": "Complete two-q/k FW+BW+packed gradient scatter/allocation/sync gain observed; eligible only to prepare controlled FSDP/clip/Adam and actual model adapter gates. Not full-step <3 or model/free-trajectory equivalence.",
+    "raw_FP64_scope": "Only seq196 full outputs and packed gradient, not all six shapes"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "proposal_id": "qk-preentry-copy-repeat-l2norm",
+  "action_id": "actual-qwen-gdn-runtime-adapter-gate",
+  "status": "deterministic_component_all6_and_coldCP_bitwise_passed_exit0",
+  "scope": "Process-only class forward AST clone of exact loaded decorated source, original force_accelerate_hooks preserved. No generated/installed/formal source mutation. Same native FLA convolution/value contiguous/beta/g/gated norm/output projection and same instance cached MUSA TileLang backend.",
+  "source_sha256": {
+    "install_qk_preentry.py": "135a2a7bd3eee6f387514f710f64c20a2e1adf1c0bca2f83c7209a0559861f7a",
+    "check_qk_preentry_gdn.py": "3db77ec124b797415b296315d8bef73c48f0249fe07014fbe00dbd6b7e1cdad9",
+    "qk_repeat_l2norm.py": "9f47223ddbdbf14d1c28cb7ac8130d4455ec43a4af72fe0c80b227f58757bba1",
+    "qk_repeat_l2norm_kernel.py": "5a342c976da65e800b512ca2cd9d3d57e2cfd2091405625909d655e781dc4b65",
+    "qk_preentry_original_forward.py": "e9f0405ea191294dd4f622250bbb61a5b43df434cc74e890fb7958627ece36cb"
+  },
+  "predeclared_gate": {
+    "actual_class_and_local_text_config": true,
+    "random_weights_BF16_not_pretrained": true,
+    "native_repeat_all_outputs_input_and_parameter_gradients_bitwise": true,
+    "candidate_all_outputs_input_and_parameter_gradients_bitwise": true,
+    "parameter_version_deltas_equal": true,
+    "checkpoint": [
+      false,
+      true
+    ],
+    "packed_lengths": [
+      256,
+      2048,
+      8155
+    ],
+    "every_segment_ge128": true,
+    "candidate_backward_calls_per_case": 2,
+    "unsupported_backend_proxy_and_no_grad_complete_native_fallback_bitwise": true,
+    "global_OpSlot_rebind_existing_instance_independence": true,
+    "install_idempotence": true,
+    "deterministic_algorithms_gate_only": true,
+    "natural_cold_checkpoint": "fresh nativeconfigNone/no cache mutation; q nativefallback1 warms shared D/NB/dtype key, k firstFW alreadyfused1; recompute q+k fusedFW2: totalFW3/BW1/fallback1. Full output/input/allparamgrad/versions exact vs native."
+  },
+  "previous_default_mode_result": {
+    "exitcode": 1,
+    "archive": "qk_preentry_gdn_gate.native_repeat_failure/",
+    "failure_scope": "NativeRepeat cpFalse/S256 out_proj.weight grad RMS3.464956987710133e-5/max7.62939453125e-6 notexact; all other output/input/paramgrad exact. candidate never ran. No threshold relaxation or full50. Native-only frozen GEMM repetition diagnosis prepared."
+  },
+  "container": "gl_veomni_test_rebuild_20261009",
+  "remote_cwd": "/data/share/liang.geng/fsdp_overlap_test/VeOmni",
+  "command": "MUSA_VISIBLE_DEVICES=0 PYTHONPATH=$PWD:$trial bash $trial/with_cache.sh python -u $trial/check_qk_preentry_gdn.py",
+  "runtime_deterministic_gate_only": true,
+  "independent_review": {
+    "verdict": "safe",
+    "scope": "GPU0 deterministic numeric gate only. ColdCP1fallback/3FW/1BW correct/sharedkey, all original6cases/allbitwise retained. Not defaultmode gradient equivalence or permission for full50."
+  },
+  "fresh_gpu_before": "2026-10-10T02:55:40+08:00 raw8cards0MiB/0%/noProc",
+  "source_sync": "gate/proposal minimally synced; actualsource4remoteSHA matched and py_compile0",
+  "exitcode": 0,
+  "result": {
+    "equal_comparisons": 155,
+    "cases": 6,
+    "all_bitwise": true,
+    "coldCP_actual_counter_delta": "fallback1/FW3/BW1",
+    "adapter_stats": {
+      "adapter": {
+        "installed": 1,
+        "eligible_forward": 11,
+        "preentry_fast": 11,
+        "original_forward": 24
+      },
+      "prototype": {
+        "fallback": 1,
+        "native_config_fallback": 1,
+        "fused_forward": 21,
+        "FW_BT32_W8_S2": 15,
+        "fused_backward": 13,
+        "FW_BT16_W2_S2": 6
+      }
+    },
+    "runtime_deterministic": true,
+    "scope": "Actual random-weight GDN component deterministic-mode only; no defaultmode allgradient/freehistory/fullmodel certification.",
+    "gpu_after_scope": "Raw all8 0MiB/noProc; GPU0 sampled utilization61% immediately postexit (notallutil0). Fresh check required before next GPU launch."
+  },
+  "independent_result_review": {
+    "verdict": "safe",
+    "tensor_comparisons": 155,
+    "all_equal_RMS0_max0": true,
+    "scope": "Deterministic-only component. Performance-only original-config full50 allowed after sourcecheck/freshGPU; not default allgradient/freehistory/formal adoption."
+  }
+}
