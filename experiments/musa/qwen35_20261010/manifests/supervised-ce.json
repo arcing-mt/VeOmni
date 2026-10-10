@@ -1,0 +1,16 @@
+{
+  "baseline": "900794f9babc57a3963880e8a87d088c5b9fa3a0",
+  "default_runtime_import": false,
+  "source_files": [
+    {
+      "path": "experiments/musa/qwen35_20261010/supervised_chunk_loss.py",
+      "sha256": "c89d4bfb109ac7a8ce904b0aee445a0c45f3b23a6754fc4a6430ecb7cda4d662",
+      "source": "trace/qwen35_optimize_20261009/supervised_chunk_loss.py"
+    },
+    {
+      "path": "experiments/musa/qwen35_20261010/check_supervised_loss.py",
+      "sha256": "4bbc208c9eaaff7560f0232d75797bdeb88e9f473420558399c3c37dc78719e6",
+      "source": "trace/qwen35_optimize_20261009/check_supervised_loss.py"
+    }
+  ]
+}
