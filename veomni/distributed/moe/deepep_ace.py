@@ -69,6 +69,16 @@ def combine_direct_write_enabled() -> bool:
     return getattr(get_ops_config(), "moe_deepep_combine_direct_write", False)
 
 
+def payload_ready_event_enabled() -> bool:
+    """Opt into event coverage for ACE payload layout and dtype conversions."""
+    return os.environ.get("VEOMNI_MUSA_ACE_PAYLOAD_READY", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 @contextmanager
 def route_validation_context(enabled: bool):
     token = _ROUTING_VALIDATION.set(enabled)
@@ -261,8 +271,21 @@ class _ACEState:
 
     def dispatch(self, hidden_states, selected_experts, routing_weights, previous_event=None):
         self.token_num = hidden_states.size(0)
+        payload_ready = payload_ready_event_enabled()
+        if payload_ready:
+            # Layout and dtype conversions produce the payload consumed by
+            # DeepEP. If an overlap producer supplied an event, wait before
+            # those writes and capture a new event afterward so communication
+            # covers the copies.
+            needs_copy = not hidden_states.is_contiguous() or routing_weights.dtype != torch.float32
+            if previous_event is not None and needs_copy:
+                previous_event.current_stream_wait()
+            hidden_states = hidden_states.contiguous()
+            routing_weights = routing_weights.float()
+        else:
+            needs_copy = False
         buffer = self._get_buffer(hidden_states)
-        if previous_event is None:
+        if previous_event is None or (payload_ready and needs_copy):
             previous_event = _current_stream_event()
         (
             tokens_per_rank,
@@ -285,9 +308,9 @@ class _ACEState:
             handle,
             dispatch_event,
         ) = buffer.dispatch(
-            hidden_states.contiguous(),
+            hidden_states if payload_ready else hidden_states.contiguous(),
             topk_idx=selected_experts,
-            topk_weights=routing_weights.float(),
+            topk_weights=routing_weights if payload_ready else routing_weights.float(),
             num_tokens_per_rank=tokens_per_rank,
             num_tokens_per_rdma_rank=tokens_per_rdma_rank,
             is_token_in_rank=token_in_rank,
@@ -585,7 +608,12 @@ def _te_compact_permute(
     # correct when each expert is a contiguous row, and this orientation is
     # also the one used by the TE row-map builder. DeepEP's host counts still
     # provide the authoritative output length without a CPU/GPU metadata copy.
-    counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
+    if os.environ.get("VEOMNI_MUSA_ACE_TE_LONG_COUNTS", "0") == "1":
+        from ...ops.kernels.moe.musa_te_counts import column_counts
+
+        counts = column_counts(multi_hot, recv_hidden, recv_probs, num_local_experts)
+    else:
+        counts = multi_hot.t().contiguous().sum(1, dtype=torch.long)
     num_out = sum(target) if target is not None else int(counts.sum().item())
     if validate_routing:
         # Diagnostics/tests can retain the old contract checks. Native Qwen
@@ -616,18 +644,33 @@ def _te_permute_with_plan(recv_hidden, recv_probs, plan):
     # can be freed; cache only the compact routing map and validated counts.
     row_id_map, row_nt = _ace_te_impl()[0](plan["multi_hot"], num_tokens, num_local_experts)
     # Routing weights in the same expert-major layout the permute kernel reads.
-    weights = torch.zeros((num_tokens, num_local_experts + 1), dtype=torch.float32, device=recv_hidden.device)
-    weights.scatter_(1, plan["scatter_indices"], recv_probs)
-    weights = weights[:, 1:].contiguous()
-    permuted, permuted_probs = _TECompactPermute.apply(
-        recv_hidden,
-        weights,
-        row_nt,
-        row_id_map,
-        num_tokens,
-        num_local_experts,
-        plan["num_out"],
-    )
+    if os.environ.get("VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY", "0") == "1":
+        from ...ops.kernels.moe.musa_te_slot_probability import compact
+
+        permuted, permuted_probs = compact(
+            recv_hidden,
+            recv_probs,
+            plan["scatter_indices"],
+            row_nt,
+            row_id_map,
+            num_tokens,
+            num_local_experts,
+            plan["num_out"],
+            index_offset=1,
+        )
+    else:
+        weights = torch.zeros((num_tokens, num_local_experts + 1), dtype=torch.float32, device=recv_hidden.device)
+        weights.scatter_(1, plan["scatter_indices"], recv_probs)
+        weights = weights[:, 1:].contiguous()
+        permuted, permuted_probs = _TECompactPermute.apply(
+            recv_hidden,
+            weights,
+            row_nt,
+            row_id_map,
+            num_tokens,
+            num_local_experts,
+            plan["num_out"],
+        )
     return permuted, permuted_probs, None, plan["counts"], row_id_map, num_local_experts
 
 
@@ -757,6 +800,12 @@ def dispatch_to_ep_class_deepep_ace(
             "moe_dispatcher='deepep_ace' currently supports the non-LoRA EP grouped-GEMM paths only"
         )
 
+    # Prepare payloads before capturing any shared-expert producer event when
+    # the event-coverage experiment is explicitly enabled. The default keeps
+    # the established ACE ordering unchanged.
+    if payload_ready_event_enabled():
+        hidden_states = hidden_states.contiguous()
+        routing_weights = routing_weights.float()
     if combine_direct_write_enabled():
         from .deepep_ace_direct import dispatch_direct
 

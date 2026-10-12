@@ -76,6 +76,61 @@ def test_deepep_ace_dispatch_uses_caller_previous_event(monkeypatch):
     assert received is hidden_states
 
 
+@pytest.mark.parametrize("setting", [None, "0", "1"])
+def test_payload_ready_opt_in_orders_copies_before_communication(monkeypatch, setting):
+    from veomni.distributed.moe import deepep_ace as ace
+
+    if setting is None:
+        monkeypatch.delenv("VEOMNI_MUSA_ACE_PAYLOAD_READY", raising=False)
+    else:
+        monkeypatch.setenv("VEOMNI_MUSA_ACE_PAYLOAD_READY", setting)
+    order = []
+    contiguous, as_float = torch.Tensor.contiguous, torch.Tensor.float
+
+    def prepare_hidden(tensor, *args, **kwargs):
+        order.append("contiguous")
+        return contiguous(tensor, *args, **kwargs)
+
+    def prepare_probs(tensor, *args, **kwargs):
+        order.append("float")
+        return as_float(tensor, *args, **kwargs)
+
+    previous = SimpleNamespace(current_stream_wait=lambda: order.append("wait_external"))
+    ready, layout = object(), object()
+
+    def capture():
+        order.append("capture_ready")
+        return ready
+
+    class Buffer:
+        def get_dispatch_layout(self, *args, **kwargs):
+            assert kwargs["previous_event"] is (ready if setting == "1" else previous)
+            order.append("layout")
+            return None, None, None, None, layout
+
+        def dispatch(self, hidden, **kwargs):
+            assert hidden.is_contiguous()
+            assert kwargs["topk_weights"].dtype == torch.float32
+            assert kwargs["previous_event"] is layout
+            order.append("dispatch")
+            return hidden, kwargs["topk_idx"], kwargs["topk_weights"], [3], object(), object()
+
+    hidden = torch.ones(2, 3).t()
+    probabilities = torch.ones(3, 1, dtype=torch.bfloat16)
+    indices = torch.zeros(3, 1, dtype=torch.long)
+    state = _ACEState(SimpleNamespace(size=lambda: 2), 2, 1)
+    monkeypatch.setattr(state, "_get_buffer", lambda _: Buffer())
+    monkeypatch.setattr(ace, "_current_stream_event", capture)
+    monkeypatch.setattr(torch.Tensor, "contiguous", prepare_hidden)
+    monkeypatch.setattr(torch.Tensor, "float", prepare_probs)
+    state.dispatch(hidden, indices, probabilities, previous_event=previous)
+    assert order == (
+        ["wait_external", "contiguous", "float", "capture_ready", "layout", "dispatch"]
+        if setting == "1"
+        else ["layout", "contiguous", "float", "dispatch"]
+    )
+
+
 def test_deepep_ace_is_a_dispatcher_selection():
     config = OpsImplementationConfig(moe_dispatcher="deepep_ace")
     assert config.moe_implementation == "fused_triton"

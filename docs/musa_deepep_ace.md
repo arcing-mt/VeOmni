@@ -233,3 +233,39 @@ three profiled steps. These measurements do **not** establish an end-to-end
 speedup. Small fixed-input output/gradient parity passed; full-model training
 loss/gradient trajectories are not bit-identical, and long-run convergence was
 not validated. The second registered window increases workspace allocation.
+
+## Optional PR16 compaction experiments
+
+These additions keep the existing TE implementation and default to disabled.
+Set the same environment on every rank before starting training:
+
+| Environment variable (`=1`) | Effect |
+| --- | --- |
+| `VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY` | Fuse weight zero-fill/scatter/slice-copy into a dense TE weight producer, and gather probability gradients directly into top-k slots, including registered ACE windows. |
+| `VEOMNI_MUSA_ACE_TE_LONG_COUNTS` | Cast the routing mask to int64 before column reduction for the PR's E32/H2048/topk8 long-token ranges. Other shapes retain the existing contiguous row reduction. |
+| `VEOMNI_MUSA_ACE_PAYLOAD_READY` | Prepare contiguous hidden states and FP32 probabilities before recording the dispatch-ready event, including shared-expert, checkpoint and direct-write entry points. |
+
+The slot path supports contiguous MUSA BF16 H2048 payloads with 32 local experts
+and top-k 8. Its backward accepts the checkpoint's shifted expert indices using
+`index_offset=1`; replay duplicate/count validation remains upstream. Hidden
+permutation still uses the established TE kernels and FP32 accumulation.
+Host receive counts still determine output length without new metadata transfers.
+No launcher default changes, dependency replacement or native fallback warmup
+are included.
+
+On torch/torch_musa 2.9.1, Qwen3.5-35B-A3B, eight MTT S5000 devices, compact
+checkpoint stride 2 and direct writes enabled, the short unprofiled comparison
+(rank-0 progress timings, epochs 2--10, one step per epoch) measured 3.0778 s
+with slot/count paths off and 3.0800 s with them on. Both arms already included
+the payload-ready change; its isolated performance was not measured. Full-model
+gradient trajectories were not established as identical.
+
+All eight ranks recorded 600 fused weight calls and 400 registered slot-gradient
+calls each over ten steps. Long-count calls totaled 88 across all ranks; the
+other 4712 count calls kept the existing row reduction. Rank-0 traces recorded
+60 weight and 40 slot-gradient kernels per step, about 1.7 ms combined. TE
+hidden permutation, row-map and expert compute remain, and no communication
+calls are removed. Local probability work savings did not produce a stable
+step-time reduction amid communication/runtime variation. Kernel durations
+are not additive wall-time savings; these short runs do not establish a
+production speedup or long-run convergence.

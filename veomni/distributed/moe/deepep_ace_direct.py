@@ -5,6 +5,7 @@ enabled. The pool owns two registered windows; each invocation borrows a window
 only until its combine submission has an associated completion event.
 """
 
+import os
 import threading
 from contextlib import contextmanager
 
@@ -160,9 +161,15 @@ def reverse_compact(state, grad, grad_probs, row_nt, row_map, scatter, rows, wid
         )[0]
         assert result.data_ptr() == x.data_ptr()
         if grad_probs is not None:
-            dense = grad_probs[row_nt.clamp_min(0)] * (row_nt >= 0).to(grad_probs.dtype)
-            torch.gather(dense, 1, (scatter - 1).clamp_min(0), out=p)
-            p.masked_fill_(scatter == 0, 0)
+            slot_gradients = None
+            if os.environ.get("VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY", "0") == "1":
+                from ...ops.kernels.moe.musa_te_slot_probability import slot_gradients as gather_slot_gradients
+
+                slot_gradients = gather_slot_gradients(grad_probs, row_map, scatter, index_offset=1, out=p)
+            if slot_gradients is None:
+                dense = grad_probs[row_nt.clamp_min(0)] * (row_nt >= 0).to(grad_probs.dtype)
+                torch.gather(dense, 1, (scatter - 1).clamp_min(0), out=p)
+                p.masked_fill_(scatter == 0, 0)
 
     return state.written_combine(grad, rows, write, grad_probs is not None)
 

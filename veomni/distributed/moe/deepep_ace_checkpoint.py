@@ -1,6 +1,7 @@
 """Selective checkpoint caching for ACE dispatch and local compaction."""
 
 import contextvars
+import os
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 
@@ -213,8 +214,14 @@ class _DispatchCompact(torch.autograd.Function):
                 empty,
                 empty,
             )[0]
-            dense = grad_probabilities[row_nt.clamp_min(0)] * (row_nt >= 0).to(grad_probabilities.dtype)
-            grad_weights = dense.gather(1, (scatter - 1).clamp_min(0)).masked_fill(scatter == 0, 0)
+            grad_weights = None
+            if os.environ.get("VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY", "0") == "1":
+                from ...ops.kernels.moe.musa_te_slot_probability import slot_gradients
+
+                grad_weights = slot_gradients(grad_probabilities, row_map, scatter, index_offset=1)
+            if grad_weights is None:
+                dense = grad_probabilities[row_nt.clamp_min(0)] * (row_nt >= 0).to(grad_probabilities.dtype)
+                grad_weights = dense.gather(1, (scatter - 1).clamp_min(0)).masked_fill(scatter == 0, 0)
         else:
             rows, slots = ctx.saved_tensors
             grad_received = grad_compact.new_zeros((ctx.received_tokens, grad_compact.shape[-1]))
