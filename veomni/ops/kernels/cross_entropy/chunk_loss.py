@@ -30,6 +30,7 @@ Causal-only: the function hard-codes a causal label shift, so it cannot back
 applied here so VLMs with SP enabled produce correct losses.
 """
 
+import os
 from typing import Any, Callable, Optional
 
 import torch
@@ -86,7 +87,7 @@ class ChunkLoss(torch.autograd.Function):
         return grad_input, grad_weight, None, None, None, None
 
 
-def chunk_loss_function(
+def _native_chunk_loss_function(
     hidden_states: torch.Tensor,
     weights: torch.Tensor,
     labels: torch.Tensor,
@@ -95,6 +96,8 @@ def chunk_loss_function(
     num_items_in_batch: Optional[int] = None,
     ignore_index: int = -100,
     shift_labels: Optional[torch.Tensor] = None,
+    *,
+    _labels_already_shifted: bool = False,
     **kwargs,
 ) -> torch.Tensor:
     sp_enabled = get_parallel_state().sp_enabled
@@ -102,7 +105,7 @@ def chunk_loss_function(
     # below rewrites `labels` in place with the shifted view.
     sp_reduction_labels = labels
 
-    if not sp_enabled:
+    if not sp_enabled and not _labels_already_shifted:
         labels = labels[..., 1:].contiguous()
         hidden_states = hidden_states[..., :-1, :].contiguous()
 
@@ -142,3 +145,13 @@ def chunk_loss_function(
         num_valid_tokens = (sp_reduction_labels != ignore_index).sum()
         chunk_loss = reduce_sequence_parallel_loss(chunk_loss, num_valid_tokens)
     return chunk_loss, None
+
+
+def chunk_loss_function(*args, **kwargs):
+    """Select supervised-token compaction only for explicitly enabled MUSA calls."""
+    hidden = kwargs.get("hidden_states", args[0] if args else None)
+    if hidden is not None and hidden.device.type == "musa" and os.environ.get("VEOMNI_MUSA_SUPERVISED_CE", "0") == "1":
+        from .supervised_chunk_loss import compact_chunk_loss
+
+        return compact_chunk_loss(*args, **kwargs)
+    return _native_chunk_loss_function(*args, **kwargs)

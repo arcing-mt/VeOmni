@@ -22,6 +22,7 @@ stay untouched and the behaviour is added on the active MUSA model path only.
 from __future__ import annotations
 
 import inspect
+import os
 from functools import wraps
 from types import ModuleType
 
@@ -34,6 +35,20 @@ from ....utils.logging import get_logger
 
 
 logger = get_logger(__name__)
+
+
+def install_qwen3_5_moe_training_compute_patches(modeling_module):
+    """Install PR15's default-off MUSA adapters without editing generated code."""
+    if os.environ.get("VEOMNI_MUSA_VISION_EMBEDDING_CSR", "0") == "1":
+        from .musa_vision_embedding import install
+
+        install(modeling_module)
+        logger.info_rank0("Enabled Qwen3.5-MoE MUSA vision embedding CSR")
+    if os.environ.get("VEOMNI_MUSA_QK_PREENTRY", "0") == "1":
+        from .musa_qk_preentry import install
+
+        install(modeling_module)
+        logger.info_rank0("Enabled Qwen3.5-MoE MUSA Q/K preentry")
 
 
 # Set on the vision model for the duration of one outer forward call to the

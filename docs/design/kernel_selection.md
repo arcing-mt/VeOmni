@@ -44,6 +44,9 @@ The per-op fields are typed as plain `str` (not `Literal`), so third-party
 backends can be registered via `extra_backends` in a model's `device_patch.py`
 without modifying `OpsImplementationConfig`.
 
+Qualified, default-off Qwen3.5 MUSA experiments within existing implementations
+are documented in [Qwen3.5 MUSA compute experiments](../musa_qwen35_compute.md).
+
 ---
 
 ## Lifecycle Overview
