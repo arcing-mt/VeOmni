@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -323,6 +324,14 @@ class PackingCollator(DataCollator):
             # the hook sees the SP-padded batch + per-modality pad counts.
             if self.metadata_collate_func is not None:
                 self.metadata_collate_func(batch, {"pixel_values": 0, "pixel_values_videos": 0})
+                if (
+                    not self.seq_classification
+                    and os.environ.get("VEOMNI_MUSA_SUPERVISED_CE_METADATA", "0") == "1"
+                    and os.environ.get("VEOMNI_MUSA_SUPERVISED_CE", "0") == "1"
+                ):
+                    from ..ops.kernels.cross_entropy.supervised_metadata import prepare_metadata
+
+                    prepare_metadata(batch)
         elif linear_attn_tail_padding_length:
             batch[_LINEAR_ATTN_TAIL_PADDING_LENGTH] = linear_attn_tail_padding_length
         return batch

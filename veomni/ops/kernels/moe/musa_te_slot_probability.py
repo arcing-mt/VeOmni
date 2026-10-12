@@ -1,5 +1,6 @@
 """Copy-only slot probabilities around the existing TE hidden permutation."""
 
+import os
 from collections import Counter
 
 import torch
@@ -101,26 +102,31 @@ def slot_gradients(grad_probabilities, row_map, indices, *, index_offset=0, out=
     return result
 
 
+def _compact_forward(hidden, probabilities, indices, row_nt, tokens, width, out_tokens, index_offset):
+    """Forward-only primitive for callers that own dispatch's adjoint."""
+    _, native_permute, _, dtypes = reference._ace_te_impl()
+    weights = torch.empty((tokens, width), device=probabilities.device, dtype=probabilities.dtype)
+    stream = torch.musa.current_stream()
+    indices.record_stream(stream)
+    probabilities.record_stream(stream)
+    _weights_from_slots[(triton.cdiv(tokens * width, 1024),)](
+        indices, probabilities, weights, tokens, BLOCK=1024, INDEX_OFFSET=index_offset, num_warps=4
+    )
+    COUNTERS["fused_weights"] += 1
+    empty = torch.empty(0, device="cpu")
+    return native_permute(
+        dtypes[hidden.dtype], hidden, row_nt, weights, tokens, width, out_tokens, hidden.shape[-1], empty, empty
+    )
+
+
 class _TECompactSlotProbabilities(torch.autograd.Function):
     @staticmethod
     def forward(ctx, hidden, probabilities, indices, row_nt, row_map, tokens, width, out_tokens, index_offset):
-        _, native_permute, _, dtypes = reference._ace_te_impl()
         ctx.save_for_backward(row_nt, row_map, indices.clone())
         ctx.tokens = tokens
         ctx.width = width
         ctx.index_offset = index_offset
-        weights = torch.empty((tokens, width), device=probabilities.device, dtype=probabilities.dtype)
-        stream = torch.musa.current_stream()
-        indices.record_stream(stream)
-        probabilities.record_stream(stream)
-        _weights_from_slots[(triton.cdiv(tokens * width, 1024),)](
-            indices, probabilities, weights, tokens, BLOCK=1024, INDEX_OFFSET=index_offset, num_warps=4
-        )
-        COUNTERS["fused_weights"] += 1
-        empty = torch.empty(0, device="cpu")
-        return native_permute(
-            dtypes[hidden.dtype], hidden, row_nt, weights, tokens, width, out_tokens, hidden.shape[-1], empty, empty
-        )
+        return _compact_forward(hidden, probabilities, indices, row_nt, tokens, width, out_tokens, index_offset)
 
     @staticmethod
     def backward(ctx, grad_hidden_output, grad_probabilities):
@@ -182,6 +188,9 @@ def compact(hidden, probabilities, indices, row_nt, row_map, tokens, width, out_
         and row_map.is_contiguous()
     )
     if eligible:
+        if os.environ.get("VEOMNI_MUSA_ACE_COMPACT_STATE_REUSE", "0") == "1" and not torch.is_grad_enabled():
+            COUNTERS["forward_only_compact"] += 1
+            return _compact_forward(hidden, probabilities, indices, row_nt, tokens, width, out_tokens, index_offset)
         return _TECompactSlotProbabilities.apply(
             hidden, probabilities, indices, row_nt, row_map, tokens, width, out_tokens, index_offset
         )

@@ -634,15 +634,20 @@ def _te_compact_permute(
     )
     if plan is not None:
         plan.update(built_plan)
+    if plan is not None and plan.pop("_reuse_forward_row_nt", False):
+        return _te_permute_with_plan(recv_hidden, recv_probs, built_plan, row_nt_out=plan)
     return _te_permute_with_plan(recv_hidden, recv_probs, built_plan)
 
 
-def _te_permute_with_plan(recv_hidden, recv_probs, plan):
+def _te_permute_with_plan(recv_hidden, recv_probs, plan, *, row_nt_out=None):
     num_tokens, num_local_experts = plan["num_tokens"], plan["width"]
     # Two int64 row maps retain 16x the bytes of the bool routing map across
     # every decoder checkpoint. Recreate them locally so their forward storage
     # can be freed; cache only the compact routing map and validated counts.
     row_id_map, row_nt = _ace_te_impl()[0](plan["multi_hot"], num_tokens, num_local_experts)
+    if row_nt_out is not None:
+        # The owning outer Function pops this before retaining its compact plan.
+        row_nt_out["_forward_row_nt"] = row_nt
     # Routing weights in the same expert-major layout the permute kernel reads.
     if os.environ.get("VEOMNI_MUSA_ACE_TE_SLOT_PROBABILITY", "0") == "1":
         from ...ops.kernels.moe.musa_te_slot_probability import compact

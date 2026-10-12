@@ -80,7 +80,10 @@ class MUSAAlignedReduceScatter(collectives.DefaultReduceScatter):
 
 def configure_musa_collective_padding(model):
     """Attach custom collectives to this model only, before its first forward."""
+    packed = os.environ.get("VEOMNI_MUSA_FSDP_PACKED_PADDING", "0") == "1"
     if os.environ.get("VEOMNI_MUSA_FSDP_SHARD_PADDING", "0") != "1":
+        if packed:
+            raise RuntimeError("Packed FSDP padding also requires VEOMNI_MUSA_FSDP_SHARD_PADDING=1")
         return
     requested_overlap = os.environ.get("TORCH_MUSA_FSDP2_OVERLAP_LEVEL")
     if requested_overlap is None:
@@ -92,7 +95,13 @@ def configure_musa_collective_padding(model):
 
         if _FSDP2_OVERLAP_LEVEL.value != 0:
             raise RuntimeError("MUSA shard padding requires effective FSDP2 OVERLAP_LEVEL=0")
+    if packed:
+        from .musa_packed_padding import install
+
+        install()
     for module in model.modules():
         if isinstance(module, FSDPModule):
-            module.set_custom_all_gather(MUSAAlignedAllGather())
-            module.set_custom_reduce_scatter(MUSAAlignedReduceScatter())
+            gather, reduce_scatter = MUSAAlignedAllGather(), MUSAAlignedReduceScatter()
+            gather._veomni_pack_aligned = reduce_scatter._veomni_pack_aligned = packed
+            module.set_custom_all_gather(gather)
+            module.set_custom_reduce_scatter(reduce_scatter)

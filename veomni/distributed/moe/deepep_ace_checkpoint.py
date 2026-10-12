@@ -144,7 +144,11 @@ class _DispatchCompact(torch.autograd.Function):
             )
             state.wait_dispatch()
             state.received_tokens = received.shape[0]
-            plan = {}
+            plan = (
+                {"_reuse_forward_row_nt": True}
+                if os.environ.get("VEOMNI_MUSA_ACE_COMPACT_STATE_REUSE", "0") == "1"
+                else {}
+            )
             compact, probabilities, rows, counts, row_map, width = ace._compact_permute(
                 received,
                 indices,
@@ -153,7 +157,15 @@ class _DispatchCompact(torch.autograd.Function):
                 state.recv_counts,
                 plan=plan,
             )
-            row_nt = row_map.t().contiguous() if row_map is not None else None
+            row_nt = plan.pop("_forward_row_nt", None)
+            # Remove the request marker as well when routing used the fallback.
+            plan.pop("_reuse_forward_row_nt", None)
+            if row_nt is None:
+                row_nt = row_map.t().contiguous() if row_map is not None else None
+            else:
+                from ...ops.kernels.moe.musa_te_slot_probability import COUNTERS
+
+                COUNTERS["row_nt_reused"] += 1
             records.append(
                 _CompactRecord(
                     signature,

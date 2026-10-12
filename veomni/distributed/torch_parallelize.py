@@ -615,7 +615,12 @@ def parallelize_model_fsdp2(
                 if isinstance(_para_mod, FSDPModule):
                     continue
                 # shard para module (e.g. expert/decoder.moe, embed_tokens/decoder.embed_tokens)
-                fully_shard(_para_mod, **extra_parallel_fsdp_kwargs[para])
+                para_fsdp_kwargs = extra_parallel_fsdp_kwargs[para]
+                if IS_MUSA_AVAILABLE and para == "ep" and os.environ.get("VEOMNI_MUSA_ROUTER_FP32_PAYLOAD") == "1":
+                    from ..ops.kernels.moe.routing_payload import expert_fsdp_kwargs
+
+                    para_fsdp_kwargs = expert_fsdp_kwargs(_para_mod, para_fsdp_kwargs)
+                fully_shard(_para_mod, **para_fsdp_kwargs)
                 # average para (e.g. ep) grads across para (e.g. ep) ranks
                 # NOTE: in torch 2.8 and later we should use
                 # experts_mod.set_gradient_divide_factor(parallel_state.ep_size)

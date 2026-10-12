@@ -1,5 +1,8 @@
 # Qwen3.5 MUSA compute experiments
 
+For additional independent experiments over these paths, see
+[the follow-up experiments](musa_pr_followups.md).
+
 Three independent, default-off experiments are adapted from
 [PR #15](https://github.com/arcing-mt/VeOmni/pull/15). They target the existing
 Qwen3.5-MoE MUSA training path. This source change does not include launcher

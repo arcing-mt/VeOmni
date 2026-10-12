@@ -1,5 +1,6 @@
 """Guarded integer column counts for the qualified MUSA E32 routing shapes."""
 
+import os
 from collections import Counter
 
 import torch
@@ -14,6 +15,14 @@ def column_counts(mask, hidden, probabilities, experts):
     The existing transpose-and-reduce workaround remains the fallback. Never
     restore the unreliable bool column reduction outside the PR's shape gate.
     """
+    if os.environ.get("VEOMNI_MUSA_ACE_TE_FUSED_COUNTS", "0") == "1" and experts == 32:
+        from .musa_te_count_kernel import fused_column_counts
+
+        counts = fused_column_counts(mask)
+        if counts is not None:
+            COUNTERS["fused_column_sum"] += 1
+            return counts
+        COUNTERS["fused_column_fallback"] += 1
     supported = (
         mask.device.type == "musa"
         and mask.device.index == torch.musa.current_device()

@@ -59,8 +59,11 @@ class _Transform(ast.NodeTransformer):
             return ast.parse("""
 _qk_fast = _qk_eligible(query, 1e-6) and _qk_eligible(key, 1e-6)
 if _qk_fast:
-    query = _qk_repeat_norm(query)
-    key = _qk_repeat_norm(key)
+    if _qk_joint_enabled():
+        query, key = _qk_repeat_norm_pair(query, key)
+    else:
+        query = _qk_repeat_norm(query)
+        key = _qk_repeat_norm(key)
     _qk_counts['preentry_fast'] += 1
 else:
     query = query.contiguous()
@@ -122,6 +125,10 @@ def install(modeling_module):
     ast.fix_missing_locations(tree)
     namespace = dict(inspect.unwrap(original).__globals__)
     namespace.update(_qk_eligible=prototype.eligible, _qk_repeat_norm=prototype.repeat_norm, _qk_counts=counts)
+    namespace.update(
+        _qk_repeat_norm_pair=prototype.repeat_norm_pair,
+        _qk_joint_enabled=lambda: os.environ.get("VEOMNI_MUSA_QK_JOINT_FORWARD", "0") == "1",
+    )
     exec(compile(tree, "<qk-preentry-private-forward>", "exec"), namespace)
     private = namespace["forward"]
     prototype.initialize()

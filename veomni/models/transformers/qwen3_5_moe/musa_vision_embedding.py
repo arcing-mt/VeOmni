@@ -15,7 +15,7 @@ METHOD_SOURCE_SHA256 = "70159a4de78d0b0beba6ae926f3f7cc4f08caf6b1b23b06436269bfa
 _installed = False
 
 
-def make_candidate(original):
+def make_candidate(original, *, cache_metadata=False):
     source = textwrap.dedent(inspect.getsource(original))
     method = ast.parse(source).body[0]
     # Hash exact dedented source, rather than AST dump fields which differ
@@ -53,6 +53,28 @@ def make_candidate(original):
     method = replacer.visit(copy.deepcopy(method))
     assert replacer.count == 1
     namespace = dict(original.__globals__, _trial_cached_embedding=cached_embedding)
+    if cache_metadata:
+        from .vision_interpolation_cache import cached_metadata
+
+        loops = [node for node in method.body if isinstance(node, ast.For)]
+        assert len(loops) == 1 and ast.unparse(loops[0].target) == "(t, h, w)"
+        loop = loops[0]
+        ends = [
+            i
+            for i, node in enumerate(loop.body)
+            if isinstance(node, ast.Assign) and ast.unparse(node) == "weights = weights.to(dtype=dtype)"
+        ]
+        assert len(ends) == 1 and ast.unparse(loop.body[0]).startswith("h_idxs = torch.linspace(")
+        end = ends[0] + 1
+        builder = ast.parse("def _trial_build_metadata(self, h, w, num_grid_per_side, dtype):\n    pass").body[0]
+        builder.body = copy.deepcopy(loop.body[:end]) + ast.parse("return indices, weights").body
+        builder_module = ast.fix_missing_locations(ast.Module(body=[builder], type_ignores=[]))
+        exec(compile(builder_module, inspect.getfile(original), "exec"), namespace)
+        loop.body[:end] = ast.parse(
+            "indices, weights = _trial_interpolation_metadata("
+            "self, h, w, num_grid_per_side, dtype, _trial_build_metadata)"
+        ).body
+        namespace["_trial_interpolation_metadata"] = cached_metadata
     module = ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[]))
     exec(compile(module, inspect.getfile(original), "exec"), namespace)
     return functools.update_wrapper(namespace[method.name], original)
@@ -65,10 +87,17 @@ def install(modeling):
     cls = modeling.Qwen3_5MoeVisionModel
     original = cls.fast_pos_embed_interpolate
     candidate = make_candidate(original)
+    metadata_candidate = (
+        make_candidate(original, cache_metadata=True)
+        if os.environ.get("VEOMNI_MUSA_VISION_INTERPOLATION_CACHE", "0") == "1"
+        else None
+    )
 
     @functools.wraps(original)
     def interpolate(self, *args, **kwargs):
         if os.environ.get("VEOMNI_MUSA_VISION_EMBEDDING_CSR", "0") == "1":
+            if metadata_candidate is not None and os.environ.get("VEOMNI_MUSA_VISION_INTERPOLATION_CACHE", "0") == "1":
+                return metadata_candidate(self, *args, **kwargs)
             return candidate(self, *args, **kwargs)
         return original(self, *args, **kwargs)
 

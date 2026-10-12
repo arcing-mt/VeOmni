@@ -236,6 +236,9 @@ not validated. The second registered window increases workspace allocation.
 
 ## Optional PR16 compaction experiments
 
+Additional independent experiments are documented in
+[the PR15/16/17 follow-up guide](musa_pr_followups.md).
+
 These additions keep the existing TE implementation and default to disabled.
 Set the same environment on every rank before starting training:
 

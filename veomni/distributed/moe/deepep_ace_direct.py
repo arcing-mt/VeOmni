@@ -181,7 +181,11 @@ class Dispatched(torch.autograd.Function):
             hidden, selected, weights, getattr(state, "previous_event", None)
         )
         state.wait_dispatch()
-        plan = {}
+        plan = (
+            {"_reuse_forward_row_nt": True}
+            if os.environ.get("VEOMNI_MUSA_ACE_COMPACT_STATE_REUSE", "0") == "1"
+            else {}
+        )
         compact, probs, rows, counts, row_map, width = ace._compact_permute(
             received, indices, recv_probs, state.num_experts // state.group.size(), state.recv_counts, plan=plan
         )
@@ -189,7 +193,14 @@ class Dispatched(torch.autograd.Function):
             raise RuntimeError("ACE direct write requires native TE compaction")
         ctx.state, ctx.rows, ctx.width = state, received.shape[0], width
         state.received_tokens = ctx.rows
-        ctx.save_for_backward(row_map.t().contiguous(), row_map, plan["scatter_indices"])
+        row_nt = plan.pop("_forward_row_nt", None)
+        if row_nt is None:
+            row_nt = row_map.t().contiguous()
+        else:
+            from ...ops.kernels.moe.musa_te_slot_probability import COUNTERS
+
+            COUNTERS["row_nt_reused"] += 1
+        ctx.save_for_backward(row_nt, row_map, plan["scatter_indices"])
         ctx.mark_non_differentiable(counts, row_map)
         return compact, probs, rows, counts, row_map, width
 

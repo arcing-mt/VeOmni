@@ -39,6 +39,11 @@ logger = get_logger(__name__)
 
 def install_qwen3_5_moe_training_compute_patches(modeling_module):
     """Install PR15's default-off MUSA adapters without editing generated code."""
+    if os.environ.get("VEOMNI_MUSA_ROUTER_FP32_PAYLOAD", "0") == "1":
+        from .musa_router_payload import install
+
+        install(modeling_module)
+        logger.info_rank0("Enabled Qwen3.5-MoE MUSA rounded FP32 router payload")
     if os.environ.get("VEOMNI_MUSA_VISION_EMBEDDING_CSR", "0") == "1":
         from .musa_vision_embedding import install
 

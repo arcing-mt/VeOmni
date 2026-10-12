@@ -1,5 +1,6 @@
 """PR15 supervised causal-token compaction over the existing ChunkLoss adjoint."""
 
+import os
 from collections import Counter
 
 import torch
@@ -40,7 +41,12 @@ def compact_chunk_loss(
     shifted = labels[..., 1:] if shift_labels is None else shift_labels
     hidden = hidden_states[..., :-1, :] if shift_labels is None else hidden_states
     shifted = shifted.reshape(-1)
-    selected = torch.nonzero(shifted != ignore_index, as_tuple=False).flatten()
+    cached = None
+    if os.environ.get("VEOMNI_MUSA_SUPERVISED_CE_METADATA", "0") == "1":
+        from .supervised_metadata import selection
+
+        cached = selection(labels, hidden_states, shift_labels, ignore_index, kwargs.get("multimodal_metadata"))
+    selected = cached[0] if cached is not None else torch.nonzero(shifted != ignore_index, as_tuple=False).flatten()
     total, valid = shifted.numel(), selected.numel()
     shapes[(total, valid)] += 1
     if valid == 0 or valid == total:
@@ -68,7 +74,7 @@ def compact_chunk_loss(
             **kwargs,
         )
     compact_hidden = hidden.reshape(-1, hidden.shape[-1]).index_select(0, selected).unsqueeze(0)
-    compact_labels = shifted.index_select(0, selected).unsqueeze(0)
+    compact_labels = (cached[1] if cached is not None else shifted.index_select(0, selected)).unsqueeze(0)
     # Compaction destroys sequence adjacency: never apply a second causal shift.
     # Keep the disabled public path's existing shift_labels behavior unchanged.
     return original(

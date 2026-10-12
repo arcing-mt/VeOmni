@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import torch
 
 from ....utils import logging
@@ -22,6 +24,8 @@ from ....utils.import_utils import (
     is_torch_musa_available,
     is_torch_npu_available,
 )
+from .routing_payload import counters as payload_counters
+from .routing_payload import qualified_experts
 
 
 logger = logging.get_logger(__name__)
@@ -155,7 +159,7 @@ def apply_veomni_fused_moe_patch(fused_moe_kernel: str = "triton") -> None:
 from ...kernel_registry import KERNEL_REGISTRY, HardwareRequirement, KernelSpec
 
 
-def _make_moe_experts_adapter(raw_forward):
+def _make_moe_experts_adapter(raw_forward, *, allow_ace_fp32_payload=False):
     """Adapt the raw fused MoE kernel to the OpSlot call signature.
 
     The generated modeling code calls the slot as a bound method of the
@@ -179,9 +183,22 @@ def _make_moe_experts_adapter(raw_forward):
     """
 
     def adapter(self, hidden_states, top_k_index, top_k_weights):
+        preserve_payload = (
+            allow_ace_fp32_payload
+            and hidden_states.device.type == "musa"
+            and hidden_states.dtype == torch.bfloat16
+            and top_k_weights.dtype == torch.float32
+            and top_k_weights.device == hidden_states.device
+            and qualified_experts(self)
+        )
+        input_dtype = getattr(self, "_veomni_payload_input_dtype", None)
+        if input_dtype is not None and hidden_states.is_floating_point():
+            hidden_states = hidden_states.to(input_dtype)
+        if allow_ace_fp32_payload and os.environ.get("VEOMNI_MUSA_ROUTER_FP32_PAYLOAD", "0") == "1":
+            payload_counters["adapter_fp32" if preserve_payload else "adapter_fallback"] += 1
         return raw_forward(
             num_experts=self.num_experts,
-            routing_weights=top_k_weights.to(hidden_states.dtype),
+            routing_weights=top_k_weights if preserve_payload else top_k_weights.to(hidden_states.dtype),
             selected_experts=top_k_index,
             hidden_states=hidden_states,
             fc1_1_weight=None,
@@ -301,7 +318,7 @@ def _musa_kernel_factory():
     from .musa_group_gemm import musa_fused_moe_forward, validate_mate
 
     validate_mate()
-    return _make_moe_experts_adapter(musa_fused_moe_forward)
+    return _make_moe_experts_adapter(musa_fused_moe_forward, allow_ace_fp32_payload=True)
 
 
 KERNEL_REGISTRY.register(
